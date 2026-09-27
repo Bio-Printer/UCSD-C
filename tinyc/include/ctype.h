@@ -1,17 +1,17 @@
 /* ctype.h -- Tiny-C (ASCII) */
 #ifndef __CTYPE_H
 #define __CTYPE_H
-int isdigit(int c) { return c >= '0' && c <= '9'; }
-int isupper(int c) { return c >= 'A' && c <= 'Z'; }
-int islower(int c) { return c >= 'a' && c <= 'z'; }
-int isalpha(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
-int isalnum(int c) { return isalpha(c) || isdigit(c); }
-int isxdigit(int c) { return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-int isspace(int c) { return c == ' ' || (c >= 9 && c <= 13); }
-int iscntrl(int c) { return (c >= 0 && c < 32) || c == 127; }
-int isprint(int c) { return c >= 32 && c < 127; }
-int isgraph(int c) { return c > 32 && c < 127; }
-int ispunct(int c) { return isgraph(c) && !isalnum(c); }
-int toupper(int c) { return c >= 'a' && c <= 'z' ? c - 32 : c; }
-int tolower(int c) { return c >= 'A' && c <= 'Z' ? c + 32 : c; }
+int isdigit(int c);
+int isupper(int c);
+int islower(int c);
+int isalpha(int c);
+int isalnum(int c);
+int isxdigit(int c);
+int isspace(int c);
+int iscntrl(int c);
+int isprint(int c);
+int isgraph(int c);
+int ispunct(int c);
+int toupper(int c);
+int tolower(int c);
 #endif

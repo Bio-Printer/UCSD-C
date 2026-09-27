@@ -111,3 +111,5 @@ no main function
 more than 10 segments
 more than 255 functions in segment
 internal: segment length
+undefined variable
+variable defined twice

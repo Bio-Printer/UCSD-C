@@ -1,12 +1,18 @@
-/* main.c -- the Tiny-C driver: preprocess, compile, link.
+/* main.c -- the Tiny-C driver: preprocess, compile, generate, link.
  *
- * Host:      tc [-I dir] file.c [-o file.code]
- *            (temporary files: file.i and file.obj next to the output)
- * P-System:  X(ecute TC, then answer the prompts; the source NAME.TEXT
- *            becomes NAME.CODE, temporaries TCTEMP.TEXT and TCTEMP.OBJ.
+ * Host:      tc [-c] [-I dir] [-L lib.obj] [-o out] file.c ... file.obj ...
+ *            Each .c becomes a .obj (temporaries .i and .ir beside it);
+ *            without -c everything is linked with the library (-L, or
+ *            tclib.obj in the include directory) into a .code file.
+ * P-System:  X(ecute TINYC, then answer "Compile what file?" with
+ *              NAME             compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
+ *              /C NAME          compile only -> NAME.OBJ
+ *              /L OUT=A,B,...   link A.OBJ, B.OBJ ... and TCLIB.OBJ -> OUT.CODE
  */
 #include "tc.h"
 #pragma segment MAIN
+
+#define MAXFILES 24
 
 static void basename8(char *path, char *out)
 {
@@ -27,12 +33,13 @@ static void basename8(char *path, char *out)
 
 /* every pass gives its heap back: on the P-System memory is released
    to where it was before the pass (the stdio files are all closed) */
-static void passbegin(void)
+static void passbegin(int xsize)
 {
     curfile = 0;
 #ifdef __TINYC__
     __heapsave();
 #endif
+    xsetsize(xsize);
 }
 
 static void passend(void)
@@ -44,106 +51,217 @@ static void passend(void)
     resetpools();
 }
 
-static void banner(void)
+/* one source file to one object file */
+static int compileone(char *src, char *tmpi, char *tmpr, char *obj)
 {
-    printf("Tiny-C compiler for UCSD Pascal II.0  [0.1]\n");
+    char mod[10];
+    basename8(src, mod);
+    printf("Preprocessing %s\n", src);
+    passbegin(8000);
+    if (!preprocess(src, tmpi))
+        return 0;
+    passend();
+    printf("Compiling\n");
+    passbegin(2400);
+    if (!compile(tmpi, tmpr, mod))
+        return 0;
+    passend();
+    printf("Generating code %s\n", obj);
+    passbegin(2400);
+    if (!gencode(tmpr, obj))
+        return 0;
+    passend();
+    return 1;
+}
+
+static int linkall(char **objs, int n, char *out)
+{
+    char prog[10];
+    int r;
+    basename8(out, prog);
+    printf("Linking %s\n", out);
+    passbegin(1000);
+    r = link(objs, n, out, prog);
+    passend();
+    return r;
+}
+
+static int exists(char *name)
+{
+    FILE *f;
+    f = fopen(name, "rb");
+    if (!f)
+        return 0;
+    fclose(f);
+    return 1;
+}
+
+static void upper(char *s)
+{
+    for (; *s; s++)
+        if (*s >= 'a' && *s <= 'z')
+            *s = *s - 32;
 }
 
 int main(int argc, char **argv)
 {
-    char src[200];
+    char *objs[MAXFILES];
+    int nobjs;
     char out[200];
+    char src[200];
     char tmpi[200];
-    char tmpo[200];
     char tmpr[200];
-    char prog[10];
+    char obj[200];
+    char lib[200];
+    char line[200];
+    char *s;
+    char *t;
     int i;
     int n;
-    char *s;
-    src[0] = 0;
+    int conly;
+    printf("Tiny-C compiler for UCSD Pascal II.0  [0.2]\n");
+    nobjs = 0;
+    conly = 0;
     out[0] = 0;
-    banner();
+    lib[0] = 0;
 #ifdef __TINYC__
     printf("Compile what file? ");
-    if (!fgets(src, MAXNAME, stdin))
+    if (!fgets(line, 180, stdin))
         return 1;
-    n = strlen(src);
-    while (n > 0 && (src[n - 1] == '\n' || src[n - 1] == ' '))
-        src[--n] = 0;
-    if (n == 0)
+    n = strlen(line);
+    while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == ' '))
+        line[--n] = 0;
+    upper(line);
+    s = line;
+    while (*s == ' ')
+        s++;
+    if (!*s)
         return 1;
-    for (i = 0; i < n; i++)
-        if (src[i] >= 'a' && src[i] <= 'z')
-            src[i] = src[i] - 32;
-    if (n < 5 || strcmp(src + n - 5, ".TEXT") != 0) {
-        strcpy(out, src);
-        strcat(src, ".TEXT");
+    strcpy(lib, "TCLIB.OBJ");
+    if (!exists(lib))
+        strcpy(lib, "*TCLIB.OBJ");
+    if (s[0] == '/' && s[1] == 'L') {
+        /* /L OUT=A,B,... */
+        s = s + 2;
+        while (*s == ' ')
+            s++;
+        t = strchr(s, '=');
+        if (!t) {
+            printf("use: /L OUT=A,B,...\n");
+            return 1;
+        }
+        *t++ = 0;
+        strcpy(out, s);
+        strcat(out, ".CODE");
+        while (*t) {
+            s = t;
+            while (*t && *t != ',')
+                t++;
+            if (*t)
+                *t++ = 0;
+            if (nobjs >= MAXFILES - 1)
+                break;
+            objs[nobjs] = (char *)malloc(strlen(s) + 5);
+            strcpy(objs[nobjs], s);
+            strcat(objs[nobjs], ".OBJ");
+            nobjs++;
+        }
     } else {
-        strcpy(out, src);
-        out[n - 5] = 0;
+        if (s[0] == '/' && s[1] == 'C') {
+            conly = 1;
+            s = s + 2;
+            while (*s == ' ')
+                s++;
+        }
+        n = strlen(s);
+        if (n > 5 && strcmp(s + n - 5, ".TEXT") == 0)
+            s[n - 5] = 0;
+        strcpy(src, s);
+        strcat(src, ".TEXT");
+        strcpy(obj, s);
+        strcat(obj, ".OBJ");
+        strcpy(out, s);
+        strcat(out, ".CODE");
+        if (!compileone(src, "TCTEMP.TEXT", "TCTEMP.IR", obj))
+            return 1;
+        objs[nobjs++] = obj;
     }
-    strcat(out, ".CODE");
-    strcpy(tmpi, "TCTEMP.TEXT");
-    strcpy(tmpr, "TCTEMP.IR");
-    strcpy(tmpo, "TCTEMP.OBJ");
     argc = 0;
     argv = 0;
 #else
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-o") == 0 && i + 1 < argc)
             strcpy(out, argv[++i]);
+        else if (strcmp(argv[i], "-c") == 0)
+            conly = 1;
+        else if (strcmp(argv[i], "-L") == 0 && i + 1 < argc)
+            strcpy(lib, argv[++i]);
         else if (strcmp(argv[i], "-I") == 0 && i + 1 < argc) {
             static char env[300];
             sprintf(env, "TINYC_INCLUDE=%s", argv[++i]);
             putenv(env);
-        } else
-            strcpy(src, argv[i]);
+        }
     }
-    if (!src[0]) {
-        printf("usage: tc [-I includedir] file.c [-o file.code]\n");
+    for (i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            if (strcmp(argv[i], "-c") != 0)
+                i++;
+            continue;
+        }
+        n = strlen(argv[i]);
+        if (n > 4 && strcmp(argv[i] + n - 4, ".obj") == 0) {
+            objs[nobjs++] = argv[i];
+            continue;
+        }
+        strcpy(src, argv[i]);
+        if (conly && out[0])
+            strcpy(obj, out);
+        else {
+            strcpy(obj, src);
+            s = strrchr(obj, '.');
+            if (s)
+                *s = 0;
+            strcat(obj, ".obj");
+        }
+        strcpy(tmpi, obj);
+        s = strrchr(tmpi, '.');
+        if (s)
+            *s = 0;
+        strcpy(tmpr, tmpi);
+        strcat(tmpi, ".i");
+        strcat(tmpr, ".ir");
+        if (!compileone(src, tmpi, tmpr, obj))
+            return 1;
+        if (nobjs >= MAXFILES - 1)
+            break;
+        objs[nobjs] = (char *)malloc(strlen(obj) + 1);
+        strcpy(objs[nobjs], obj);
+        nobjs++;
+    }
+    if (nobjs == 0) {
+        printf("usage: tc [-c] [-I dir] [-L lib.obj] [-o out] file.c ... file.obj ...\n");
         return 1;
     }
+    if (!lib[0] && getenv("TINYC_INCLUDE")) {
+        strcpy(lib, getenv("TINYC_INCLUDE"));
+        strcat(lib, "/tclib.obj");
+    }
     if (!out[0]) {
-        strcpy(out, src);
+        strcpy(out, objs[0]);
         s = strrchr(out, '.');
         if (s)
             *s = 0;
         strcat(out, ".code");
     }
-    strcpy(tmpi, out);
-    s = strrchr(tmpi, '.');
-    if (s)
-        *s = 0;
-    strcpy(tmpo, tmpi);
-    strcpy(tmpr, tmpi);
-    strcat(tmpr, ".ir");
-    strcat(tmpi, ".i");
-    strcat(tmpo, ".obj");
 #endif
-    basename8(out, prog);
-    printf("Preprocessing %s\n", src);
-    passbegin();
-    xsetsize(8000);
-    if (!preprocess(src, tmpi))
+    if (conly) {
+        printf("Done.\n");
+        return 0;
+    }
+    if (lib[0] && exists(lib))
+        objs[nobjs++] = lib;
+    if (!linkall(objs, nobjs, out))
         return 1;
-    passend();
-    printf("Compiling\n");
-    passbegin();
-    xsetsize(2400);
-    if (!compile(tmpi, tmpr, prog))
-        return 1;
-    passend();
-    printf("Generating code\n");
-    passbegin();
-    xsetsize(2400);
-    if (!gencode(tmpr, tmpo))
-        return 1;
-    passend();
-    printf("Linking %s\n", out);
-    passbegin();
-    if (!link(tmpo, out, prog))
-        return 1;
-    passend();
     printf("Done.\n");
     return 0;
 }

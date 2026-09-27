@@ -15,7 +15,8 @@
  *   R curlocal sretoff functype [tree]         S temp n (val lab)* default
  *   E maxlocal static name seg exitlab functype
  *   I / i  initialiser begin / end             Z flush initialisers
- *   G globalwords        Q end of file
+ *   d strong name words  (an exported variable)
+ *   G staticwords        Q end of file
  */
 #include "tc.h"
 
@@ -107,7 +108,10 @@ static void irnode(struct Node *n)
     if (mask & 64) {
         irb(n->sym->kind);
         irw(n->sym->offset);
-        irs(n->sym->kind == S_FUNC ? n->sym->name : "");
+        if (n->sym->kind == S_FUNC)
+            irs(n->sym->lname ? n->sym->lname : n->sym->name);
+        else
+            irs(n->sym->offset < 0 ? n->sym->name : "");   /* globals by name */
     }
     if (n->op == N_STR || n->op == N_HEAPSTR) {
         irw(n->slen);
@@ -149,6 +153,14 @@ void ir_close(int globalwords)
     irw(globalwords);
     irb('Q');
     fclose(irout);
+}
+
+void ir_data(char *name, int words, int strong)
+{
+    irb('d');
+    irb(strong);
+    irs(name);
+    irw(words);
 }
 
 void ir_funcbegin(void)
@@ -511,6 +523,11 @@ int gencode(char *irname, char *obj)
             break;
         case 'Z':
             gen_initflush();
+            break;
+        case 'd':
+            st = rb();
+            name = rstr();
+            gen_objdata(name, rw(), st);
             break;
         case 'G':
             gen_objend(rw());

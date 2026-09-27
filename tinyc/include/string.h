@@ -3,226 +3,47 @@
 #define __STRING_H
 #include <stddef.h>
 
-size_t strlen(char *s)
-{
-    char *p;
-    p = s;
-    while (*p)
-        p++;
-    return p - s;
-}
+size_t strlen(char *s);
 
-char *strcpy(char *d, char *s)
-{
-    char *r;
-    r = d;
-    while ((*d++ = *s++) != 0)
-        ;
-    return r;
-}
+char *strcpy(char *d, char *s);
 
-char *strncpy(char *d, char *s, size_t n)
-{
-    char *r;
-    r = d;
-    while (n > 0 && *s) {
-        *d++ = *s++;
-        n--;
-    }
-    while (n > 0) {
-        *d++ = 0;
-        n--;
-    }
-    return r;
-}
+char *strncpy(char *d, char *s, size_t n);
 
-char *strcat(char *d, char *s)
-{
-    strcpy(d + strlen(d), s);
-    return d;
-}
+char *strcat(char *d, char *s);
 
-char *strncat(char *d, char *s, size_t n)
-{
-    char *p;
-    p = d + strlen(d);
-    while (n > 0 && *s) {
-        *p++ = *s++;
-        n--;
-    }
-    *p = 0;
-    return d;
-}
+char *strncat(char *d, char *s, size_t n);
 
-int strcmp(char *a, char *b)
-{
-    while (*a && *a == *b) {
-        a++;
-        b++;
-    }
-    return (*a & 255) - (*b & 255);
-}
+int strcmp(char *a, char *b);
 
-int strncmp(char *a, char *b, size_t n)
-{
-    while (n > 0 && *a && *a == *b) {
-        a++;
-        b++;
-        n--;
-    }
-    if (n == 0)
-        return 0;
-    return (*a & 255) - (*b & 255);
-}
+int strncmp(char *a, char *b, size_t n);
 
-char *strchr(char *s, int c)
-{
-    for (;;) {
-        if (*s == (char)c)
-            return s;
-        if (!*s)
-            return NULL;
-        s++;
-    }
-}
+char *strchr(char *s, int c);
 
-char *strrchr(char *s, int c)
-{
-    char *r;
-    r = NULL;
-    for (;;) {
-        if (*s == (char)c)
-            r = s;
-        if (!*s)
-            return r;
-        s++;
-    }
-}
+char *strrchr(char *s, int c);
 
-char *strstr(char *s, char *t)
-{
-    size_t n;
-    n = strlen(t);
-    while (*s) {
-        if (strncmp(s, t, n) == 0)
-            return s;
-        s++;
-    }
-    return n ? NULL : s;
-}
+char *strstr(char *s, char *t);
 
-void *memcpy(void *d, void *s, size_t n)
-{
-    if (n > 0)
-        __cspv(2, s, 0, d, 0, n);       /* MOVELEFT */
-    return d;
-}
+void *memcpy(void *d, void *s, size_t n);
 
-void *memmove(void *d, void *s, size_t n)
-{
-    if (n > 0) {
-        if ((unsigned)d <= (unsigned)s)
-            __cspv(2, s, 0, d, 0, n);   /* MOVELEFT */
-        else
-            __cspv(3, s, 0, d, 0, n);   /* MOVERIGHT */
-    }
-    return d;
-}
+void *memmove(void *d, void *s, size_t n);
 
-void *memset(void *d, int c, size_t n)
-{
-    if (n > 0)
-        __cspv(10, d, 0, n, c);         /* FILLCHAR */
-    return d;
-}
+void *memset(void *d, int c, size_t n);
 
-int memcmp(void *a, void *b, size_t n)
-{
-    unsigned char *p;
-    unsigned char *q;
-    p = a;
-    q = b;
-    while (n > 0) {
-        if (*p != *q)
-            return *p - *q;
-        p++;
-        q++;
-        n--;
-    }
-    return 0;
-}
+int memcmp(void *a, void *b, size_t n);
 
-void *memchr(void *s, int c, size_t n)
-{
-    unsigned char *p;
-    p = s;
-    while (n > 0) {
-        if (*p == (c & 255))
-            return p;
-        p++;
-        n--;
-    }
-    return NULL;
-}
+void *memchr(void *s, int c, size_t n);
 
-size_t strspn(char *s, char *set)
-{
-    size_t n;
-    n = 0;
-    while (s[n] && strchr(set, s[n]))
-        n++;
-    return n;
-}
+size_t strspn(char *s, char *set);
 
-size_t strcspn(char *s, char *set)
-{
-    size_t n;
-    n = 0;
-    while (s[n] && !strchr(set, s[n]))
-        n++;
-    return n;
-}
+size_t strcspn(char *s, char *set);
 
-char *strpbrk(char *s, char *set)
-{
-    while (*s) {
-        if (strchr(set, *s))
-            return s;
-        s++;
-    }
-    return NULL;
-}
+char *strpbrk(char *s, char *set);
 
-char *__strtok;
+extern char *__strtok;
 
-char *strtok(char *s, char *delim)
-{
-    char *r;
-    if (s)
-        __strtok = s;
-    if (!__strtok)
-        return NULL;
-    __strtok = __strtok + strspn(__strtok, delim);
-    if (!*__strtok)
-        return NULL;
-    r = __strtok;
-    __strtok = __strtok + strcspn(__strtok, delim);
-    if (*__strtok)
-        *__strtok++ = 0;
-    return r;
-}
+char *strtok(char *s, char *delim);
 
-void *malloc(size_t n);
-void free(void *p);
 
-char *strdup(char *s)
-{
-    char *p;
-    p = malloc(strlen(s) + 1);
-    if (p)
-        strcpy(p, s);
-    return p;
-}
+char *strdup(char *s);
 
-#include <stdlib.h>
 #endif

@@ -22,11 +22,37 @@ def build_tc():
         subprocess.check_call(['gcc', '-O1', '-w', '-o', TC, os.path.join(ROOT, 'tinyc', 'tc.c')])
 
 
-def compile_c(src, outdir):
+LIBSRC = os.path.join(ROOT, 'tinyc', 'lib')
+LIB = os.path.join(INC, 'tclib.obj')
+
+
+def build_lib():
+    """compile tinyc/lib/*.c and concatenate the modules into tclib.obj"""
     build_tc()
+    srcs = sorted(f for f in os.listdir(LIBSRC) if f.endswith('.c'))
+    newest = max([os.path.getmtime(os.path.join(LIBSRC, f)) for f in srcs] +
+                 [os.path.getmtime(os.path.join(INC, f)) for f in os.listdir(INC) if f.endswith('.h')] +
+                 [os.path.getmtime(TC)])
+    if os.path.exists(LIB) and os.path.getmtime(LIB) >= newest:
+        return LIB
+    objdir = os.path.join(ROOT, 'build', 'lib')
+    os.makedirs(objdir, exist_ok=True)
+    data = b''
+    for f in srcs:
+        obj = os.path.join(objdir, f[:-2] + '.obj')
+        r = subprocess.run([TC, '-c', '-I', INC, os.path.join(LIBSRC, f), '-o', obj], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit('library build failed (%s):\n%s' % (f, r.stdout + r.stderr))
+        data += open(obj, 'rb').read()
+    open(LIB, 'wb').write(data)
+    return LIB
+
+
+def compile_c(src, outdir):
+    build_lib()
     base = os.path.splitext(os.path.basename(src))[0].upper()[:10]
     out = os.path.join(outdir, base + '.CODE')
-    r = subprocess.run([TC, '-I', INC, src, '-o', out], capture_output=True, text=True)
+    r = subprocess.run([TC, '-I', INC, '-L', LIB, src, '-o', out], capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit('compile failed:\n' + r.stdout + r.stderr)
     return base, out

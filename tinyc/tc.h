@@ -26,7 +26,7 @@
 #define MAXLABEL  300      /* labels in one procedure */
 #define MAXFIX    500      /* jump fixups in one procedure */
 #define MAXLONGJ  60       /* jump-table entries in one procedure (II.0 limit) */
-#define MAXREL    200      /* relocations in one procedure */
+#define MAXREL    500      /* relocations in one procedure */
 #define MAXSEGS   10       /* segment 1 and 7..15 */
 #define MAXNAME   64
 
@@ -155,7 +155,8 @@ struct Sym {
     int offset;             /* word offset (globals, locals), enum value, label number */
     int level;              /* scope level (0 = file) */
     int isstatic;
-    int defined;
+    int defined;            /* functions: has a body; globals: 1 common, 2 initialised */
+    char *lname;            /* link name when it differs (static functions) */
     struct Sym *next;       /* hash chain */
     struct Sym *scopenext;  /* symbols of one scope */
 };
@@ -321,10 +322,12 @@ void ir_initbegin(void);
 void ir_initend(void);
 void ir_initflush(void);
 int gencode(char *ir, char *obj);
+void ir_data(char *name, int words, int strong);
+void gen_objdata(char *name, int words, int strong);
 
 /* passes */
 int preprocess(char *src, char *out);
 int compile(char *src, char *obj, char *modname);
-int link(char *obj, char *code, char *progname);
+int link(char **objs, int nobjs, char *code, char *progname);
 
 #endif

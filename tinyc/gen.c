@@ -77,6 +77,8 @@
 /* relocation kinds in the object file */
 #define R_CALL    1         /* CXP s,p at pos */
 #define R_FNPTR   2         /* LDCI word at pos+1: seg | proc << 8 */
+#define R_GSTAT   3         /* 2-byte global operand at pos: module static */
+#define R_GNAME   4         /* 2-byte global operand at pos: named variable */
 
 struct Emit {
     unsigned char *code;
@@ -376,16 +378,37 @@ struct LV {
     int off;                    /* word offset of the variable */
     int boff;                   /* extra byte offset */
     struct Node *ptr;           /* LV_PTR: address expression */
+    char *name;                 /* LV_GLOBAL: link name, 0 for a module static */
 };
+
+/* global variable access: operand is always two bytes so the linker can
+   fill it in -- R_GSTAT: module static (operand = offset in the module),
+   R_GNAME: named variable (operand = word offset within it) */
+static void gglob(int op, struct LV *lv, int add)
+{
+    int v;
+    ob(op);
+    if (lv->name) {
+        reloc(R_GNAME, lv->name);
+        v = add;
+    } else {
+        reloc(R_GSTAT, "");
+        v = lv->off + add;
+    }
+    ob(128 | ((v >> 8) & 127));
+    ob(v & 255);
+}
 
 static void lvinfo(struct Node *n, struct LV *lv)
 {
     struct Node *p;
+    lv->name = 0;
     if (n->op == N_VAR) {
         lv->kind = n->sym->kind == S_LOCAL ? LV_LOCAL : LV_GLOBAL;
         lv->off = n->sym->offset;
         lv->boff = 0;
         lv->ptr = 0;
+        lv->name = lv->kind == LV_GLOBAL && lv->off < 0 ? n->sym->name : 0;
         return;
     }
     if (n->op == N_MEMBER) {
@@ -441,7 +464,7 @@ static void gen_addr(struct Node *n)
         lla(lv.off + (lv.boff >> 1));
         addconst(lv.boff & 1);
     } else if (lv.kind == LV_GLOBAL) {
-        lao(lv.off + (lv.boff >> 1));
+        gglob(O_LAO, &lv, lv.boff >> 1);
         addconst(lv.boff & 1);
     } else {
         gen_ptrvalue(lv.ptr);
@@ -459,7 +482,7 @@ static void gen_byteaddr(struct Node *n)
         lla(lv.off + (lv.boff >> 1));
         ldc(lv.boff & 1);
     } else if (lv.kind == LV_GLOBAL) {
-        lao(lv.off + (lv.boff >> 1));
+        gglob(O_LAO, &lv, lv.boff >> 1);
         ldc(lv.boff & 1);
     } else {
         p = lv.ptr;
@@ -528,7 +551,7 @@ static void gen_load(struct Node *n)
         if (lv.kind == LV_LOCAL && !(lv.boff & 1))
             ldl(lv.off + lv.boff / 2);
         else if (lv.kind == LV_GLOBAL && !(lv.boff & 1))
-            ldo(lv.off + lv.boff / 2);
+            gglob(O_LDO, &lv, lv.boff / 2);
         else if (lv.kind == LV_PTR && !(lv.boff & 1) && lv.boff >= 0) {
             gen_ptrvalue(lv.ptr);
             ind(lv.boff / 2);
@@ -574,7 +597,7 @@ static void storepost(struct Node *n)
         if (lv.kind == LV_LOCAL && !(lv.boff & 1))
             gen_stl(lv.off + lv.boff / 2);
         else if (lv.kind == LV_GLOBAL && !(lv.boff & 1))
-            sro(lv.off + lv.boff / 2);
+            gglob(O_SRO, &lv, lv.boff / 2);
         else
             ob(O_STO);
         return;
@@ -1361,21 +1384,32 @@ static void outs(char *s)
         putc(*s++, objout);
 }
 
+static char *genmod;
+
 void gen_objheader(char *modname)
 {
+    genmod = modname;
     memset(names, 0, sizeof(names));
     setupemit(&fe, MAXCODE, MAXLABEL, MAXFIX, MAXREL);
-    setupemit(&ie, 1600, 40, 80, 40);
+    setupemit(&ie, 1600, 40, 80, 300);
     E = &fe;
     fputs("TCOB", objout);
     putc('M', objout);
     outs(modname);
 }
 
-void gen_objend(int globalwords)
+void gen_objdata(char *name, int words, int strong)
+{
+    putc('D', objout);
+    putc(strong, objout);
+    outs(name);
+    outw(words);
+}
+
+void gen_objend(int staticwords)
 {
     putc('G', objout);
-    outw(globalwords);
+    outw(staticwords);
     putc('E', objout);
 }
 
@@ -1505,7 +1539,7 @@ static void initstart(void)
 
 void gen_initflush(void)
 {
-    char name[16];
+    char name[40];
     struct Emit *save;
     save = E;
     saveframe();
@@ -1515,7 +1549,7 @@ void gen_initflush(void)
         setlabel(initexit);
         ob(O_RNP);
         ob(0);
-        sprintf(name, "__init%d", ninit);
+        sprintf(name, "%s'init%d", genmod, ninit);
         ninit++;
         endproc(name, "INIT", initexit, 0, 1);
         E->pc = 0;
@@ -1543,6 +1577,6 @@ void gen_initend(void)
     saveframe();
     E = &fe;
     loadframe();
-    if (ie.pc > ie.max - 500)
+    if (ie.pc > ie.max - 500 || ie.nrel > ie.maxrel - 60)
         gen_initflush();
 }

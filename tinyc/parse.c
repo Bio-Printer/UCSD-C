@@ -26,7 +26,8 @@ static struct Sym *ttab[HSIZE];
 static struct Sym *scopes[40];
 static int level;
 static struct Sym *labels;
-int globoff;                    /* next free global word */
+int globoff;                    /* next free word of the module's static variables */
+static char *modname;
 
 /* current function */
 static struct Sym *curfn;
@@ -99,7 +100,7 @@ void typeinit(void)
     ty_double = mktype(TY_DOUBLE, 4, 2);
     ty_ldouble = mktype(TY_LDOUBLE, 4, 2);
     ty_charp = ptrto(ty_char);
-    globoff = 3;
+    globoff = 0;
 }
 
 #pragma segment PARSE
@@ -1675,10 +1676,11 @@ static void localdecl(void)
                 s = addsym(name, t->kind == TY_FUNC ? S_FUNC : S_GLOBAL, t);
                 level = save;
                 if (t->kind != TY_FUNC)
-                    s->offset = allocglobal(t);
+                    s->offset = -1;     /* by name: defined in some module */
             }
         } else if (sc == K_STATIC) {
             s = addsym(name, S_GLOBAL, t);
+            s->isstatic = 1;
             if (tok == '=') {
                 next();
                 if (t->kind == TY_ARRAY && t->len < 0 && tok == T_STR) {
@@ -2066,7 +2068,7 @@ static void funcdef(struct Sym *fs, int isstatic)
     for (s = labels; s; s = s->next)
         if (!s->defined)
             error(87 /* undefined label */, s->name);
-    ir_funcend(fs->name, ft, exitlab, isstatic, seg);
+    ir_funcend(fs->lname ? fs->lname : fs->name, ft, exitlab, isstatic, seg);
     popscope();
     curfn = 0;
     curft = 0;
@@ -2107,8 +2109,13 @@ static void external(void)
                 s = addsym(name, S_FUNC, t);
             else if (!s->defined && t->params)
                 s->type = t;
-            if (sc == K_STATIC)
+            if (sc == K_STATIC && !s->isstatic) {
                 s->isstatic = 1;
+                s->lname = palloc(strlen(modname) + strlen(name) + 2);
+                strcpy(s->lname, modname);
+                strcat(s->lname, "'");
+                strcat(s->lname, name);
+            }
             if (tok == '{') {
                 if (t != s->type)
                     s->type = t;
@@ -2124,20 +2131,29 @@ static void external(void)
             if (!s) {
                 s = addsym(name, S_GLOBAL, t);
                 s->offset = -1;
+                if (sc == K_STATIC) {
+                    s->isstatic = 1;
+                    if (t->size >= 0)
+                        s->offset = allocglobal(t);
+                }
             } else if (s->type->kind == TY_ARRAY && s->type->len < 0 && t->len >= 0)
                 s->type = t;
+            if (sc != K_EXTERN && !s->defined)
+                s->defined = 1;             /* a tentative (common) definition */
             if (tok == '=') {
                 next();
                 if (t->kind == TY_ARRAY && t->len < 0 && tok == T_STR) {
                     t->len = toklen;
                     t->size = toklen;
                 }
-                if (s->offset < 0 && t->size >= 0)
-                    s->offset = allocglobal(t);
+                if (s->defined == 2)
+                    error(88 /* redeclared */, name);
+                s->defined = 2;
+                s->type = t;
                 lv = mknode(N_VAR, t, 0, 0);
                 lv->sym = s;
-                if (s->offset < 0) {
-                    /* array of unknown size: allocate after the initializer */
+                if (s->isstatic && s->offset < 0) {
+                    /* static array of unknown size: allocate after the initializer */
                     s->offset = globoff;
                     ir_initbegin();
                     initializer(lv, t, 1);
@@ -2149,7 +2165,7 @@ static void external(void)
                     initializer(lv, t, 1);
                     ir_initend();
                 }
-            } else if (s->offset < 0 && t->size >= 0)
+            } else if (s->isstatic && s->offset < 0 && t->size >= 0)
                 s->offset = allocglobal(t);
         }
         if (tok != ',')
@@ -2248,9 +2264,10 @@ void pragma(char *s)
     }
 }
 
-int compile(char *src, char *ir, char *modname)
+int compile(char *src, char *ir, char *mod)
 {
     FILE *fp;
+    modname = mod;
     fp = fopen(src, "r");
     if (!fp)
         fatal(25 /* cannot open */, src);
@@ -2264,6 +2281,18 @@ int compile(char *src, char *ir, char *modname)
         external();
     }
     ir_initflush();
+    {
+        /* the module's exported variables: name, size, initialised or common */
+        struct Sym *g;
+        int h;
+        for (h = 0; h < HSIZE; h++)
+            for (g = htab[h]; g; g = g->next)
+                if (g->kind == S_GLOBAL && !g->isstatic && g->defined) {
+                    if (g->type->size < 0)
+                        error(73 /* incomplete type */, g->name);
+                    ir_data(g->name, (g->type->size + 1) / 2, g->defined == 2);
+                }
+    }
     ir_close(globoff);
     fclose(fp);
     return nerrors == 0;

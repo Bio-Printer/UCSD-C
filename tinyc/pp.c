@@ -1182,21 +1182,6 @@ int preprocess(char *src, char *out)
             fclose(istack[idepth - 1].fp);
             idepth--;
             xrelease(m);
-            if (idepth == 0 && !crtdone) {
-                /* the runtime helpers follow every program */
-                crtdone = 1;
-                istack[0].fp = openinc("tcrt.h", 1);
-                if (!istack[0].fp)
-                    fatal(17 /* cannot open include file */, "tcrt.h");
-                istack[0].name = "tcrt.h";
-                istack[0].line = 0;
-                idepth = 1;
-                if (iflevel)
-                    error(26 /* missing #endif */, 0);
-                iflevel = 0;
-                active = 1;
-                continue;
-            }
             if (idepth == 0)
                 break;
             continue;

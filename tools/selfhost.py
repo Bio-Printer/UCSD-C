@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from psys import PSystem, esc
-from tcrun import compile_c, INC
+from tcrun import compile_c, build_lib, INC
 
 
 def put_headers(ps):
@@ -21,6 +21,7 @@ def put_headers(ps):
         if f.endswith('.h'):
             ps.put(f.upper() + '.TEXT', open(os.path.join(INC, f)).read())
     ps.put('TCMSGS.TEXT', open(os.path.join(INC, 'tcmsgs.txt')).read())
+    ps.put('TCLIB.OBJ', open(build_lib(), 'rb').read())
 
 
 def compile_on_psystem(src_files, main_name, tc_code=None, timeout=1800, blocks=4000):
