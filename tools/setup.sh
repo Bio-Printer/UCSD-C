@@ -17,8 +17,8 @@ cp --update=none build/img/Big_Disk.BLK build/data/Big_Disk.BLK
 # LoadFiles only needs the file to exist.
 [ -f build/data/pascal.bin ] || head -c 4096 /dev/zero > build/data/pascal.bin
 if [ ! -x build/run_verify ] || [ build/pm/UCSDPascal/PSystemEngine.cpp -nt build/run_verify ]; then
-    g++ -std=c++17 -O2 -w -I build/pm/verify/linux-shim -I build/pm/UCSDPascal \
-        -o build/run_verify build/pm/verify/run_verify.cpp \
+    g++ -std=c++17 -O2 -w -I tools/runner/linux-shim -I build/pm/UCSDPascal \
+        -o build/run_verify tools/runner/run_verify.cpp \
         build/pm/UCSDPascal/PSystemEngine.cpp build/pm/UCSDPascal/z80.cpp -lpthread
 fi
 echo "setup OK"

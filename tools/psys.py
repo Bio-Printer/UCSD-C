@@ -58,7 +58,8 @@ class PSystem:
         shutil.rmtree(self.out, ignore_errors=True)
         r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
                             self.src, self.spare, sp, 'native', self.out, '', str(timeout)],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True,
+                           env=dict(os.environ, VERIFY_RECLAIM=os.environ.get('VERIFY_RECLAIM', '1')))
         tr = ''
         tp = os.path.join(self.out, 'transcript.txt')
         if os.path.exists(tp):
