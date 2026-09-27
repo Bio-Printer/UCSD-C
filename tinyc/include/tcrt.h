@@ -112,38 +112,6 @@ int __sx(int c)
     return c;
 }
 
-/* compare two reals by their bit patterns: [exp][sign|m1][m2][m3] */
-int __fcmp(double a, double b)
-{
-    unsigned *x;
-    unsigned *y;
-    int sa;
-    int sb;
-    int ka;
-    int kb;
-    unsigned la;
-    unsigned lb;
-    int r;
-    x = (unsigned *)&a;
-    y = (unsigned *)&b;
-    sa = (x[0] & 255) == 0 ? 0 : ((int)x[0] < 0 ? -1 : 1);
-    sb = (y[0] & 255) == 0 ? 0 : ((int)y[0] < 0 ? -1 : 1);
-    if (sa != sb || sa == 0)
-        return sa < sb ? -1 : (sa > sb ? 1 : 0);
-    ka = (x[0] & 255) * 128 + (__ushr(x[0], 8) & 127);
-    kb = (y[0] & 255) * 128 + (__ushr(y[0], 8) & 127);
-    if (ka != kb)
-        r = ka < kb ? -1 : 1;
-    else {
-        la = (x[1] & 255) * 256 + __ushr(x[1], 8);
-        lb = (y[1] & 255) * 256 + __ushr(y[1], 8);
-        if (la == lb)
-            return 0;
-        r = la < lb ? -1 : 1;
-    }
-    return sa < 0 ? -r : r;
-}
-
 double __utof(unsigned u)
 {
     if ((int)u >= 0)
