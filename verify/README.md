@@ -26,15 +26,23 @@ On Linux, `tools/tcverify.py [native|z80]` runs the pack through
 
 ## Requirements
 
-* **P-Code mode with the interpreter memory reclaimed.** Tiny-C needs
-  that memory; without it the code generator stops with STK OFLOW.
+* **Any execution mode.** P-Code mode (with or without the reclaimed
+  memory) and Z80 mode both run it; Z80 mode is the tightest (about 165
+  words to spare while generating code for STMT or GEN).  In Z80 mode
+  the FLOATS test stops with "Unimplemented instruction": the Z80
+  interpreter on the boot disk was assembled with NOFPT, so SIN, COS,
+  EXP, ATAN, SQT, LOG and LN are not implemented there (P-Code mode has
+  them).  Everything else passes (checked: all other tests, the
+  self-compile, CMPCODE IDENTICAL).
 * The 64-frame CXP fix (`repro/DEEPCXP.README.md`) is *not* needed today.
   The compiler used to hang in EXPR without it, but only because its
   16-bit wrap macro (W16) called the long-arithmetic helpers in segment 1
   from deep inside the parser. Since W16 became a no-op on the P-System,
   the pack passes on the unfixed engine too. Programs that recurse more
   than 64 deep and then call into another segment still need the fix.
-* About 585 script steps; the whole run takes about 16 s in P-Code mode on Linux.
+* About 585 script steps; the whole run takes about 16 s in P-Code mode
+  on Linux, about 7 minutes in Z80 mode.  tools/tcverify.py z80 runs it
+  in Z80 mode (TCV_MAX=seconds raises the time limit).
 
 ## Wiring it into the menu (a sketch)
 

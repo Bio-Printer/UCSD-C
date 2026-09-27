@@ -53,6 +53,11 @@ remove TCLIB.OBJ and rename TCLIB2.OBJ to TCLIB.OBJ with the Filer.
 
 THE DEMO PROGRAMS: see DEMOS.TEXT on TCEXTRA: (@DEMOS).
 
+MEMORY: Tiny-C runs in Z80 mode as well as P-Code mode, and @BUILD
+works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
+EXP, ATAN, SQT, LOG or LN: math.h's sqrt, sin ... stop there with
+"Unimplemented instruction"; P-Code mode has them.)
+
 FILES.TEXT lists every file on this volume.
 """
 
