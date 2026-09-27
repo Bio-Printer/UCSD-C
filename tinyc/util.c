@@ -119,7 +119,7 @@ void freset(void)
     fused = 0;
 }
 
-#define XSIZE 6000
+#define XSIZE 8000
 static char *xbuf;
 static int xused;
 

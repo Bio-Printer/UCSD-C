@@ -316,11 +316,13 @@ static char *expandcopy(char *s, int n)
     char *buf;
     char *src;
     int len;
+    int xm;
     src = xalloc(n + 1);
     memcpy(src, s, n);
     src[n] = 0;
     buf = xalloc(MAXEXP);
     save = outp;
+    xm = xmark();
     saveend = outend;
     outp = buf;
     outend = buf + MAXEXP;
@@ -368,6 +370,7 @@ static char *expandcall(struct Macro *m, char *p)
 {
     char *args[32];
     int alen[32];
+    char *aexp[32];
     int nargs;
     int depth;
     char *q;
@@ -381,6 +384,7 @@ static char *expandcall(struct Macro *m, char *p)
     int idx;
     int n;
     int paste;
+    int xm;
     q = p;
     while (*q == ' ' || *q == '\t')
         q++;
@@ -405,6 +409,7 @@ static char *expandcall(struct Macro *m, char *p)
             n = q - start;
             args[nargs] = trim(start, &n);
             alen[nargs] = n;
+            aexp[nargs] = 0;
             nargs++;
             if (*q == ')') {
                 q++;
@@ -420,6 +425,7 @@ static char *expandcall(struct Macro *m, char *p)
     if (nargs != m->nparams)
         error("wrong number of macro arguments", m->name);
     /* substitute into a temporary buffer, then rescan it */
+    xm = xmark();
     res = xalloc(MAXEXP);
     saveout = outp;
     saveend = outend;
@@ -471,8 +477,9 @@ static char *expandcall(struct Macro *m, char *p)
                 if (paste)
                     put(args[idx], alen[idx]);
                 else {
-                    rstart = expandcopy(args[idx], alen[idx]);
-                    put(rstart, strlen(rstart));
+                    if (!aexp[idx])
+                        aexp[idx] = expandcopy(args[idx], alen[idx]);
+                    put(aexp[idx], strlen(aexp[idx]));
                 }
             }
             continue;
@@ -493,6 +500,7 @@ static char *expandcall(struct Macro *m, char *p)
     expanding[nexpanding++] = m;
     expand(res);
     nexpanding--;
+    xrelease(xm);
     return q;
 }
 

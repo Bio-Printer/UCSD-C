@@ -52,6 +52,14 @@ class PSystem:
         raw, kind = v.read(name)
         return ucsdvol.ucsd_to_text(raw) if kind == 3 else raw
 
+    def env(self):
+        e = dict(os.environ)
+        if e.get('VERIFY_RECLAIM', '1') == '1':
+            e['VERIFY_RECLAIM'] = '1'
+        else:
+            e.pop('VERIFY_RECLAIM', None)
+        return e
+
     def run_script(self, script_text, timeout=600):
         sp = os.path.join(self.dir, 'run.script')
         open(sp, 'w').write(script_text)
@@ -59,7 +67,7 @@ class PSystem:
         r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
                             self.src, self.spare, sp, 'native', self.out, '', str(timeout)],
                            capture_output=True, text=True,
-                           env=dict(os.environ, VERIFY_RECLAIM=os.environ.get('VERIFY_RECLAIM', '1')))
+                           env=self.env())
         tr = ''
         tp = os.path.join(self.out, 'transcript.txt')
         if os.path.exists(tp):

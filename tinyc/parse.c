@@ -581,6 +581,8 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
             return mknode(op, ty_int, call1(t->kind == TY_ULONG ? "__ulcmp" : "__lcmp", a, b), mknum(0, ty_int));
         if (isconst(a) && isconst(b) && !isfloatty(t))
             return mknum(fold(op, a->val, b->val, isunsignedty(t)), ty_int);
+        if (isfloatty(t))           /* real compares are not native in the engine */
+            return mknode(op, ty_int, call1("__fcmp", a, b), mknum(0, ty_int));
         return mknode(op, ty_int, a, b);
     }
     if (!isscalar(at) || !isscalar(bt) || at->kind == TY_PTR || bt->kind == TY_PTR) {
@@ -635,11 +637,21 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
 }
 
 /* value of a condition as int 0/1 is produced by gen; this checks type */
+static struct Node *fzero(void)
+{
+    struct Node *n;
+    n = mknode(N_FNUM, ty_double, 0, 0);
+    n->fimg = (unsigned char *)xalloc(4);
+    return n;
+}
+
 static struct Node *cond(struct Node *n)
 {
     n = decay(n);
     if (!isscalar(n->type))
         error("scalar required", 0);
+    if (isfloatty(n->type))
+        n = binop(N_NE, n, fzero());
     return n;
 }
 
@@ -2210,6 +2222,7 @@ static void helpers(void)
     declhelper("__sx", ty_int, ty_int, 0);
     declhelper("__utof", ty_double, ty_uint, 0);
     declhelper("__ftou", ty_uint, ty_double, 0);
+    declhelper("__fcmp", ty_int, ty_double, ty_double);
     declhelper("__ladd", ty_long, ty_long, ty_long);
     declhelper("__lsub", ty_long, ty_long, ty_long);
     declhelper("__lmul", ty_long, ty_long, ty_long);
