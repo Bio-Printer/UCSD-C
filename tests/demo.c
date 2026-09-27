@@ -1,4 +1,4 @@
-/* demo.c -- small enough to compile ON the P-System today (no stdio.h):
+/* demo.c -- the smallest program: no stdio.h (much less to link);
    console output through UNITWRITE, recursion, arrays, structs, longs */
 
 void puts1(char *s)

@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""mkvolume.py -- build TinyC_Volume.zip: TINY-C.BLK, the UCSD volume TINY-C: holding the
-Tiny-C compiler (TINYC.CODE, built from its modules), its headers
-(NAME.H.TEXT), the library (TCLIB.OBJ), the message file (TCMSGS.TEXT),
-the test programs, the compiler's own sources and README.TEXT.
+"""mkvolume.py -- build the two Tiny-C volumes (volumes/*.zip):
 
-Use it as unit #5 (or any unit), set the prefix to it (F(iler P(refix),
-then X(ecute TINYC and answer "Compile what file?" with e.g. SIEVE.
+  TINY-C:   everything needed to use Tiny-C and to rebuild it: TINYC.CODE,
+            TCLIB.OBJ, TCMSGS.TEXT, the headers, the compiler's and the
+            library's sources, BUILD.TEXT (X TINYC, @BUILD rebuilds the
+            compiler), README.TEXT, FILES.TEXT
+  TCEXTRA:  the test and demo programs (sources and ready-to-run code
+            files), CMPCODE, README.TEXT, FILES.TEXT
+
+FILES.TEXT lists every file on its volume with its size and what it is;
+the same listing is written next to the zips (volumes/NAME.txt).
 """
-import os, sys, zipfile, subprocess
+import os, sys, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
@@ -15,108 +19,207 @@ import ucsdvol
 from tcrun import build_lib, compile_c, INC
 from buildtc import build, MODULES
 
-README = """TINY-C for UCSD Pascal II.0
+SRC = os.path.join(ROOT, 'tinyc')
+LIB = os.path.join(SRC, 'lib')
+TESTS = os.path.join(ROOT, 'tests')
+OUT = os.path.join(ROOT, 'volumes')
+TMP = os.path.join(ROOT, 'build', 'volume_tmp')
+LIBMODS = sorted(f[:-2] for f in os.listdir(LIB) if f.endswith('.c'))
 
-  X(ecute TINYC            then answer "Compile what file?" with
-      NAME                 compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
-      /C NAME              compile only -> NAME.OBJ
-      /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
-  X(ecute NAME             runs the program
+README_TC = """TINY-C for UCSD Pascal II.0                        volume TINY-C:
 
-TCLIB.OBJ is the precompiled C library (only what a program uses is
-linked in).  Headers: STDIO.H STDLIB.H STRING.H CTYPE.H MATH.H CONIO.H IO.H FCNTL.H
-STDARG.H STDDEF.H LIMITS.H FLOAT.H ASSERT.H.  TCRT.H documents the
-runtime helpers the compiler calls (they are in TCLIB.OBJ).  TCMSGS.TEXT
-holds the compiler's messages.  Temporary files: TCTEMP.TEXT, TCTEMP.IR.
+Use: set the prefix to TINY-C: (F(iler, P(refix), then X(ecute TINYC and
+answer "Compile what file?" with
+    NAME                 compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
+    /C NAME              compile only -> NAME.OBJ
+    /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
+    @FILE                run the commands in FILE.TEXT, one per line
+                         (blank lines and lines starting with ; skipped)
+X(ecute NAME runs a program.  A program on another volume (e.g. TCEXTRA:)
+compiles with that volume as the prefix: headers, TCLIB.OBJ and
+TCMSGS.TEXT are found on TINY-C: when they are not on the prefix volume
+or the boot volume.  Temporary files: TCTEMP.TEXT, TCTEMP.IR.
 
-Set the prefix to this volume first (F(iler, P(refix TINY-C:).
+REBUILDING THE COMPILER:  X(ecute TINYC, answer  @BUILD
+BUILD.TEXT compiles the compiler's 12 modules and links TINYC2.CODE,
+which is identical to TINYC.CODE apart from its name (check it with
+CMPCODE on TCEXTRA:).  To use it, rename it with the Filer.
 
-Demo and test programs (NAME.TEXT; compile with X TINYC, answer NAME):
-  CALC      a calculator: recursive descent, longs
-  GUESS     guess the number: rand, scanf
-  BOXES     conio.h: clrscr, gotoxy, getch
-  FILEIO    stdio text files, io.h/fcntl.h binary files
-  HANOI     towers of Hanoi          QUEENS   eight queens
-  SIEVE     primes                   STRINGS  string.h, sprintf, sscanf
-  STRUCTS   structs, unions, lists   FUNCPTR  function pointers, qsort
-  LONGS     32-bit longs             FLOATS   reals and math.h
-  CONTROL   switch, goto, loops
-  CMPCODE   compares two code files (checks a rebuilt compiler)
+THE LIBRARY: TCLIB.OBJ is the library modules' objects one after
+another.  Each module compiles with /C to exactly the object in it.
+TINYC links TCLIB.OBJ whenever it finds one; to link with rebuilt
+modules instead, rename TCLIB.OBJ and list them, e.g.
+    /L PROG=PROG,TCRT,STDIO,STDLIB,STRING,CTYPE,MATH,FLTFMT,...
 
-Files: 58 of the directory's 77 entries are used.  A compile adds
-NAME.OBJ and NAME.CODE (and TCTEMP.TEXT, TCTEMP.IR once); rebuilding the
-compiler needs 15 (12 .OBJ files, TINYC2.CODE, the two temporaries).
-Remove the .OBJ and .CODE files you no longer need.
+FILES.TEXT lists every file on this volume.
+"""
 
-The compiler's own sources are here too (%s,
-TC.H PARSE.H).  To rebuild the compiler on the P-System, compile each
-module separately, then link them (there is no TC.TEXT: the whole
-compiler as one file does not fit in memory):
-  X(ecute TINYC   /C MAIN        (and the same for every module)
-  X(ecute TINYC   /L TINYC2=%s
-TINYC2.CODE comes out identical to TINYC.CODE (apart from its name):
-  X(ecute CMPCODE   TINYC.CODE  TINYC2.CODE   -> IDENTICAL
+README_EX = """TINY-C EXTRAS                                     volume TCEXTRA:
 
-The library's sources are here as well (%s,
-LIBINT.H).  Each compiles on the P-System with /C to exactly the
-host's object.  TCLIB.OBJ is those objects one after another.  TINYC
-links TCLIB.OBJ automatically when it finds it (here or *TCLIB.OBJ),
-so to link with rebuilt modules instead, rename TCLIB.OBJ and list
-them:  /L PROG=PROG,TCRT,STDIO,STDLIB,STRING,CTYPE,MATH,FLTFMT,...
-""" % (' '.join(m.upper() for m in MODULES), ','.join(m.upper() for m in MODULES),
-       ' '.join(f[:-2].upper() for f in sorted(os.listdir(os.path.join(ROOT, 'tinyc', 'lib'))) if f.endswith('.c')))
+Test and demo programs for Tiny-C (the compiler is on TINY-C:).  Every
+program is here as source (NAME.TEXT) and ready to run (NAME.CODE):
+X(ecute TCEXTRA:NAME.  To compile one yourself, set the prefix to
+TCEXTRA: and X(ecute TINY-C:TINYC, answer NAME.
+
+CMPCODE compares two code files byte by byte (the program name in
+block 0 aside): after @BUILD on TINY-C:, compare TINY-C:TINYC.CODE with
+TINY-C:TINYC2.CODE; it prints IDENTICAL.
+
+FILES.TEXT lists every file on this volume.
+"""
+
+BUILD = """; BUILD -- rebuild the Tiny-C compiler: X(ecute TINYC, answer @BUILD
+; Compiles every module, then links them into TINYC2.CODE.
+""" + ''.join('/C %s\n' % m.upper() for m in MODULES) + \
+    '/L TINYC2=%s\n' % ','.join(m.upper() for m in MODULES)
 
 
-# tests left off the volume (the directory holds 77 files): in tests/ still
-SKIP_TESTS = ('demo', 'fcompare')
+WHAT = {
+    'assert.h': 'assert()',
+    'conio.h': 'console: getch, putch, cputs, kbhit, gotoxy, clrscr',
+    'ctype.h': 'isdigit, isalpha, toupper, ...',
+    'fcntl.h': "open()'s flags: O_RDONLY, O_CREAT, ...",
+    'float.h': 'FLT_MAX, FLT_EPSILON, ... (32-bit reals)',
+    'io.h': 'open, read, write, lseek, close, unlink',
+    'limits.h': 'INT_MAX, LONG_MAX, ... (16-bit int, 32-bit long)',
+    'math.h': 'sqrt, sin, cos, atan, exp, log, pow, fabs, ...',
+    'stdarg.h': 'va_list, va_start, va_arg, va_end',
+    'stddef.h': 'size_t, NULL, offsetof',
+    'stdio.h': 'printf, scanf, FILE, fopen, fgets, fprintf, ...',
+    'stdlib.h': 'malloc, free, atoi, rand, qsort, exit, ...',
+    'string.h': 'strcpy, strcmp, strlen, memcpy, memset, ...',
+    'tcrt.h': 'runtime helpers the compiler calls (reference only)',
+    'main.c': 'the driver: commands, @FILE, the passes',
+    'util.c': 'messages, output helpers, memory pools',
+    'types.c': 'type predicates',
+    'pp.c': 'pass 1: the preprocessor',
+    'lex.c': 'pass 2: the tokenizer',
+    'psym.c': 'parser: types and symbols',
+    'expr.c': 'parser: expressions',
+    'decl.c': 'parser: declarations and initializers',
+    'stmt.c': 'parser: statements, functions, pragmas',
+    'ir.c': 'the intermediate file between parser and code generator',
+    'gen.c': 'pass 3: P-code generation, object files',
+    'link.c': 'the linker: object files -> code file',
+    'tc.h': 'shared declarations (every module)',
+    'parse.h': "the parser modules' shared declarations",
+    'libint.h': "the library modules' shared declarations",
+    'fltfmt.c': "printf's %f %e %g (linked only when floats are used)",
+    'tcrt.c': 'runtime helpers: C division, shifts, unsigned, longs',
+}
+
+
+def describe(path):
+    """WHAT, or the file's first comment line without 'name --', cut at a word"""
+    base = os.path.basename(path)
+    if base in WHAT:
+        return WHAT[base]
+    if os.path.dirname(path) == LIB:
+        return '<%s.h>' % base[:-2]
+    line = open(path).readline().strip()
+    line = line.replace('/*', '').replace('*/', '').strip()
+    if ' -- ' in line:
+        line = line.split(' -- ', 1)[1]
+    line = line.rstrip('.,;:')
+    if len(line) > 56:
+        line = line[:56].rsplit(' ', 1)[0].rstrip('.,;:') + ' ...'
+    return line
+
+
+class Vol:
+    def __init__(self, name, blocks):
+        self.name = name
+        self.path = os.path.join(ROOT, 'build', name + '.BLK')
+        ucsdvol.main(['new', self.path, name, str(blocks)])
+        self.v = ucsdvol.Volume(self.path)
+        self.desc = {}
+
+    def text(self, name, text, desc):
+        self.v.write(name, ucsdvol.text_to_ucsd(text), 3)
+        self.desc[name] = desc
+
+    def textfile(self, name, path, desc=None):
+        self.text(name, open(path).read(), desc or describe(path))
+
+    def binary(self, name, data, desc):
+        self.v.write(name, data, 2 if name.endswith('.CODE') else 5)
+        self.desc[name] = desc
+
+    def finish(self):
+        # FILES.TEXT: written once to learn its own size, then with it
+        self.text('FILES.TEXT', '', 'this list')
+        for _ in range(2):
+            listing = self.listing()
+            self.v.write('FILES.TEXT', ucsdvol.text_to_ucsd(listing), 3)
+        self.v.save()
+        os.makedirs(OUT, exist_ok=True)
+        open(os.path.join(OUT, self.name + '.txt'), 'w').write(listing)
+        with zipfile.ZipFile(os.path.join(OUT, self.name + '.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(self.path, self.name + '.BLK')
+        print('%s: %d files' % (self.name, len(self.v.entries)))
+
+    def listing(self):
+        lines = ['%s:  %d files  (a UCSD directory holds 77)' % (self.name, len(self.v.entries)), '',
+                 '  %-15s %6s  %s' % ('FILE', 'BLOCKS', 'WHAT'), '']
+        for first, last, kind, name, lastbyte, date in self.v.entries:
+            lines.append('  %-15s %6d  %s' % (name, last - first, self.desc.get(name, '')))
+        return '\n'.join(lines) + '\n'
+
+
+def compiled(path):
+    """compile a program with the host Tiny-C; its .CODE bytes"""
+    os.makedirs(TMP, exist_ok=True)
+    base, code = compile_c(path, TMP)
+    d, n = os.path.split(os.path.splitext(path)[0])
+    for ext in ('.i', '.ir', '.obj'):                  # compile_c's temporaries
+        if os.path.exists(os.path.join(d, n + ext)):
+            os.remove(os.path.join(d, n + ext))
+    return open(code, 'rb').read()
+
+
+def tiny_c():
+    t = Vol('TINY-C', 4000)
+    code, log = build()
+    t.binary('TINYC.CODE', open(code, 'rb').read(), 'the Tiny-C compiler: X(ecute TINYC')
+    t.binary('TCLIB.OBJ', open(build_lib(), 'rb').read(), 'the C library, linked into every program')
+    t.textfile('TCMSGS.TEXT', os.path.join(INC, 'tcmsgs.txt'), "the compiler's messages (line n = message n)")
+    t.text('README.TEXT', README_TC, 'how to use and rebuild Tiny-C')
+    t.text('BUILD.TEXT', BUILD, 'X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE')
+    for f in sorted(os.listdir(INC)):
+        if f.endswith('.h'):
+            t.textfile(f.upper() + '.TEXT', os.path.join(INC, f), 'header: ' + describe(os.path.join(INC, f)))
+    for m in MODULES:
+        p = os.path.join(SRC, m + '.c')
+        t.textfile(m.upper() + '.TEXT', p, 'compiler: ' + describe(p))
+    for h in ('tc.h', 'parse.h'):
+        p = os.path.join(SRC, h)
+        t.textfile(h.upper() + '.TEXT', p, 'compiler: ' + describe(p))
+    for m in LIBMODS:
+        p = os.path.join(LIB, m + '.c')
+        t.textfile(m.upper() + '.TEXT', p, 'library: ' + describe(p))
+    p = os.path.join(LIB, 'libint.h')
+    t.textfile('LIBINT.H.TEXT', p, 'library: ' + describe(p))
+    t.finish()
+
+
+def extras():
+    e = Vol('TCEXTRA', 4000)
+    e.text('README.TEXT', README_EX, 'what is on this volume')
+    progs = [os.path.join(TESTS, f) for f in sorted(os.listdir(TESTS)) if f.endswith('.c')]
+    progs.append(os.path.join(ROOT, 'verify', 'cmpcode.c'))
+    for p in progs:
+        name = os.path.splitext(os.path.basename(p))[0].upper()[:10]
+        e.textfile(name + '.TEXT', p, describe(p))
+        e.binary(name + '.CODE', compiled(p), '  (ready to run)')
+    e.finish()
 
 
 def main():
-    out = os.path.join(ROOT, 'build', 'TINY-C.BLK')
-    ucsdvol.main(['new', out, 'TINY-C', '4000'])
-    v = ucsdvol.Volume(out)
-    code, log = build()
-    v.write('TINYC.CODE', open(code, 'rb').read(), 2)
-    for f in sorted(os.listdir(INC)):
-        if f.endswith('.h'):
-            v.write(f.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
-    v.write('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
-    v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
-    tests = os.path.join(ROOT, 'tests')
-    for f in sorted(os.listdir(tests)):
-        if f.endswith('.c') and f[:-2] not in SKIP_TESTS:
-            v.write(f[:-2].upper()[:10] + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(tests, f)).read()), 3)
-    src = os.path.join(ROOT, 'tinyc')
-    for m in MODULES:
-        v.write(m.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, m + '.c')).read()), 3)
-    for h in ('tc.h', 'parse.h'):
-        v.write(h.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, h)).read()), 3)
-    lib = os.path.join(src, 'lib')
-    for f in sorted(os.listdir(lib)):
-        if f.endswith('.c') or f.endswith('.h'):
-            n = f[:-2].upper() + ('.TEXT' if f.endswith('.c') else '.H.TEXT')
-            v.write(n, ucsdvol.text_to_ucsd(open(os.path.join(lib, f)).read()), 3)
-    v.write('README.TEXT', ucsdvol.text_to_ucsd(README), 3)
-    # CMPCODE compares code files: checks a rebuilt compiler
-    tmp = os.path.join(ROOT, 'build', 'volume_tmp')
-    os.makedirs(tmp, exist_ok=True)
-    v.write('CMPCODE.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(ROOT, 'verify', 'cmpcode.c')).read()), 3)
-    for path in (os.path.join(ROOT, 'verify', 'cmpcode.c'),):
-        base, code = compile_c(path, tmp)
-        v.write(base + '.CODE', open(code, 'rb').read(), 2)
-    for d, n in ((os.path.join(ROOT, 'verify'), 'cmpcode'),):
-        for ext in ('.i', '.ir', '.obj'):                  # compile_c's temporaries
-            if os.path.exists(os.path.join(d, n + ext)):
-                os.remove(os.path.join(d, n + ext))
-    v.save()
-    nfiles = len(ucsdvol.Volume(out).entries)
-    print(nfiles, 'files on TINY-C:')
-    if nfiles > 58:     # 77 in a directory: room for a self-compile (15) and a program
-        raise SystemExit('too many files for a self-compile on the volume')
-    z = os.path.join(ROOT, 'TinyC_Volume.zip')
-    with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(out, 'TINY-C.BLK')
-    print('wrote', z, os.path.getsize(z), 'bytes')
+    tiny_c()
+    extras()
+    old = os.path.join(ROOT, 'TinyC_Volume.zip')
+    if os.path.exists(old):
+        os.remove(old)
 
 
 if __name__ == '__main__':

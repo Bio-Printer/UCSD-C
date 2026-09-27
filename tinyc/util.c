@@ -75,7 +75,7 @@ void saynw(int n, int w)
 }
 
 /* Message texts live in a file (tcmsgs.txt; on the P-System TCMSGS.TEXT
-   on the default or the boot volume): line n is message n.  Keeping them
+   on the default volume, the boot volume or TINY-C:): line n is message n.  Keeping them
    out of the code saves memory in every pass. */
 static void message(int n)
 {
@@ -90,6 +90,8 @@ static void message(int n)
         fp = fopen("TCMSGS.TEXT", "r");
         if (!fp)
             fp = fopen("*TCMSGS.TEXT", "r");
+        if (!fp)
+            fp = fopen("TINY-C:TCMSGS.TEXT", "r");
     }
 #else
     dir = getenv("TINYC_INCLUDE");

@@ -142,6 +142,9 @@ void ir_open(char *name, char *modname)
     irout = fopen(name, "wb");
     if (!irout)
         fatal(24 /* cannot create */, name);
+    irlabels = 0;
+    irinit = 0;
+    ntseen = 0;
     fputs("TCIR", irout);
     irb('H');
     irs(modname);

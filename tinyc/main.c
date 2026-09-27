@@ -8,6 +8,9 @@
  *              NAME             compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
  *              /C NAME          compile only -> NAME.OBJ
  *              /L OUT=A,B,...   link A.OBJ, B.OBJ ... and TCLIB.OBJ -> OUT.CODE
+ *              @FILE            run the commands in FILE.TEXT, one per line
+ *                               (blank lines and lines starting ';' skipped),
+ *                               stopping at the first that fails
  */
 #include "tc.h"
 #pragma segment MAIN
@@ -111,6 +114,118 @@ static void upper(char *s)
             *s = *s - 32;
 }
 
+#ifdef __TINYC__
+/* one command (see the top of this file); 0 = it failed */
+static int command(char *s, char *lib)
+{
+    char *objs[MAXFILES];
+    char src[40];
+    char obj[40];
+    char out[40];
+    char *t;
+    int nobjs;
+    int n;
+    int conly;
+    nobjs = 0;
+    while (*s == ' ')
+        s++;
+    if (s[0] == '/' && s[1] == 'L') {
+        /* /L OUT=A,B,... */
+        s = s + 2;
+        while (*s == ' ')
+            s++;
+        t = strchr(s, '=');
+        if (!t) {
+            say("use: /L OUT=A,B,...\n");
+            return 0;
+        }
+        *t++ = 0;
+        strcpy(out, s);
+        strcat(out, ".CODE");
+        while (*t) {
+            s = t;
+            while (*t && *t != ',')
+                t++;
+            if (*t)
+                *t++ = 0;
+            while (*s == ' ')
+                s++;
+            if (!*s)
+                continue;
+            if (nobjs >= MAXFILES - 1)
+                break;
+            objs[nobjs] = (char *)malloc(strlen(s) + 5);
+            strcpy(objs[nobjs], s);
+            strcat(objs[nobjs], ".OBJ");
+            nobjs++;
+        }
+    } else {
+        conly = 0;
+        if (s[0] == '/' && s[1] == 'C') {
+            conly = 1;
+            s = s + 2;
+            while (*s == ' ')
+                s++;
+        }
+        n = strlen(s);
+        if (n > 5 && strcmp(s + n - 5, ".TEXT") == 0)
+            s[n - 5] = 0;
+        strcpy(src, s);
+        strcat(src, ".TEXT");
+        strcpy(obj, s);
+        strcat(obj, ".OBJ");
+        strcpy(out, s);
+        strcat(out, ".CODE");
+        if (!compileone(src, "TCTEMP.TEXT", "TCTEMP.IR", obj))
+            return 0;
+        if (conly)
+            return 1;
+        objs[nobjs++] = obj;
+    }
+    if (lib[0] && exists(lib))
+        objs[nobjs++] = lib;
+    return linkall(objs, nobjs, out);
+}
+
+/* @FILE: the commands in FILE.TEXT */
+static int batch(char *name, char *lib)
+{
+    FILE *f;
+    char path[40];
+    char line[200];
+    int n;
+    strcpy(path, name);
+    n = strlen(path);
+    if (n <= 5 || strcmp(path + n - 5, ".TEXT") != 0)
+        strcat(path, ".TEXT");
+    f = fopen(path, "r");
+    if (!f) {
+        say("cannot open ");
+        say(path);
+        say("\n");
+        return 0;
+    }
+    while (fgets(line, 180, f)) {
+        n = strlen(line);
+        while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == ' '))
+            line[--n] = 0;
+        upper(line);
+        if (!line[0] || line[0] == ';')
+            continue;
+        say("> ");
+        say(line);
+        say("\n");
+        if (!command(line, lib)) {
+            fclose(f);
+            say("Stopped.\n");
+            return 0;
+        }
+    }
+    fclose(f);
+    return 1;
+}
+#endif
+
 int main(int argc, char **argv)
 {
     char *objs[MAXFILES];
@@ -148,54 +263,18 @@ int main(int argc, char **argv)
     strcpy(lib, "TCLIB.OBJ");
     if (!exists(lib))
         strcpy(lib, "*TCLIB.OBJ");
-    if (s[0] == '/' && s[1] == 'L') {
-        /* /L OUT=A,B,... */
-        s = s + 2;
-        while (*s == ' ')
-            s++;
-        t = strchr(s, '=');
-        if (!t) {
-            say("use: /L OUT=A,B,...\n");
-            return 1;
-        }
-        *t++ = 0;
-        strcpy(out, s);
-        strcat(out, ".CODE");
-        while (*t) {
-            s = t;
-            while (*t && *t != ',')
-                t++;
-            if (*t)
-                *t++ = 0;
-            if (nobjs >= MAXFILES - 1)
-                break;
-            objs[nobjs] = (char *)malloc(strlen(s) + 5);
-            strcpy(objs[nobjs], s);
-            strcat(objs[nobjs], ".OBJ");
-            nobjs++;
-        }
-    } else {
-        if (s[0] == '/' && s[1] == 'C') {
-            conly = 1;
-            s = s + 2;
-            while (*s == ' ')
-                s++;
-        }
-        n = strlen(s);
-        if (n > 5 && strcmp(s + n - 5, ".TEXT") == 0)
-            s[n - 5] = 0;
-        strcpy(src, s);
-        strcat(src, ".TEXT");
-        strcpy(obj, s);
-        strcat(obj, ".OBJ");
-        strcpy(out, s);
-        strcat(out, ".CODE");
-        if (!compileone(src, "TCTEMP.TEXT", "TCTEMP.IR", obj))
-            return 1;
-        objs[nobjs++] = obj;
-    }
+    if (!exists(lib))
+        strcpy(lib, "TINY-C:TCLIB.OBJ");
+    if (*s == '@')
+        n = batch(s + 1, lib);
+    else
+        n = command(s, lib);
+    if (!n)
+        return 1;
+    say("Done.\n");
     argc = 0;
     argv = 0;
+    return 0;
 #else
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-o") == 0 && i + 1 < argc)
@@ -261,7 +340,6 @@ int main(int argc, char **argv)
             *s = 0;
         strcat(out, ".code");
     }
-#endif
     if (conly) {
         say("Done.\n");
         return 0;
@@ -272,4 +350,5 @@ int main(int argc, char **argv)
         return 1;
     say("Done.\n");
     return 0;
+#endif
 }

@@ -133,7 +133,8 @@ static FILE *openinc(char *name, int sys)
     char *p;
 #ifdef __TINYC__
     /* P-System: file names are upper case and text files end in .TEXT;
-       <file> is searched on the default volume, then on the boot volume */
+       <file> is searched on the default volume, then on the boot volume,
+       then on TINY-C: */
     int i;
     for (i = 0; name[i] && i < MAXNAME; i++) {
         path[i] = name[i];
@@ -148,6 +149,12 @@ static FILE *openinc(char *name, int sys)
             path[i + 1] = path[i];
         path[0] = '*';
         fp = fopen(path, "r");
+        if (!fp) {
+            for (i = strlen(path); i >= 1; i--)
+                path[i + 6] = path[i];
+            memcpy(path, "TINY-C:", 7);
+            fp = fopen(path, "r");
+        }
     }
     strcpy(openedpath, path);
     p = 0;
@@ -190,7 +197,6 @@ static FILE *openinc(char *name, int sys)
 static char *outname;            /* file the compiler will assume */
 static int startline;           /* first physical line of the current logical line */
 static char pragbuf[MAXLINE];
-static int crtdone;
 
 /* read one physical line into buf; strips the newline. 0 at end of file */
 static int rawline(char *buf, int max)
@@ -1181,6 +1187,8 @@ int preprocess(char *src, char *out)
     iflevel = 0;
     outline = 0;
     outname = 0;
+    incomment = 0;
+    nexpanding = 0;
     for (;;) {
         m = xmark();
         r = ppgetline();

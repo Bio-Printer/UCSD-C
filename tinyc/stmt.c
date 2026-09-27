@@ -743,6 +743,25 @@ void pragma(char *s)
 int compile(char *src, char *ir, char *mod)
 {
     FILE *fp;
+    int h;
+    /* fresh parser state: @FILE runs several compiles in one execution,
+       and the previous module's symbols pointed into released memory */
+    for (h = 0; h < HSIZE; h++) {
+        htab[h] = 0;
+        ttab[h] = 0;
+    }
+    for (h = 0; h < 40; h++)
+        scopes[h] = 0;
+    level = 0;
+    labels = 0;
+    curfn = 0;
+    curft = 0;
+    tentative = 0;
+    globinit = 0;
+    swvals = 0;
+    swlabs = 0;
+    swn = 0;
+    swmax = 0;
     modname = mod;
     usesfloat = 0;
     nofltused = 0;
@@ -763,7 +782,6 @@ int compile(char *src, char *ir, char *mod)
     {
         /* the module's exported variables: name, size, initialised or common */
         struct Sym *g;
-        int h;
         for (h = 0; h < HSIZE; h++)
             for (g = htab[h]; g; g = g->next)
                 if (g->kind == S_GLOBAL && !g->isstatic && g->defined) {

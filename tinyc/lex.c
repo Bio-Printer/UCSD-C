@@ -55,6 +55,8 @@ void lexinit(FILE *fp)
     lexin = fp;
     atbol = 1;
     havepeek = 0;
+    insys = 0;
+    strslot = 0;
     nextch();
 }
 

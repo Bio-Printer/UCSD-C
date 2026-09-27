@@ -1390,6 +1390,10 @@ void gen_objheader(char *modname)
 {
     genmod = modname;
     memset(names, 0, sizeof(names));
+    ninit = 0;
+    ininit = 0;
+    lvtemp = 0;
+    lvnode = 0;
     setupemit(&fe, MAXCODE, MAXLABEL, MAXFIX, MAXREL);
     setupemit(&ie, 1600, 40, 80, 300);
     E = &fe;
