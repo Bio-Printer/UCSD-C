@@ -28,8 +28,12 @@ On Linux, `tools/tcverify.py [native|z80]` runs the pack through
 
 * **P-Code mode with the interpreter memory reclaimed.** Tiny-C needs
   that memory; without it the code generator stops with STK OFLOW.
-* **The 64-frame CXP fix** (`repro/DEEPCXP.README.md`). Without it, step 2
-  hangs in EXPR.
+* The 64-frame CXP fix (`repro/DEEPCXP.README.md`) is *not* needed today.
+  The compiler used to hang in EXPR without it, but only because its
+  16-bit wrap macro (W16) called the long-arithmetic helpers in segment 1
+  from deep inside the parser. Since W16 became a no-op on the P-System,
+  the pack passes on the unfixed engine too. Programs that recurse more
+  than 64 deep and then call into another segment still need the fix.
 * About 380 script steps; the whole run takes about 13 s in P-Code mode on Linux.
 
 ## Wiring it into the menu (a sketch)

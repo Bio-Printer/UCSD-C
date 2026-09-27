@@ -38,7 +38,6 @@ TC.H PARSE.H).  To rebuild the compiler on the P-System:
   X(ecute TINYC   /C MAIN        (and the same for every module)
   X(ecute TINYC   /L TINYC2=%s
 TINYC2.CODE comes out identical to TINYC.CODE (apart from its name).
-Note: the P-Code mode engine needs the 64-frame CXP fix for this.
 """ % (' '.join(m.upper() for m in MODULES), ','.join(m.upper() for m in MODULES))
 
 
