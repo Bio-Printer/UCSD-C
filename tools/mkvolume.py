@@ -38,7 +38,15 @@ TC.H PARSE.H).  To rebuild the compiler on the P-System:
   X(ecute TINYC   /C MAIN        (and the same for every module)
   X(ecute TINYC   /L TINYC2=%s
 TINYC2.CODE comes out identical to TINYC.CODE (apart from its name).
-""" % (' '.join(m.upper() for m in MODULES), ','.join(m.upper() for m in MODULES))
+
+The library's sources are here as well (%s,
+LIBINT.H).  Each compiles on the P-System with /C to exactly the
+host's object.  TCLIB.OBJ is those objects one after another.  TINYC
+links TCLIB.OBJ automatically when it finds it (here or *TCLIB.OBJ),
+so to link with rebuilt modules instead, rename TCLIB.OBJ and list
+them:  /L PROG=PROG,TCRT,STDIO,STDLIB,STRING,CTYPE,MATH,FLTFMT,...
+""" % (' '.join(m.upper() for m in MODULES), ','.join(m.upper() for m in MODULES),
+       ' '.join(f[:-2].upper() for f in sorted(os.listdir(os.path.join(ROOT, 'tinyc', 'lib'))) if f.endswith('.c')))
 
 
 def main():
@@ -61,6 +69,11 @@ def main():
         v.write(m.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, m + '.c')).read()), 3)
     for h in ('tc.h', 'parse.h'):
         v.write(h.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, h)).read()), 3)
+    lib = os.path.join(src, 'lib')
+    for f in sorted(os.listdir(lib)):
+        if f.endswith('.c') or f.endswith('.h'):
+            n = f[:-2].upper() + ('.TEXT' if f.endswith('.c') else '.H.TEXT')
+            v.write(n, ucsdvol.text_to_ucsd(open(os.path.join(lib, f)).read()), 3)
     v.write('README.TEXT', ucsdvol.text_to_ucsd(README), 3)
     v.save()
     z = os.path.join(ROOT, 'TinyC_Volume.zip')
