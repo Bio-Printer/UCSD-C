@@ -1,5 +1,6 @@
 /* stdio.c -- Tiny-C library: the code behind <stdio.h> */
 #include "libint.h"
+#pragma nofltused
 FILE __files[FOPEN_MAX + 3];
 char __conout[80];
 int __conlen;
@@ -160,7 +161,10 @@ FILE *fopen(char *name, char *mode)
         f->flags = f->flags | __F_TEXT;
     f->bufsize = (f->flags & __F_TEXT) ? 1024 : 512;
     f->buf = malloc(f->bufsize);
-    if (!f->buf) {
+    f->fib = malloc(80);
+    if (!f->buf || !f->fib) {
+        if (f->buf)
+            free(f->buf);
         f->flags = 0;
         return NULL;
     }
@@ -170,6 +174,7 @@ FILE *fopen(char *name, char *mode)
     __cxp0v(5, f->fib, title, old, 0);          /* FOPEN */
     if (__cspi(34) != 0) {
         free(f->buf);
+        free(f->fib);
         f->flags = 0;
         return NULL;
     }
@@ -374,6 +379,7 @@ int fclose(FILE *f)
     if (__cspi(34) != 0)
         r = EOF;
     free(f->buf);
+    free(f->fib);
     f->flags = 0;
     return r;
 }
@@ -634,117 +640,9 @@ void __ofield(char *pre, char *body, int n, int reversed, int width, int left, i
         __opad(pad, ' ');
 }
 
-int __fdigits(double v, int prec, int style, int alt, char *out)
-{
-    int e;
-    int n;
-    int i;
-    int d;
-    int ndig;
-    double r;
-    long ip;
-    char digs[40];
-    n = 0;
-    if (prec > 20)
-        prec = 20;
-    e = 0;
-    if (v != 0.0) {
-        while (v >= 10.0) {
-            v = v / 10.0;
-            e++;
-        }
-        while (v < 1.0) {
-            v = v * 10.0;
-            e--;
-        }
-    }
-    /* v in [1, 10): value = v * 10^e */
-    if (style == 'g') {
-        if (prec == 0)
-            prec = 1;
-        if (e < -4 || e >= prec)
-            style = 'e';
-        else
-            style = 'f';
-        if (style == 'e')
-            prec = prec - 1;
-        else
-            prec = prec - 1 - e;
-        if (prec < 0)
-            prec = 0;
-        alt = alt | 2;          /* strip trailing zeros */
-    }
-    ndig = style == 'e' ? prec + 1 : e + 1 + prec;
-    if (ndig > 38)
-        ndig = 38;
-    /* round at digit ndig */
-    if (ndig >= 0) {
-        r = 0.5;
-        for (i = 0; i < ndig - 1; i++)
-            r = r / 10.0;
-        v = v + r;
-        if (v >= 10.0) {
-            v = v / 10.0;
-            e++;
-            if (style == 'f')
-                ndig++;
-        }
-    }
-    for (i = 0; i < ndig && i < 38; i++) {
-        if (i < 8) {
-            d = (int)v;
-            if (d > 9)
-                d = 9;
-            v = (v - d) * 10.0;
-        } else
-            d = 0;
-        digs[i] = '0' + d;
-    }
-    if (ndig < 0)
-        ndig = 0;
-    if (style == 'f') {
-        if (e < 0)
-            out[n++] = '0';
-        for (i = 0; i <= e; i++)
-            out[n++] = i < ndig ? digs[i] : '0';
-        if (prec > 0 || (alt & 1)) {
-            out[n++] = '.';
-            for (i = 0; i < prec; i++) {
-                d = e + 1 + i;
-                out[n++] = d < 0 ? '0' : (d < ndig ? digs[d] : '0');
-            }
-        }
-    } else {
-        out[n++] = ndig > 0 ? digs[0] : '0';
-        if (prec > 0 || (alt & 1)) {
-            out[n++] = '.';
-            for (i = 1; i <= prec; i++)
-                out[n++] = i < ndig ? digs[i] : '0';
-        }
-    }
-    if ((alt & 2) && !(alt & 1)) {
-        for (i = 0; i < n; i++)
-            if (out[i] == '.')
-                break;
-        if (i < n) {
-            while (out[n - 1] == '0')
-                n--;
-            if (out[n - 1] == '.')
-                n--;
-        }
-    }
-    if (style == 'e') {
-        out[n++] = 'e';
-        if (e < 0) {
-            out[n++] = '-';
-            e = -e;
-        } else
-            out[n++] = '+';
-        out[n++] = '0' + e / 10;
-        out[n++] = '0' + e % 10;
-    }
-    return n;
-}
+/* float formatting lives in fltfmt.c: it is linked (and installs itself
+   here) only in programs that use floating point */
+int (*__fltfmt)(double v, int prec, int style, int alt, char *out);
 
 int __vformat(char *fmt, va_list ap)
 {
@@ -883,7 +781,12 @@ int __vformat(char *fmt, va_list ap)
             neg = dv < 0.0;
             if (neg)
                 dv = -dv;
-            n = __fdigits(dv, prec < 0 ? 6 : prec, c == 'E' ? 'e' : (c == 'G' ? 'g' : c), alt, buf);
+            if (__fltfmt)
+                n = __fltfmt(dv, prec < 0 ? 6 : prec, c == 'E' ? 'e' : (c == 'G' ? 'g' : c), alt, buf);
+            else {
+                buf[0] = '?';
+                n = 1;
+            }
             if (neg)
                 strcpy(pre, "-");
             else if (plus)

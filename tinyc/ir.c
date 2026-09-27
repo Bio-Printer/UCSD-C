@@ -163,6 +163,12 @@ void ir_data(char *name, int words, int strong)
     irw(words);
 }
 
+void ir_use(char *name)
+{
+    irb('u');
+    irs(name);
+}
+
 void ir_funcbegin(void)
 {
     irlabels = 0;
@@ -528,6 +534,9 @@ int gencode(char *irname, char *obj)
             st = rb();
             name = rstr();
             gen_objdata(name, rw(), st);
+            break;
+        case 'u':
+            gen_objuse(rstr());
             break;
         case 'G':
             gen_objend(rw());

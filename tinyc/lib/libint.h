@@ -34,6 +34,7 @@ void __opad(int n, int c);
 int __udigits(unsigned long v, int base, int upper, char *buf);
 void __ofield(char *pre, char *body, int n, int reversed, int width, int left, int zero);
 int __fdigits(double v, int prec, int style, int alt, char *out);
+extern int (*__fltfmt)(double v, int prec, int style, int alt, char *out);
 int __vformat(char *fmt, va_list ap);
 extern FILE *__if;
 extern char *__is;

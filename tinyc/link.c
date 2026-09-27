@@ -56,11 +56,15 @@ static struct LProc **procs;
 static int nprocs;
 static struct LData **datas;
 static int ndatas;
-static struct LProc *lhash[LHASH];
-static struct LData *dhash[LHASH];
-static int modstatic[MAXMOD];
-static int modbase[MAXMOD];
-static int modlive[MAXMOD];
+static struct LProc **lhash;
+static struct LData **dhash;
+static int *modstatic;
+static int *modbase;
+static int *modlive;
+#define MAXUSES 64
+static int *usemod;             /* module-level references ('U': e.g. __fltused) */
+static int *usedata;
+static int nuses;
 static int nmods;
 static char *segnames[24];
 static int nsegs;
@@ -208,6 +212,10 @@ static void record(int c, char *name, char *seg, int *flags, int *parmsz, int *r
         *codelen = rdw();
         return;
     }
+    if (c == 'U') {
+        rds(name);
+        return;
+    }
     if (c != 'P')
         fatal(106 /* bad object file record */, 0);
     *flags = rd();
@@ -326,8 +334,20 @@ static void pass2(void)
     struct LData *d;
     rewindobjs();
     k = 0;
+    nuses = 0;
     while ((c = nextrec()) != 0) {
         record(c, name, seg, &flags, &parmsz, &rw, &codelen, &jtab);
+        if (c == 'U') {
+            d = finddata(name);
+            if (!d || d->mod < 0)
+                error(114 /* undefined variable */, name);
+            else if (nuses < MAXUSES) {
+                usemod[nuses] = curmod;
+                usedata[nuses] = dataindex(d);
+                nuses++;
+            }
+            continue;
+        }
         if (c != 'P')
             continue;
         p = procs[k++];
@@ -366,6 +386,14 @@ static void markall(void)
     struct LData *d;
     do {
         changed = 0;
+        for (i = 0; i < nuses; i++) {
+            d = datas[usedata[i]];
+            if (modlive[usemod[i]] && !d->live) {
+                d->live = 1;
+                modlive[d->mod] = 1;
+                changed = 1;
+            }
+        }
         for (i = 0; i < nprocs; i++) {
             p = procs[i];
             if (!p->live && (p->flags & 1) && modlive[p->mod]) {
@@ -551,8 +579,15 @@ int link(char **objs, int nobjs, char *code, char *progname)
     entry = (unsigned char *)malloc(600);
     if (!lbuf || !procs || !datas || !entry)
         fatal(2 /* out of memory */, 0);
-    memset(lhash, 0, sizeof(lhash));
-    memset(dhash, 0, sizeof(dhash));
+    lhash = (struct LProc **)calloc(LHASH, sizeof(struct LProc *));
+    dhash = (struct LData **)calloc(LHASH, sizeof(struct LData *));
+    modstatic = (int *)malloc(MAXMOD * sizeof(int));
+    modbase = (int *)malloc(MAXMOD * sizeof(int));
+    modlive = (int *)malloc(MAXMOD * sizeof(int));
+    usemod = (int *)malloc(MAXUSES * sizeof(int));
+    usedata = (int *)malloc(MAXUSES * sizeof(int));
+    if (!lhash || !dhash || !modstatic || !modbase || !modlive || !usemod || !usedata)
+        fatal(2 /* out of memory */, 0);
     nprocs = 0;
     ndatas = 0;
     nmods = 0;

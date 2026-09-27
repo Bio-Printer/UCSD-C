@@ -325,6 +325,8 @@ void ir_initflush(void);
 int gencode(char *ir, char *obj);
 void ir_data(char *name, int words, int strong);
 void gen_objdata(char *name, int words, int strong);
+void ir_use(char *name);
+void gen_objuse(char *name);
 
 /* passes */
 int preprocess(char *src, char *out);

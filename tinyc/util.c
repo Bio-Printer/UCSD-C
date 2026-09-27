@@ -94,7 +94,7 @@ void fatal(int n, char *arg)
     exit(2);
 }
 
-#define PCHUNK 2048
+#define PCHUNK 1024
 static char *pcur;
 static int pleft;
 

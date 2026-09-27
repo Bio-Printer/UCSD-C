@@ -1,5 +1,6 @@
 /* tcrt.c -- Tiny-C library: the code behind <tcrt.h> */
 #include "libint.h"
+#pragma nofltused
 unsigned __udiv(unsigned a, unsigned b)
 {
     unsigned q;

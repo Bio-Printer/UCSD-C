@@ -28,7 +28,7 @@ static int pval2;
 static int plong;
 static char pname[MAXNAME];
 static int havepeek;
-#define MAXSTR 600
+#define MAXSTR 260               /* LPA holds at most 255 bytes */
 static char *strbufs[2];
 static int strslot;
 

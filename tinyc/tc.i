@@ -2,13 +2,13 @@
   
 #3 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/util.c
+#1 !/home/user/UCSD-C/tinyc/util.c
        
-#8 /home/user/UCSD-C/tinyc/util.c
+#8 !/home/user/UCSD-C/tinyc/util.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -77,7 +77,7 @@ typedef struct __file {
     int linestart;               
     int bufsize;                 
     unsigned char *buf;
-    char fib[80];                
+    char *fib;                   
 } FILE;
 
 extern FILE __files[6 + 3];
@@ -198,7 +198,7 @@ int sscanf(char *s, char *fmt, ...);
 
 
 
-#15 /home/user/UCSD-C/tinyc/tc.h
+#15 !/home/user/UCSD-C/tinyc/tc.h
 
 #1 !/home/user/UCSD-C/tinyc/include/stdlib.h
     
@@ -279,7 +279,7 @@ void exit(int status);
 void abort(void);
 
 
-#16 /home/user/UCSD-C/tinyc/tc.h
+#16 !/home/user/UCSD-C/tinyc/tc.h
 
 #1 !/home/user/UCSD-C/tinyc/include/string.h
  
@@ -344,7 +344,7 @@ char *strtok(char *s, char *delim);
 char *strdup(char *s);
 
 
-#17 /home/user/UCSD-C/tinyc/tc.h
+#17 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -656,6 +656,8 @@ void ir_initflush(void);
 int gencode(char *ir, char *obj);
 void ir_data(char *name, int words, int strong);
 void gen_objdata(char *name, int words, int strong);
+void ir_use(char *name);
+void gen_objuse(char *name);
 
  
 int preprocess(char *src, char *out);
@@ -663,7 +665,7 @@ int compile(char *src, char *obj, char *modname);
 int link(char **objs, int nobjs, char *code, char *progname);
 
 
-#9 /home/user/UCSD-C/tinyc/util.c
+#9 !/home/user/UCSD-C/tinyc/util.c
 #pragma segment MAIN
 
 int nerrors;
@@ -677,7 +679,7 @@ char *curfile;
 int curline;
 
    
-#24 /home/user/UCSD-C/tinyc/util.c
+#24 !/home/user/UCSD-C/tinyc/util.c
 static void message(int n)
 {
     FILE *fp;
@@ -760,17 +762,17 @@ char *palloc(int n)
     char *p;
     n = (n + 1) & ~1;
     if (n > pleft) {
-        if (n > 2048 / 2) {
+        if (n > 1024 / 2) {
             p = (char *)malloc(n);
             if (!p)
                 memfail(n);
             memset(p, 0, n);
             return p;
         }
-        pcur = (char *)malloc(2048);
+        pcur = (char *)malloc(1024);
         if (!pcur)
-            memfail(2048);
-        pleft = 2048;
+            memfail(1024);
+        pleft = 1024;
     }
     p = pcur;
     pcur += n;
@@ -797,7 +799,7 @@ char *falloc(int n)
         c = fchunk ? fchunk->next : ffirst;
         if (!c || c->size < n) {
             int sz;
-            sz = n > 2048 ? n : 2048;
+            sz = n > 1024 ? n : 1024;
             c = (struct Chunk *)malloc(sizeof(struct Chunk) + sz);
             if (!c)
                 memfail(sz);
@@ -830,7 +832,7 @@ static int xused;
 static int xsize;
 
   
-#177 /home/user/UCSD-C/tinyc/util.c
+#177 !/home/user/UCSD-C/tinyc/util.c
 void xsetsize(int n)
 {
 
@@ -899,13 +901,13 @@ int hashstr(char *s)
 }
 #4 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/types.c
+#1 !/home/user/UCSD-C/tinyc/types.c
   
-#3 /home/user/UCSD-C/tinyc/types.c
+#3 !/home/user/UCSD-C/tinyc/types.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -1233,7 +1235,9 @@ int hashstr(char *s)
 
 
 
-#4 /home/user/UCSD-C/tinyc/types.c
+
+
+#4 !/home/user/UCSD-C/tinyc/types.c
 #pragma segment MAIN
 
 int isintegral(struct Type *t)
@@ -1296,13 +1300,13 @@ int retwords(struct Type *ft)
 
 #5 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/pp.c
+#1 !/home/user/UCSD-C/tinyc/pp.c
            
-#12 /home/user/UCSD-C/tinyc/pp.c
+#12 !/home/user/UCSD-C/tinyc/pp.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -1630,7 +1634,9 @@ int retwords(struct Type *ft)
 
 
 
-#13 /home/user/UCSD-C/tinyc/pp.c
+
+
+#13 !/home/user/UCSD-C/tinyc/pp.c
 #pragma segment PP
 
 struct Macro {
@@ -1641,7 +1647,7 @@ struct Macro {
 };
 
 
-static struct Macro *mtab[128];
+static struct Macro **mtab;
 
 struct Incl {
     FILE *fp;
@@ -1649,7 +1655,7 @@ struct Incl {
     int line;
     int sys;                     
 };
-static struct Incl istack[8];
+static struct Incl *istack;
 static int idepth;
 static FILE *ppout;
 static int incomment;
@@ -1754,7 +1760,7 @@ static FILE *openinc(char *name, int sys)
     char *p;
 
       
-#137 /home/user/UCSD-C/tinyc/pp.c
+#137 !/home/user/UCSD-C/tinyc/pp.c
     int i;
     for (i = 0; name[i] && i < 64; i++) {
         path[i] = name[i];
@@ -1885,7 +1891,7 @@ static int balance(char *s)
 }
 
   
-#268 /home/user/UCSD-C/tinyc/pp.c
+#268 !/home/user/UCSD-C/tinyc/pp.c
 static int ppgetline(void)
 {
     char tmp[512];
@@ -2780,7 +2786,9 @@ int preprocess(char *src, char *out)
     char *s;
     line = malloc(1024);
     ebuf = malloc(1024);
-    if (!line || !ebuf)
+    mtab = (struct Macro **)calloc(128, sizeof(struct Macro *));
+    istack = (struct Incl *)calloc(8, sizeof(struct Incl));
+    if (!line || !ebuf || !mtab || !istack)
         fatal(2  , 0);
     ppout = fopen(out, "w");
     if (!ppout)
@@ -2814,7 +2822,7 @@ int preprocess(char *src, char *out)
         curline = startline;
         if (outline != startline || outname != curfile) {
              
-            fprintf(ppout, "#%d %s%s\n", startline, istack[idepth - 1].sys ? "!" : "", curfile);
+            fprintf(ppout, "#%d %s%s\n", startline, idepth > 1 ? "!" : "", curfile);
             outname = curfile;
         }
         outline = startline + 1;
@@ -2843,13 +2851,13 @@ int preprocess(char *src, char *out)
 }
 #6 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/lex.c
+#1 !/home/user/UCSD-C/tinyc/lex.c
       
-#7 /home/user/UCSD-C/tinyc/lex.c
+#7 !/home/user/UCSD-C/tinyc/lex.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -3177,7 +3185,9 @@ int preprocess(char *src, char *out)
 
 
 
-#8 /home/user/UCSD-C/tinyc/lex.c
+
+
+#8 !/home/user/UCSD-C/tinyc/lex.c
 #pragma segment PARSE
 
 int tok;                         
@@ -3221,8 +3231,8 @@ static void nextch(void)
 
 void lexinit(FILE *fp)
 {
-    strbufs[0] = malloc(600);
-    strbufs[1] = malloc(600);
+    strbufs[0] = malloc(260);
+    strbufs[1] = malloc(260);
     if (!strbufs[0] || !strbufs[1])
         fatal(2  , 0);
     lexin = fp;
@@ -3323,7 +3333,7 @@ static int mac(unsigned char *acc, int base, int d)
 }
 
   
-#154 /home/user/UCSD-C/tinyc/lex.c
+#154 !/home/user/UCSD-C/tinyc/lex.c
 #pragma segment REALLIT
 
 
@@ -3719,7 +3729,7 @@ static void rawnext(void)
          
         strslot = !strslot;
         buf = strbufs[strslot];
-        cap = 600;
+        cap = 260;
         n = 0;
         for (;;) {
             nextch();
@@ -3873,13 +3883,13 @@ char *peekname(void)
 }
 #7 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/parse.c
+#1 !/home/user/UCSD-C/tinyc/parse.c
        
-#8 /home/user/UCSD-C/tinyc/parse.c
+#8 !/home/user/UCSD-C/tinyc/parse.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -4207,7 +4217,9 @@ char *peekname(void)
 
 
 
-#9 /home/user/UCSD-C/tinyc/parse.c
+
+
+#9 !/home/user/UCSD-C/tinyc/parse.c
 #pragma segment PARSE
 
 struct Type *ty_void;
@@ -4223,13 +4235,15 @@ struct Type *ty_ldouble;
 static struct Type *ty_charp;
 
 
-static struct Sym *htab[256];
-static struct Sym *ttab[256];
+static struct Sym *htab[128];
+static struct Sym *ttab[128];
 static struct Sym *scopes[40];
 static int level;
 static struct Sym *labels;
 int globoff;                     
 static char *modname;
+static int usesfloat;           
+static int nofltused;
 
  
 static struct Sym *curfn;
@@ -4276,7 +4290,7 @@ static char *intrnames[] = {
  
 
   
-#78 /home/user/UCSD-C/tinyc/parse.c
+#80 !/home/user/UCSD-C/tinyc/parse.c
 static int tentative;
 
 static struct Type *mktype(int kind, int size, int align)
@@ -4365,6 +4379,7 @@ static struct Type *permtype(struct Type *t)
     for (p = t->params; p; p = p->next) {
         q = (struct Param *)palloc(sizeof(struct Param));
         q->type = permtype(p->type);
+        q->name = p->name;           
         if (last)
             last->next = q;
         else
@@ -4374,21 +4389,27 @@ static struct Type *permtype(struct Type *t)
     return n;
 }
 
- 
+   
+#181 !/home/user/UCSD-C/tinyc/parse.c
 
-struct Ref {
-    struct Ref *next;
-    char *name;
-};
-static struct Ref *refs[128];
+static unsigned char *refbits;
+
+static int refhash2(char *s)
+{
+    int h;
+    h = 7;
+    while (*s)
+        h = (h * 31 + *s++) & 4095;
+    return h;
+}
 
 static int isref(char *name)
 {
-    struct Ref *r;
-    for (r = refs[hashstr(name) & (128 - 1)]; r; r = r->next)
-        if (strcmp(r->name, name) == 0)
-            return 1;
-    return 0;
+    int a;
+    int b;
+    a = (hashstr(name) * 2 + 1) & 4095;
+    b = refhash2(name);
+    return (refbits[a >> 3] & (1 << (a & 7))) && (refbits[b >> 3] & (1 << (b & 7)));
 }
 
 static int sametype(struct Type *a, struct Type *b)
@@ -4407,7 +4428,7 @@ static int sametype(struct Type *a, struct Type *b)
 static struct Sym *lookup(char *name)
 {
     struct Sym *s;
-    for (s = htab[hashstr(name) & (256 - 1)]; s; s = s->next)
+    for (s = htab[hashstr(name) & (128 - 1)]; s; s = s->next)
         if (strcmp(s->name, name) == 0)
             return s;
     return 0;
@@ -4416,7 +4437,7 @@ static struct Sym *lookup(char *name)
 static struct Sym *lookuptag(char *name)
 {
     struct Sym *s;
-    for (s = ttab[hashstr(name) & (256 - 1)]; s; s = s->next)
+    for (s = ttab[hashstr(name) & (128 - 1)]; s; s = s->next)
         if (strcmp(s->name, name) == 0)
             return s;
     return 0;
@@ -4437,7 +4458,7 @@ static struct Sym *addsym(char *name, int kind, struct Type *t)
     s->kind = kind;
     s->type = t;
     s->level = level;
-    h = hashstr(name) & (256 - 1);
+    h = hashstr(name) & (128 - 1);
     if (kind == 6) {
         s->next = ttab[h];
         ttab[h] = s;
@@ -4463,7 +4484,7 @@ static void popscope(void)
     struct Sym *s;
     int h;
     for (s = scopes[level]; s; s = s->scopenext) {
-        h = hashstr(s->name) & (256 - 1);
+        h = hashstr(s->name) & (128 - 1);
         if (s->kind == 6)
             ttab[h] = s->next;
         else
@@ -4565,7 +4586,7 @@ static int islvalue(struct Node *n)
 }
 
   
-#367 /home/user/UCSD-C/tinyc/parse.c
+#377 !/home/user/UCSD-C/tinyc/parse.c
 static int globinit;
 static int allocglobal(struct Type *t);
 
@@ -4969,13 +4990,25 @@ static struct Node *primary(void)
         next();
         return n;
     case 258:
+        if (!insys)
+            usesfloat = 1;
         n = mknode(2, ty_double, 0, 0);
         n->fimg = (unsigned char *)xalloc(4);
         memcpy(n->fimg, tokreal, 4);
         next();
         return n;
     case 259:
-        n = mknode(3, arrayof(ty_char, toklen), 0, 0);
+        {
+             
+            struct Type *st;
+            st = (struct Type *)xalloc(sizeof(struct Type));
+            st->kind = 11;
+            st->size = toklen;
+            st->align = 1;
+            st->base = ty_char;
+            st->len = toklen;
+            n = mknode(3, st, 0, 0);
+        }
         n->str = xalloc(toklen);
         memcpy(n->str, tokstr, toklen);
         n->slen = toklen;
@@ -5564,9 +5597,17 @@ static struct Param *paramlist(int *variadic, int *oldstyle)
         if (tentative) {
             p = (struct Param *)xalloc(sizeof(struct Param));
             p->name = 0;
+            if (name[0]) {           
+                p->name = xalloc(strlen(name) + 1);
+                strcpy(p->name, name);
+            }
         } else {
             p = (struct Param *)palloc(sizeof(struct Param));
-            p->name = name[0] ? pstrdup(name) : 0;
+            p->name = 0;
+            if (name[0]) {           
+                p->name = falloc(strlen(name) + 1);
+                strcpy(p->name, name);
+            }
         }
         p->type = t;
         if (last)
@@ -5790,8 +5831,14 @@ static struct Type *declspec(int *sclass)
     switch (base) {
     case 329: return ty_void;
     case 303: return uns ? ty_uchar : ty_char;
-    case 312: return ty_float;
-    case 308: return nlong ? ty_ldouble : ty_double;
+    case 312:
+        if (!insys)
+            usesfloat = 1;
+        return ty_float;
+    case 308:
+        if (!insys)
+            usesfloat = 1;
+        return nlong ? ty_ldouble : ty_double;
     }
     if (nlong)
         return uns ? ty_ulong : ty_long;
@@ -6404,6 +6451,7 @@ static void external(void)
                 if (t != s->type)
                     s->type = t;
                 funcdef(s, sc == 323);
+                xrelease(m);
                 return;
             }
         } else {
@@ -6462,19 +6510,16 @@ static void external(void)
 
 #pragma segment REFSCAN
 
-   
-#2266 /home/user/UCSD-C/tinyc/parse.c
+    
+#2304 !/home/user/UCSD-C/tinyc/parse.c
 static void addref(char *name)
 {
-    struct Ref *r;
-    int h;
-    if (isref(name))
-        return;
-    r = (struct Ref *)palloc(sizeof(struct Ref));
-    r->name = pstrdup(name);
-    h = hashstr(name) & (128 - 1);
-    r->next = refs[h];
-    refs[h] = r;
+    int a;
+    int b;
+    a = (hashstr(name) * 2 + 1) & 4095;
+    b = refhash2(name);
+    refbits[a >> 3] = refbits[a >> 3] | (1 << (a & 7));
+    refbits[b >> 3] = refbits[b >> 3] | (1 << (b & 7));
 }
 
 static void scanrefs(char *src)
@@ -6485,13 +6530,15 @@ static void scanrefs(char *src)
     int n;
     int sys;
     int bol;
+    int depth;
     char name[64];
     fp = fopen(src, "r");
     if (!fp)
         fatal(25  , src);
-    memset(refs, 0, sizeof(refs));
+    refbits = (unsigned char *)palloc(4096 / 8);
     sys = 0;
     bol = 1;
+    depth = 0;
     c = getc(fp);
     while (c != (-1)) {
         if (bol && c == '#') {
@@ -6512,10 +6559,10 @@ static void scanrefs(char *src)
             continue;
         }
         bol = 0;
-        if (sys) {
-            c = getc(fp);
-            continue;
-        }
+        if (c == '{')
+            depth++;
+        else if (c == '}')
+            depth--;
         if (c == '"' || c == '\'') {
             q = c;
             c = getc(fp);
@@ -6535,7 +6582,8 @@ static void scanrefs(char *src)
                 c = getc(fp);
             }
             name[n] = 0;
-            addref(name);
+            if (!sys || depth > 0)
+                addref(name);
             continue;
         }
         if (c >= '0' && c <= '9') {
@@ -6633,13 +6681,16 @@ void pragma(char *s)
         if (strcmp(name, "MAIN") == 0)
             name[0] = 0;
         cursegname = pstrdup(name);
-    }
+    } else if (strncmp(s, "nofltused", 9) == 0)
+        nofltused = 1;               
 }
 
 int compile(char *src, char *ir, char *mod)
 {
     FILE *fp;
     modname = mod;
+    usesfloat = 0;
+    nofltused = 0;
     fp = fopen(src, "r");
     if (!fp)
         fatal(25  , src);
@@ -6658,7 +6709,7 @@ int compile(char *src, char *ir, char *mod)
          
         struct Sym *g;
         int h;
-        for (h = 0; h < 256; h++)
+        for (h = 0; h < 128; h++)
             for (g = htab[h]; g; g = g->next)
                 if (g->kind == 1 && !g->isstatic && g->defined) {
                     if (g->type->size < 0)
@@ -6666,19 +6717,21 @@ int compile(char *src, char *ir, char *mod)
                     ir_data(g->name, (g->type->size + 1) / 2, g->defined == 2);
                 }
     }
+    if (usesfloat && !nofltused)
+        ir_use("__fltused");
     ir_close(globoff);
     fclose(fp);
     return nerrors == 0;
 }
 #8 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/ir.c
+#1 !/home/user/UCSD-C/tinyc/ir.c
                     
-#21 /home/user/UCSD-C/tinyc/ir.c
+#21 !/home/user/UCSD-C/tinyc/ir.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -7006,7 +7059,9 @@ int compile(char *src, char *ir, char *mod)
 
 
 
-#22 /home/user/UCSD-C/tinyc/ir.c
+
+
+#22 !/home/user/UCSD-C/tinyc/ir.c
 
  
 #pragma segment PARSE
@@ -7149,6 +7204,12 @@ void ir_data(char *name, int words, int strong)
     irb(strong);
     irs(name);
     irw(words);
+}
+
+void ir_use(char *name)
+{
+    irb('u');
+    irs(name);
 }
 
 void ir_funcbegin(void)
@@ -7517,6 +7578,9 @@ int gencode(char *irname, char *obj)
             name = rstr();
             gen_objdata(name, rw(), st);
             break;
+        case 'u':
+            gen_objuse(rstr());
+            break;
         case 'G':
             gen_objend(rw());
             break;
@@ -7532,13 +7596,13 @@ int gencode(char *irname, char *obj)
 }
 #9 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/gen.c
+#1 !/home/user/UCSD-C/tinyc/gen.c
            
-#12 /home/user/UCSD-C/tinyc/gen.c
+#12 !/home/user/UCSD-C/tinyc/gen.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -7866,7 +7930,9 @@ int gencode(char *irname, char *obj)
 
 
 
-#13 /home/user/UCSD-C/tinyc/gen.c
+
+
+#13 !/home/user/UCSD-C/tinyc/gen.c
 #pragma segment GEN
 
  
@@ -8239,7 +8305,7 @@ struct LV {
 };
 
    
-#387 /home/user/UCSD-C/tinyc/gen.c
+#387 !/home/user/UCSD-C/tinyc/gen.c
 static void gglob(int op, struct LV *lv, int add)
 {
     int v;
@@ -8373,7 +8439,7 @@ static int islv(struct Node *n)
 }
 
   
-#521 /home/user/UCSD-C/tinyc/gen.c
+#521 !/home/user/UCSD-C/tinyc/gen.c
 static void gen_lowbyte(struct Node *n)
 {
     while (n->op == 14 && isword(n->type) && isword(n->a->type))
@@ -9262,6 +9328,12 @@ void gen_objdata(char *name, int words, int strong)
     outw(words);
 }
 
+void gen_objuse(char *name)
+{
+    putc('U', objout);
+    outs(name);
+}
+
 void gen_objend(int staticwords)
 {
     putc('G', objout);
@@ -9438,13 +9510,13 @@ void gen_initend(void)
 }
 #10 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/link.c
+#1 !/home/user/UCSD-C/tinyc/link.c
                     
-#21 /home/user/UCSD-C/tinyc/link.c
+#21 !/home/user/UCSD-C/tinyc/link.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -9772,7 +9844,9 @@ void gen_initend(void)
 
 
 
-#22 /home/user/UCSD-C/tinyc/link.c
+
+
+#22 !/home/user/UCSD-C/tinyc/link.c
 #pragma segment LINK
 
 
@@ -9810,11 +9884,15 @@ static struct LProc **procs;
 static int nprocs;
 static struct LData **datas;
 static int ndatas;
-static struct LProc *lhash[128];
-static struct LData *dhash[128];
-static int modstatic[64];
-static int modbase[64];
-static int modlive[64];
+static struct LProc **lhash;
+static struct LData **dhash;
+static int *modstatic;
+static int *modbase;
+static int *modlive;
+
+static int *usemod;              
+static int *usedata;
+static int nuses;
 static int nmods;
 static char *segnames[24];
 static int nsegs;
@@ -9962,6 +10040,10 @@ static void record(int c, char *name, char *seg, int *flags, int *parmsz, int *r
         *codelen = rdw();
         return;
     }
+    if (c == 'U') {
+        rds(name);
+        return;
+    }
     if (c != 'P')
         fatal(106  , 0);
     *flags = rd();
@@ -10080,8 +10162,20 @@ static void pass2(void)
     struct LData *d;
     rewindobjs();
     k = 0;
+    nuses = 0;
     while ((c = nextrec()) != 0) {
         record(c, name, seg, &flags, &parmsz, &rw, &codelen, &jtab);
+        if (c == 'U') {
+            d = finddata(name);
+            if (!d || d->mod < 0)
+                error(114  , name);
+            else if (nuses < 64) {
+                usemod[nuses] = curmod;
+                usedata[nuses] = dataindex(d);
+                nuses++;
+            }
+            continue;
+        }
         if (c != 'P')
             continue;
         p = procs[k++];
@@ -10120,6 +10214,14 @@ static void markall(void)
     struct LData *d;
     do {
         changed = 0;
+        for (i = 0; i < nuses; i++) {
+            d = datas[usedata[i]];
+            if (modlive[usemod[i]] && !d->live) {
+                d->live = 1;
+                modlive[d->mod] = 1;
+                changed = 1;
+            }
+        }
         for (i = 0; i < nprocs; i++) {
             p = procs[i];
             if (!p->live && (p->flags & 1) && modlive[p->mod]) {
@@ -10305,8 +10407,15 @@ int link(char **objs, int nobjs, char *code, char *progname)
     entry = (unsigned char *)malloc(600);
     if (!lbuf || !procs || !datas || !entry)
         fatal(2  , 0);
-    memset(lhash, 0, sizeof(lhash));
-    memset(dhash, 0, sizeof(dhash));
+    lhash = (struct LProc **)calloc(128, sizeof(struct LProc *));
+    dhash = (struct LData **)calloc(128, sizeof(struct LData *));
+    modstatic = (int *)malloc(64 * sizeof(int));
+    modbase = (int *)malloc(64 * sizeof(int));
+    modlive = (int *)malloc(64 * sizeof(int));
+    usemod = (int *)malloc(64 * sizeof(int));
+    usedata = (int *)malloc(64 * sizeof(int));
+    if (!lhash || !dhash || !modstatic || !modbase || !modlive || !usemod || !usedata)
+        fatal(2  , 0);
     nprocs = 0;
     ndatas = 0;
     nmods = 0;
@@ -10460,13 +10569,13 @@ int link(char **objs, int nobjs, char *code, char *progname)
 }
 #11 /home/user/UCSD-C/tinyc/tc.c
 
-#1 /home/user/UCSD-C/tinyc/main.c
+#1 !/home/user/UCSD-C/tinyc/main.c
            
-#12 /home/user/UCSD-C/tinyc/main.c
+#12 !/home/user/UCSD-C/tinyc/main.c
 
-#1 /home/user/UCSD-C/tinyc/tc.h
+#1 !/home/user/UCSD-C/tinyc/tc.h
        
-#8 /home/user/UCSD-C/tinyc/tc.h
+#8 !/home/user/UCSD-C/tinyc/tc.h
 
 
 
@@ -10794,7 +10903,9 @@ int link(char **objs, int nobjs, char *code, char *progname)
 
 
 
-#13 /home/user/UCSD-C/tinyc/main.c
+
+
+#13 !/home/user/UCSD-C/tinyc/main.c
 #pragma segment MAIN
 
 
@@ -10817,7 +10928,7 @@ static void basename8(char *path, char *out)
 }
 
   
-#36 /home/user/UCSD-C/tinyc/main.c
+#36 !/home/user/UCSD-C/tinyc/main.c
 static void passbegin(int xsize)
 {
     curfile = 0;
@@ -10847,7 +10958,7 @@ static int compileone(char *src, char *tmpi, char *tmpr, char *obj)
         return 0;
     passend();
     printf("Compiling\n");
-    passbegin(2400);
+    passbegin(2000);
     if (!compile(tmpi, tmpr, mod))
         return 0;
     passend();

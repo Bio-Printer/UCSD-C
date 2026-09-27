@@ -62,7 +62,7 @@ static int compileone(char *src, char *tmpi, char *tmpr, char *obj)
         return 0;
     passend();
     printf("Compiling\n");
-    passbegin(2400);
+    passbegin(2000);
     if (!compile(tmpi, tmpr, mod))
         return 0;
     passend();

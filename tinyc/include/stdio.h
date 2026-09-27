@@ -45,7 +45,7 @@ typedef struct __file {
     int linestart;              /* text write: start of the current line in buf */
     int bufsize;                /* 512 binary, 1024 text */
     unsigned char *buf;
-    char fib[80];               /* the operating system's file information block */
+    char *fib;                  /* the operating system's file information block (80 bytes) */
 } FILE;
 
 extern FILE __files[FOPEN_MAX + 3];

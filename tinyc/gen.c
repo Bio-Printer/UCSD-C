@@ -1406,6 +1406,12 @@ void gen_objdata(char *name, int words, int strong)
     outw(words);
 }
 
+void gen_objuse(char *name)
+{
+    putc('U', objout);
+    outs(name);
+}
+
 void gen_objend(int staticwords)
 {
     putc('G', objout);

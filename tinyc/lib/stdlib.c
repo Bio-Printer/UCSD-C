@@ -1,5 +1,6 @@
 /* stdlib.c -- Tiny-C library: the code behind <stdlib.h> */
 #include "libint.h"
+#pragma nofltused
 unsigned *__freelist;
 void *malloc(size_t n)
 {

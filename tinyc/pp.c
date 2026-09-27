@@ -20,7 +20,7 @@ struct Macro {
 };
 
 #define MHASH 128
-static struct Macro *mtab[MHASH];
+static struct Macro **mtab;
 
 struct Incl {
     FILE *fp;
@@ -28,7 +28,7 @@ struct Incl {
     int line;
     int sys;                    /* a <system> header (or included from one) */
 };
-static struct Incl istack[MAXINCL];
+static struct Incl *istack;
 static int idepth;
 static FILE *ppout;
 static int incomment;
@@ -1159,7 +1159,9 @@ int preprocess(char *src, char *out)
     char *s;
     line = malloc(MAXEXP);
     ebuf = malloc(MAXEXP);
-    if (!line || !ebuf)
+    mtab = (struct Macro **)calloc(MHASH, sizeof(struct Macro *));
+    istack = (struct Incl *)calloc(MAXINCL, sizeof(struct Incl));
+    if (!line || !ebuf || !mtab || !istack)
         fatal(2 /* out of memory */, 0);
     ppout = fopen(out, "w");
     if (!ppout)
@@ -1192,8 +1194,8 @@ int preprocess(char *src, char *out)
         curfile = istack[idepth - 1].name;
         curline = startline;
         if (outline != startline || outname != curfile) {
-            /* '!' marks system headers: the compiler skips their unused declarations */
-            fprintf(ppout, "#%d %s%s\n", startline, istack[idepth - 1].sys ? "!" : "", curfile);
+            /* '!' marks included files: the compiler skips their unused declarations */
+            fprintf(ppout, "#%d %s%s\n", startline, idepth > 1 ? "!" : "", curfile);
             outname = curfile;
         }
         outline = startline + 1;

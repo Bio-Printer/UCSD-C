@@ -20,7 +20,7 @@ struct Type *ty_double;
 struct Type *ty_ldouble;
 static struct Type *ty_charp;
 
-#define HSIZE 256
+#define HSIZE 128
 static struct Sym *htab[HSIZE];
 static struct Sym *ttab[HSIZE];
 static struct Sym *scopes[40];
@@ -28,6 +28,8 @@ static int level;
 static struct Sym *labels;
 int globoff;                    /* next free word of the module's static variables */
 static char *modname;
+static int usesfloat;          /* the module uses floating point (links printf's %f) */
+static int nofltused;
 
 /* current function */
 static struct Sym *curfn;
@@ -163,6 +165,7 @@ static struct Type *permtype(struct Type *t)
     for (p = t->params; p; p = p->next) {
         q = (struct Param *)palloc(sizeof(struct Param));
         q->type = permtype(p->type);
+        q->name = p->name;          /* used only by an immediately following body */
         if (last)
             last->next = q;
         else
@@ -172,21 +175,28 @@ static struct Type *permtype(struct Type *t)
     return n;
 }
 
-/* ---- the names the program itself uses (see scanrefs) ---- */
-#define RHASH 128
-struct Ref {
-    struct Ref *next;
-    char *name;
-};
-static struct Ref *refs[RHASH];
+/* ---- the names the program itself uses (see scanrefs) ----
+   A Bloom filter: 4096 bits, two hash functions.  A false positive only
+   keeps a declaration that was not needed. */
+#define RBITS 4096
+static unsigned char *refbits;
+
+static int refhash2(char *s)
+{
+    int h;
+    h = 7;
+    while (*s)
+        h = (h * 31 + *s++) & 4095;
+    return h;
+}
 
 static int isref(char *name)
 {
-    struct Ref *r;
-    for (r = refs[hashstr(name) & (RHASH - 1)]; r; r = r->next)
-        if (strcmp(r->name, name) == 0)
-            return 1;
-    return 0;
+    int a;
+    int b;
+    a = (hashstr(name) * 2 + 1) & 4095;
+    b = refhash2(name);
+    return (refbits[a >> 3] & (1 << (a & 7))) && (refbits[b >> 3] & (1 << (b & 7)));
 }
 
 static int sametype(struct Type *a, struct Type *b)
@@ -767,13 +777,25 @@ static struct Node *primary(void)
         next();
         return n;
     case T_FNUM:
+        if (!insys)
+            usesfloat = 1;
         n = mknode(N_FNUM, ty_double, 0, 0);
         n->fimg = (unsigned char *)xalloc(4);
         memcpy(n->fimg, tokreal, 4);
         next();
         return n;
     case T_STR:
-        n = mknode(N_STR, arrayof(ty_char, toklen), 0, 0);
+        {
+            /* the literal's array type lives as long as the statement */
+            struct Type *st;
+            st = (struct Type *)xalloc(sizeof(struct Type));
+            st->kind = TY_ARRAY;
+            st->size = toklen;
+            st->align = 1;
+            st->base = ty_char;
+            st->len = toklen;
+            n = mknode(N_STR, st, 0, 0);
+        }
         n->str = xalloc(toklen);
         memcpy(n->str, tokstr, toklen);
         n->slen = toklen;
@@ -1362,9 +1384,17 @@ static struct Param *paramlist(int *variadic, int *oldstyle)
         if (tentative) {
             p = (struct Param *)xalloc(sizeof(struct Param));
             p->name = 0;
+            if (name[0]) {          /* a definition in a header needs its names */
+                p->name = xalloc(strlen(name) + 1);
+                strcpy(p->name, name);
+            }
         } else {
             p = (struct Param *)palloc(sizeof(struct Param));
-            p->name = name[0] ? pstrdup(name) : 0;
+            p->name = 0;
+            if (name[0]) {          /* only needed while the function body is compiled */
+                p->name = falloc(strlen(name) + 1);
+                strcpy(p->name, name);
+            }
         }
         p->type = t;
         if (last)
@@ -1588,8 +1618,14 @@ static struct Type *declspec(int *sclass)
     switch (base) {
     case K_VOID: return ty_void;
     case K_CHAR: return uns ? ty_uchar : ty_char;
-    case K_FLOAT: return ty_float;
-    case K_DOUBLE: return nlong ? ty_ldouble : ty_double;
+    case K_FLOAT:
+        if (!insys)
+            usesfloat = 1;
+        return ty_float;
+    case K_DOUBLE:
+        if (!insys)
+            usesfloat = 1;
+        return nlong ? ty_ldouble : ty_double;
     }
     if (nlong)
         return uns ? ty_ulong : ty_long;
@@ -2202,6 +2238,7 @@ static void external(void)
                 if (t != s->type)
                     s->type = t;
                 funcdef(s, sc == K_STATIC);
+                xrelease(m);
                 return;
             }
         } else {
@@ -2260,20 +2297,18 @@ static void external(void)
 
 #pragma segment REFSCAN
 
-/* Collect every identifier on the program's own lines (not <system>
-   headers) of the preprocessed file.  Declarations in system headers of
-   names the program never mentions are then not kept at all. */
+/* Collect every identifier the program itself uses: everything in the
+   main file, and whatever is inside braces (function bodies, structures,
+   initialisers) in included files.  Top-level declarations in included
+   files of names never mentioned are then not kept at all. */
 static void addref(char *name)
 {
-    struct Ref *r;
-    int h;
-    if (isref(name))
-        return;
-    r = (struct Ref *)palloc(sizeof(struct Ref));
-    r->name = pstrdup(name);
-    h = hashstr(name) & (RHASH - 1);
-    r->next = refs[h];
-    refs[h] = r;
+    int a;
+    int b;
+    a = (hashstr(name) * 2 + 1) & 4095;
+    b = refhash2(name);
+    refbits[a >> 3] = refbits[a >> 3] | (1 << (a & 7));
+    refbits[b >> 3] = refbits[b >> 3] | (1 << (b & 7));
 }
 
 static void scanrefs(char *src)
@@ -2284,13 +2319,15 @@ static void scanrefs(char *src)
     int n;
     int sys;
     int bol;
+    int depth;
     char name[MAXNAME];
     fp = fopen(src, "r");
     if (!fp)
         fatal(25 /* cannot open */, src);
-    memset(refs, 0, sizeof(refs));
+    refbits = (unsigned char *)palloc(RBITS / 8);
     sys = 0;
     bol = 1;
+    depth = 0;
     c = getc(fp);
     while (c != EOF) {
         if (bol && c == '#') {
@@ -2311,10 +2348,10 @@ static void scanrefs(char *src)
             continue;
         }
         bol = 0;
-        if (sys) {
-            c = getc(fp);
-            continue;
-        }
+        if (c == '{')
+            depth++;
+        else if (c == '}')
+            depth--;
         if (c == '"' || c == '\'') {
             q = c;
             c = getc(fp);
@@ -2334,7 +2371,8 @@ static void scanrefs(char *src)
                 c = getc(fp);
             }
             name[n] = 0;
-            addref(name);
+            if (!sys || depth > 0)
+                addref(name);
             continue;
         }
         if (c >= '0' && c <= '9') {
@@ -2432,13 +2470,16 @@ void pragma(char *s)
         if (strcmp(name, "MAIN") == 0)
             name[0] = 0;
         cursegname = pstrdup(name);
-    }
+    } else if (strncmp(s, "nofltused", 9) == 0)
+        nofltused = 1;              /* library modules: float use does not link %f */
 }
 
 int compile(char *src, char *ir, char *mod)
 {
     FILE *fp;
     modname = mod;
+    usesfloat = 0;
+    nofltused = 0;
     fp = fopen(src, "r");
     if (!fp)
         fatal(25 /* cannot open */, src);
@@ -2465,6 +2506,8 @@ int compile(char *src, char *ir, char *mod)
                     ir_data(g->name, (g->type->size + 1) / 2, g->defined == 2);
                 }
     }
+    if (usesfloat && !nofltused)
+        ir_use("__fltused");
     ir_close(globoff);
     fclose(fp);
     return nerrors == 0;
