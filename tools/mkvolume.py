@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""mkvolume.py -- build TinyC_Volume.zip: a UCSD volume TINYC: holding the
+"""mkvolume.py -- build TinyC_Volume.zip: TINY-C.BLK, the UCSD volume TINY-C: holding the
 Tiny-C compiler (TINYC.CODE, built from its modules), its headers
 (NAME.H.TEXT), the library (TCLIB.OBJ), the message file (TCMSGS.TEXT),
 the test programs, the compiler's own sources and README.TEXT.
@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import ucsdvol
-from tcrun import build_lib, INC
+from tcrun import build_lib, compile_c, INC
 from buildtc import build, MODULES
 
 README = """TINY-C for UCSD Pascal II.0
@@ -29,9 +29,24 @@ STDARG.H STDDEF.H LIMITS.H FLOAT.H ASSERT.H.  TCRT.H documents the
 runtime helpers the compiler calls (they are in TCLIB.OBJ).  TCMSGS.TEXT
 holds the compiler's messages.  Temporary files: TCTEMP.TEXT, TCTEMP.IR.
 
-Test programs: DEMO SIEVE HANOI QUEENS STRUCTS CONTROL FUNCPTR LONGS
-FLOATS FCOMPARE STRINGS.  Set the prefix to this volume first (F(iler,
-P(refix).
+Set the prefix to this volume first (F(iler, P(refix TINY-C:).
+
+Demo and test programs (NAME.TEXT; compile with X TINYC, answer NAME):
+  CALC      a calculator: recursive descent, longs
+  GUESS     guess the number: rand, scanf
+  BOXES     conio.h: clrscr, gotoxy, getch
+  FILEIO    stdio text files, io.h/fcntl.h binary files
+  HANOI     towers of Hanoi          QUEENS   eight queens
+  SIEVE     primes                   STRINGS  string.h, sprintf, sscanf
+  STRUCTS   structs, unions, lists   FUNCPTR  function pointers, qsort
+  LONGS     32-bit longs             FLOATS   reals and math.h
+  CONTROL   switch, goto, loops
+  CMPCODE   compares two code files (checks a rebuilt compiler)
+
+Files: 58 of the directory's 77 entries are used.  A compile adds
+NAME.OBJ and NAME.CODE (and TCTEMP.TEXT, TCTEMP.IR once); rebuilding the
+compiler needs 15 (12 .OBJ files, TINYC2.CODE, the two temporaries).
+Remove the .OBJ and .CODE files you no longer need.
 
 The compiler's own sources are here too (%s,
 TC.H PARSE.H).  To rebuild the compiler on the P-System, compile each
@@ -39,7 +54,8 @@ module separately, then link them (there is no TC.TEXT: the whole
 compiler as one file does not fit in memory):
   X(ecute TINYC   /C MAIN        (and the same for every module)
   X(ecute TINYC   /L TINYC2=%s
-TINYC2.CODE comes out identical to TINYC.CODE (apart from its name).
+TINYC2.CODE comes out identical to TINYC.CODE (apart from its name):
+  X(ecute CMPCODE   TINYC.CODE  TINYC2.CODE   -> IDENTICAL
 
 The library's sources are here as well (%s,
 LIBINT.H).  Each compiles on the P-System with /C to exactly the
@@ -51,9 +67,13 @@ them:  /L PROG=PROG,TCRT,STDIO,STDLIB,STRING,CTYPE,MATH,FLTFMT,...
        ' '.join(f[:-2].upper() for f in sorted(os.listdir(os.path.join(ROOT, 'tinyc', 'lib'))) if f.endswith('.c')))
 
 
+# tests left off the volume (the directory holds 77 files): in tests/ still
+SKIP_TESTS = ('demo', 'fcompare')
+
+
 def main():
-    out = os.path.join(ROOT, 'build', 'TINYC.BLK')
-    ucsdvol.main(['new', out, 'TINYC', '4000'])
+    out = os.path.join(ROOT, 'build', 'TINY-C.BLK')
+    ucsdvol.main(['new', out, 'TINY-C', '4000'])
     v = ucsdvol.Volume(out)
     code, log = build()
     v.write('TINYC.CODE', open(code, 'rb').read(), 2)
@@ -64,7 +84,7 @@ def main():
     v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     tests = os.path.join(ROOT, 'tests')
     for f in sorted(os.listdir(tests)):
-        if f.endswith('.c'):
+        if f.endswith('.c') and f[:-2] not in SKIP_TESTS:
             v.write(f[:-2].upper()[:10] + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(tests, f)).read()), 3)
     src = os.path.join(ROOT, 'tinyc')
     for m in MODULES:
@@ -77,10 +97,25 @@ def main():
             n = f[:-2].upper() + ('.TEXT' if f.endswith('.c') else '.H.TEXT')
             v.write(n, ucsdvol.text_to_ucsd(open(os.path.join(lib, f)).read()), 3)
     v.write('README.TEXT', ucsdvol.text_to_ucsd(README), 3)
+    # CMPCODE compares code files: checks a rebuilt compiler
+    tmp = os.path.join(ROOT, 'build', 'volume_tmp')
+    os.makedirs(tmp, exist_ok=True)
+    v.write('CMPCODE.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(ROOT, 'verify', 'cmpcode.c')).read()), 3)
+    for path in (os.path.join(ROOT, 'verify', 'cmpcode.c'),):
+        base, code = compile_c(path, tmp)
+        v.write(base + '.CODE', open(code, 'rb').read(), 2)
+    for d, n in ((os.path.join(ROOT, 'verify'), 'cmpcode'),):
+        for ext in ('.i', '.ir', '.obj'):                  # compile_c's temporaries
+            if os.path.exists(os.path.join(d, n + ext)):
+                os.remove(os.path.join(d, n + ext))
     v.save()
+    nfiles = len(ucsdvol.Volume(out).entries)
+    print(nfiles, 'files on TINY-C:')
+    if nfiles > 58:     # 77 in a directory: room for a self-compile (15) and a program
+        raise SystemExit('too many files for a self-compile on the volume')
     z = os.path.join(ROOT, 'TinyC_Volume.zip')
     with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(out, 'TINYC.BLK')
+        zf.write(out, 'TINY-C.BLK')
     print('wrote', z, os.path.getsize(z), 'bytes')
 
 

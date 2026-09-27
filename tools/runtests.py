@@ -41,7 +41,7 @@ def main(a):
     for n in names:
         exp_path = os.path.join(TESTS, n + '.expect')
         keys_path = os.path.join(TESTS, n + '.keys')
-        keys = open(keys_path).read() if os.path.exists(keys_path) else ''
+        keys = open(keys_path, newline='').read() if os.path.exists(keys_path) else ''
         try:
             ok, out, ps, info = run_c(os.path.join(TESTS, n + '.c'), keys)
         except SystemExit as e:

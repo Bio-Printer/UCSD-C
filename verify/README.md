@@ -18,7 +18,7 @@ If an expected text never appears, the run stops at the next prompt with
 | `TCVERIFY.SCRIPT` | the script (generated) |
 | `TCVERIFY.zip` | `TCVERIFY.BLK`, volume TINYCV:, which goes on unit #5 |
 | `cmpcode.c` | the byte-compare program (on the volume as CMPCODE.CODE) |
-| `rmfiles.c` | removes the tests' .OBJ and .CODE files before step 2 (a UCSD directory holds 77 files) |
+| `rmfiles.c` | removes each test's .OBJ and .CODE after it runs (a UCSD directory holds 77 files) |
 
 Both files are generated from the current sources by `tools/mkverify.py`.
 On Linux, `tools/tcverify.py [native|z80]` runs the pack through
@@ -34,7 +34,7 @@ On Linux, `tools/tcverify.py [native|z80]` runs the pack through
   from deep inside the parser. Since W16 became a no-op on the P-System,
   the pack passes on the unfixed engine too. Programs that recurse more
   than 64 deep and then call into another segment still need the fix.
-* About 380 script steps; the whole run takes about 13 s in P-Code mode on Linux.
+* About 585 script steps; the whole run takes about 16 s in P-Code mode on Linux.
 
 ## Wiring it into the menu (a sketch)
 

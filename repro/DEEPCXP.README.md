@@ -42,19 +42,9 @@ Suggested fix: make the search unbounded, as the Z80 loop is, or at least
 much larger (the chain always ends at the lex-0 frame). If a bail-out is
 kept, it has to push the IPC and set A = target before jumping to 137F.
 
-## The fix (committed)
+## The fix
 
-The fix is applied in the repository: inside `UCSD-Pascal---P-Machine_work.zip` (UCSDPascal/ and linux-harness/) and `linux-harness.zip`. `deepcxp-engine.patch` shows it. It changes the cap from 64 to 30000 in:
-
-* `UCSDPascal/NativeCxp.inc` (CXP)
-* `UCSDPascal/PSystemEngine.cpp` (native CIP)
-
-A 64K stack can't hold more than about 5,500 frames, so the search now
-always finishes in native code and the broken bail-out is never reached.
-The comment above the CIP loop ("a handful of iterations") is wrong: the
-loop walks the *dynamic* chain, so its length is the recursion depth, not
-the lexical nesting depth.
-
-The linux-harness copies (`harness.cpp`,
-`remove_file.cpp`, `NativeCxp.inc`) are patched the same way. The bail-out code itself is still
-wrong (see above) if anyone ever relies on it.
+Fixed in `UCSD-Pascal---P-Machine_work-v1.84.zip` (the search runs to
+30000 frames; regression tests in its verify/errtest). The tools here
+build `run_verify` from that zip; the repro gives the same output in
+Z80 and P-Code mode. `deepcxp-engine.patch` is the diff as first tested.
