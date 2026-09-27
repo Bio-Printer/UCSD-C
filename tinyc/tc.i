@@ -16,13 +16,13 @@
 
 
 
-#1 /home/user/UCSD-C/tinyc/include/stdio.h
+#1 !/home/user/UCSD-C/tinyc/include/stdio.h
                
-#16 /home/user/UCSD-C/tinyc/include/stdio.h
+#16 !/home/user/UCSD-C/tinyc/include/stdio.h
 
 
 
-#1 /home/user/UCSD-C/tinyc/include/stddef.h
+#1 !/home/user/UCSD-C/tinyc/include/stddef.h
  
 
 
@@ -34,11 +34,11 @@ typedef int ptrdiff_t;
 typedef char wchar_t;
 
 
-#19 /home/user/UCSD-C/tinyc/include/stdio.h
+#19 !/home/user/UCSD-C/tinyc/include/stdio.h
 
-#1 /home/user/UCSD-C/tinyc/include/stdarg.h
+#1 !/home/user/UCSD-C/tinyc/include/stdarg.h
     
-#5 /home/user/UCSD-C/tinyc/include/stdarg.h
+#5 !/home/user/UCSD-C/tinyc/include/stdarg.h
 
 
 typedef char *va_list;
@@ -48,7 +48,7 @@ typedef char *va_list;
 
 
 
-#20 /home/user/UCSD-C/tinyc/include/stdio.h
+#20 !/home/user/UCSD-C/tinyc/include/stdio.h
 
 
 
@@ -200,13 +200,13 @@ int sscanf(char *s, char *fmt, ...);
 
 #15 /home/user/UCSD-C/tinyc/tc.h
 
-#1 /home/user/UCSD-C/tinyc/include/stdlib.h
+#1 !/home/user/UCSD-C/tinyc/include/stdlib.h
     
-#5 /home/user/UCSD-C/tinyc/include/stdlib.h
+#5 !/home/user/UCSD-C/tinyc/include/stdlib.h
 
 
 
-#1 /home/user/UCSD-C/tinyc/include/stddef.h
+#1 !/home/user/UCSD-C/tinyc/include/stddef.h
  
 
 
@@ -218,7 +218,7 @@ int sscanf(char *s, char *fmt, ...);
 
 
 
-#8 /home/user/UCSD-C/tinyc/include/stdlib.h
+#8 !/home/user/UCSD-C/tinyc/include/stdlib.h
 
 
 
@@ -281,12 +281,12 @@ void abort(void);
 
 #16 /home/user/UCSD-C/tinyc/tc.h
 
-#1 /home/user/UCSD-C/tinyc/include/string.h
+#1 !/home/user/UCSD-C/tinyc/include/string.h
  
 
 
 
-#1 /home/user/UCSD-C/tinyc/include/stddef.h
+#1 !/home/user/UCSD-C/tinyc/include/stddef.h
  
 
 
@@ -298,7 +298,7 @@ void abort(void);
 
 
 
-#5 /home/user/UCSD-C/tinyc/include/string.h
+#5 !/home/user/UCSD-C/tinyc/include/string.h
 
 size_t strlen(char *s);
 
@@ -574,6 +574,7 @@ int hashstr(char *s);
 
  
 extern int tok;
+extern int insys;
 extern int tokval;
 extern int tokval2;
 extern int toklong;
@@ -905,6 +906,7 @@ int hashstr(char *s)
 #1 /home/user/UCSD-C/tinyc/tc.h
        
 #8 /home/user/UCSD-C/tinyc/tc.h
+
 
 
 
@@ -1627,6 +1629,7 @@ int retwords(struct Type *ft)
 
 
 
+
 #13 /home/user/UCSD-C/tinyc/pp.c
 #pragma segment PP
 
@@ -1644,6 +1647,7 @@ struct Incl {
     FILE *fp;
     char *name;
     int line;
+    int sys;                     
 };
 static struct Incl istack[8];
 static int idepth;
@@ -1750,7 +1754,7 @@ static FILE *openinc(char *name, int sys)
     char *p;
 
       
-#136 /home/user/UCSD-C/tinyc/pp.c
+#137 /home/user/UCSD-C/tinyc/pp.c
     int i;
     for (i = 0; name[i] && i < 64; i++) {
         path[i] = name[i];
@@ -1881,7 +1885,7 @@ static int balance(char *s)
 }
 
   
-#267 /home/user/UCSD-C/tinyc/pp.c
+#268 /home/user/UCSD-C/tinyc/pp.c
 static int ppgetline(void)
 {
     char tmp[512];
@@ -2679,6 +2683,7 @@ static void doinclude(char *s)
     istack[idepth].fp = fp;
     istack[idepth].name = pstrdup(openedpath);
     istack[idepth].line = 0;
+    istack[idepth].sys = sys || istack[idepth - 1].sys;
     idepth++;
 }
 
@@ -2788,6 +2793,7 @@ int preprocess(char *src, char *out)
         fatal(25  , src);
     istack[0].name = pstrdup(src);
     istack[0].line = 0;
+    istack[0].sys = 0;
     idepth = 1;
     active = 1;
     iflevel = 0;
@@ -2807,7 +2813,8 @@ int preprocess(char *src, char *out)
         curfile = istack[idepth - 1].name;
         curline = startline;
         if (outline != startline || outname != curfile) {
-            fprintf(ppout, "#%d %s\n", startline, curfile);
+             
+            fprintf(ppout, "#%d %s%s\n", startline, istack[idepth - 1].sys ? "!" : "", curfile);
             outname = curfile;
         }
         outline = startline + 1;
@@ -3169,10 +3176,12 @@ int preprocess(char *src, char *out)
 
 
 
+
 #8 /home/user/UCSD-C/tinyc/lex.c
 #pragma segment PARSE
 
 int tok;                         
+int insys;                       
 int tokval;                      
 int tokval2;                     
 int toklong;                     
@@ -3244,6 +3253,9 @@ static void lexdirective(void)
         while (*s == ' ')
             s++;
         curline = v - 1;          
+        insys = *s == '!';
+        if (insys)
+            s++;
         if (!curfile || strcmp(curfile, s) != 0)
             curfile = pstrdup(s);
     } else if (strncmp(buf, "pragma", 6) == 0)
@@ -3311,7 +3323,7 @@ static int mac(unsigned char *acc, int base, int d)
 }
 
   
-#150 /home/user/UCSD-C/tinyc/lex.c
+#154 /home/user/UCSD-C/tinyc/lex.c
 #pragma segment REALLIT
 
 
@@ -4194,6 +4206,7 @@ char *peekname(void)
 
 
 
+
 #9 /home/user/UCSD-C/tinyc/parse.c
 #pragma segment PARSE
 
@@ -4262,9 +4275,21 @@ static char *intrnames[] = {
 
  
 
+  
+#78 /home/user/UCSD-C/tinyc/parse.c
+static int tentative;
+
 static struct Type *mktype(int kind, int size, int align)
 {
     struct Type *t;
+    if (tentative && (kind == 10 || kind == 11 || kind == 14)) {
+        t = (struct Type *)xalloc(sizeof(struct Type));
+        t->align = -1;               
+        t->kind = kind;
+        t->size = size;
+        t->len = -1;
+        return t;
+    }
     t = (struct Type *)palloc(sizeof(struct Type));
     t->kind = kind;
     t->size = size;
@@ -4299,6 +4324,11 @@ struct Type *ptrto(struct Type *t)
     struct Type *p;
     if (t->ptrto)
         return t->ptrto;
+    if (tentative) {
+        p = mktype(10, 2, 2);    
+        p->base = t;
+        return p;
+    }
     p = mktype(10, 2, 2);
     p->base = t;
     t->ptrto = p;
@@ -4312,6 +4342,53 @@ static struct Type *arrayof(struct Type *t, int n)
     a->base = t;
     a->len = n;
     return a;
+}
+
+ 
+static struct Type *permtype(struct Type *t)
+{
+    struct Type *n;
+    struct Param *p;
+    struct Param *q;
+    struct Param *last;
+    if (t->align != -1)
+        return t;
+    if (t->kind == 10)
+        return ptrto(permtype(t->base));
+    if (t->kind == 11)
+        return arrayof(permtype(t->base), t->len);
+    n = mktype(14, 2, 2);
+    n->base = permtype(t->base);
+    n->variadic = t->variadic;
+    n->oldstyle = t->oldstyle;
+    last = 0;
+    for (p = t->params; p; p = p->next) {
+        q = (struct Param *)palloc(sizeof(struct Param));
+        q->type = permtype(p->type);
+        if (last)
+            last->next = q;
+        else
+            n->params = q;
+        last = q;
+    }
+    return n;
+}
+
+ 
+
+struct Ref {
+    struct Ref *next;
+    char *name;
+};
+static struct Ref *refs[128];
+
+static int isref(char *name)
+{
+    struct Ref *r;
+    for (r = refs[hashstr(name) & (128 - 1)]; r; r = r->next)
+        if (strcmp(r->name, name) == 0)
+            return 1;
+    return 0;
 }
 
 static int sametype(struct Type *a, struct Type *b)
@@ -4488,7 +4565,7 @@ static int islvalue(struct Node *n)
 }
 
   
-#303 /home/user/UCSD-C/tinyc/parse.c
+#367 /home/user/UCSD-C/tinyc/parse.c
 static int globinit;
 static int allocglobal(struct Type *t);
 
@@ -5484,8 +5561,13 @@ static struct Param *paramlist(int *variadic, int *oldstyle)
             t = ptrto(t->base);
         else if (t->kind == 14)
             t = ptrto(t);
-        p = (struct Param *)palloc(sizeof(struct Param));
-        p->name = name[0] ? pstrdup(name) : 0;
+        if (tentative) {
+            p = (struct Param *)xalloc(sizeof(struct Param));
+            p->name = 0;
+        } else {
+            p = (struct Param *)palloc(sizeof(struct Param));
+            p->name = name[0] ? pstrdup(name) : 0;
+        }
         p->type = t;
         if (last)
             last->next = p;
@@ -6266,6 +6348,7 @@ static void funcdef(struct Sym *fs, int isstatic)
 
 static void external(void)
 {
+    int sysdecl;
     struct Type *base;
     struct Type *t;
     struct Sym *s;
@@ -6280,11 +6363,23 @@ static void external(void)
         return;
     }
     for (;;) {
+        sysdecl = insys && sc != 326;
+        tentative = sysdecl;
         t = declarator(base, name);
+        tentative = 0;
         if (!name[0]) {
             error(71  , 0);
             next();
             return;
+        }
+        if (sysdecl) {
+            if ((sc == 311 || (t->kind == 14 && tok != '{')) && !isref(name)) {
+                if (tok != ',')
+                    break;               
+                next();
+                continue;
+            }
+            t = permtype(t);
         }
         if (sc == 326) {
             addsym(name, 4, t);
@@ -6363,6 +6458,94 @@ static void external(void)
     }
     expect(';', ";");
     xrelease(m);
+}
+
+#pragma segment REFSCAN
+
+   
+#2266 /home/user/UCSD-C/tinyc/parse.c
+static void addref(char *name)
+{
+    struct Ref *r;
+    int h;
+    if (isref(name))
+        return;
+    r = (struct Ref *)palloc(sizeof(struct Ref));
+    r->name = pstrdup(name);
+    h = hashstr(name) & (128 - 1);
+    r->next = refs[h];
+    refs[h] = r;
+}
+
+static void scanrefs(char *src)
+{
+    FILE *fp;
+    int c;
+    int q;
+    int n;
+    int sys;
+    int bol;
+    char name[64];
+    fp = fopen(src, "r");
+    if (!fp)
+        fatal(25  , src);
+    memset(refs, 0, sizeof(refs));
+    sys = 0;
+    bol = 1;
+    c = getc(fp);
+    while (c != (-1)) {
+        if (bol && c == '#') {
+             
+            while (c != (-1) && c != ' ' && c != '\n')
+                c = getc(fp);
+            if (c == ' ') {
+                c = getc(fp);
+                sys = c == '!';
+            }
+            while (c != (-1) && c != '\n')
+                c = getc(fp);
+            continue;
+        }
+        if (c == '\n') {
+            bol = 1;
+            c = getc(fp);
+            continue;
+        }
+        bol = 0;
+        if (sys) {
+            c = getc(fp);
+            continue;
+        }
+        if (c == '"' || c == '\'') {
+            q = c;
+            c = getc(fp);
+            while (c != (-1) && c != q && c != '\n') {
+                if (c == '\\')
+                    c = getc(fp);
+                c = getc(fp);
+            }
+            c = getc(fp);
+            continue;
+        }
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+            n = 0;
+            while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9')) {
+                if (n < 64 - 1)
+                    name[n++] = c;
+                c = getc(fp);
+            }
+            name[n] = 0;
+            addref(name);
+            continue;
+        }
+        if (c >= '0' && c <= '9') {
+            while ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '.' || c == '_')
+                c = getc(fp);
+            continue;
+        }
+        c = getc(fp);
+    }
+    fclose(fp);
 }
 
 #pragma segment CINIT
@@ -6461,6 +6644,7 @@ int compile(char *src, char *ir, char *mod)
     if (!fp)
         fatal(25  , src);
     ir_open(ir, modname);
+    scanrefs(src);
     typeinit();
     helpers();
     cursegname = "";
@@ -6495,6 +6679,7 @@ int compile(char *src, char *ir, char *mod)
 #1 /home/user/UCSD-C/tinyc/tc.h
        
 #8 /home/user/UCSD-C/tinyc/tc.h
+
 
 
 
@@ -7354,6 +7539,7 @@ int gencode(char *irname, char *obj)
 #1 /home/user/UCSD-C/tinyc/tc.h
        
 #8 /home/user/UCSD-C/tinyc/tc.h
+
 
 
 
@@ -9585,6 +9771,7 @@ void gen_initend(void)
 
 
 
+
 #22 /home/user/UCSD-C/tinyc/link.c
 #pragma segment LINK
 
@@ -10280,6 +10467,7 @@ int link(char **objs, int nobjs, char *code, char *progname)
 #1 /home/user/UCSD-C/tinyc/tc.h
        
 #8 /home/user/UCSD-C/tinyc/tc.h
+
 
 
 

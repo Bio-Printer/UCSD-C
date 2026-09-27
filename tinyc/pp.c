@@ -26,6 +26,7 @@ struct Incl {
     FILE *fp;
     char *name;
     int line;
+    int sys;                    /* a <system> header (or included from one) */
 };
 static struct Incl istack[MAXINCL];
 static int idepth;
@@ -1061,6 +1062,7 @@ static void doinclude(char *s)
     istack[idepth].fp = fp;
     istack[idepth].name = pstrdup(openedpath);
     istack[idepth].line = 0;
+    istack[idepth].sys = sys || istack[idepth - 1].sys;
     idepth++;
 }
 
@@ -1170,6 +1172,7 @@ int preprocess(char *src, char *out)
         fatal(25 /* cannot open */, src);
     istack[0].name = pstrdup(src);
     istack[0].line = 0;
+    istack[0].sys = 0;
     idepth = 1;
     active = 1;
     iflevel = 0;
@@ -1189,7 +1192,8 @@ int preprocess(char *src, char *out)
         curfile = istack[idepth - 1].name;
         curline = startline;
         if (outline != startline || outname != curfile) {
-            fprintf(ppout, "#%d %s\n", startline, curfile);
+            /* '!' marks system headers: the compiler skips their unused declarations */
+            fprintf(ppout, "#%d %s%s\n", startline, istack[idepth - 1].sys ? "!" : "", curfile);
             outname = curfile;
         }
         outline = startline + 1;

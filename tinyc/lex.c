@@ -8,6 +8,7 @@
 #pragma segment PARSE
 
 int tok;                        /* current token */
+int insys;                      /* reading a <system> header */
 int tokval;                     /* T_NUM: low 16 bits */
 int tokval2;                    /* T_NUM: high 16 bits (long constants) */
 int toklong;                    /* T_NUM: 1 = long, and bit 2 = unsigned */
@@ -79,6 +80,9 @@ static void lexdirective(void)
         while (*s == ' ')
             s++;
         curline = v - 1;         /* the newline that follows counts */
+        insys = *s == '!';
+        if (insys)
+            s++;
         if (!curfile || strcmp(curfile, s) != 0)
             curfile = pstrdup(s);
     } else if (strncmp(buf, "pragma", 6) == 0)

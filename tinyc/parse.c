@@ -73,9 +73,21 @@ static char *intrnames[] = {
 
 /* ---- types ---- */
 
+/* while a declarator from a system header is parsed, derived types go to
+   the statement pool: most such declarations are dropped (see isref) */
+static int tentative;
+
 static struct Type *mktype(int kind, int size, int align)
 {
     struct Type *t;
+    if (tentative && (kind == TY_PTR || kind == TY_ARRAY || kind == TY_FUNC)) {
+        t = (struct Type *)xalloc(sizeof(struct Type));
+        t->align = -1;              /* marks a temporary type */
+        t->kind = kind;
+        t->size = size;
+        t->len = -1;
+        return t;
+    }
     t = (struct Type *)palloc(sizeof(struct Type));
     t->kind = kind;
     t->size = size;
@@ -110,6 +122,11 @@ struct Type *ptrto(struct Type *t)
     struct Type *p;
     if (t->ptrto)
         return t->ptrto;
+    if (tentative) {
+        p = mktype(TY_PTR, 2, 2);   /* temporary: not cached */
+        p->base = t;
+        return p;
+    }
     p = mktype(TY_PTR, 2, 2);
     p->base = t;
     t->ptrto = p;
@@ -123,6 +140,53 @@ static struct Type *arrayof(struct Type *t, int n)
     a->base = t;
     a->len = n;
     return a;
+}
+
+/* a permanent copy of a type built tentatively */
+static struct Type *permtype(struct Type *t)
+{
+    struct Type *n;
+    struct Param *p;
+    struct Param *q;
+    struct Param *last;
+    if (t->align != -1)
+        return t;
+    if (t->kind == TY_PTR)
+        return ptrto(permtype(t->base));
+    if (t->kind == TY_ARRAY)
+        return arrayof(permtype(t->base), t->len);
+    n = mktype(TY_FUNC, 2, 2);
+    n->base = permtype(t->base);
+    n->variadic = t->variadic;
+    n->oldstyle = t->oldstyle;
+    last = 0;
+    for (p = t->params; p; p = p->next) {
+        q = (struct Param *)palloc(sizeof(struct Param));
+        q->type = permtype(p->type);
+        if (last)
+            last->next = q;
+        else
+            n->params = q;
+        last = q;
+    }
+    return n;
+}
+
+/* ---- the names the program itself uses (see scanrefs) ---- */
+#define RHASH 128
+struct Ref {
+    struct Ref *next;
+    char *name;
+};
+static struct Ref *refs[RHASH];
+
+static int isref(char *name)
+{
+    struct Ref *r;
+    for (r = refs[hashstr(name) & (RHASH - 1)]; r; r = r->next)
+        if (strcmp(r->name, name) == 0)
+            return 1;
+    return 0;
 }
 
 static int sametype(struct Type *a, struct Type *b)
@@ -1295,8 +1359,13 @@ static struct Param *paramlist(int *variadic, int *oldstyle)
             t = ptrto(t->base);
         else if (t->kind == TY_FUNC)
             t = ptrto(t);
-        p = (struct Param *)palloc(sizeof(struct Param));
-        p->name = name[0] ? pstrdup(name) : 0;
+        if (tentative) {
+            p = (struct Param *)xalloc(sizeof(struct Param));
+            p->name = 0;
+        } else {
+            p = (struct Param *)palloc(sizeof(struct Param));
+            p->name = name[0] ? pstrdup(name) : 0;
+        }
         p->type = t;
         if (last)
             last->next = p;
@@ -2077,6 +2146,7 @@ static void funcdef(struct Sym *fs, int isstatic)
 
 static void external(void)
 {
+    int sysdecl;
     struct Type *base;
     struct Type *t;
     struct Sym *s;
@@ -2091,11 +2161,23 @@ static void external(void)
         return;
     }
     for (;;) {
+        sysdecl = insys && sc != K_TYPEDEF;
+        tentative = sysdecl;
         t = declarator(base, name);
+        tentative = 0;
         if (!name[0]) {
             error(71 /* name expected */, 0);
             next();
             return;
+        }
+        if (sysdecl) {
+            if ((sc == K_EXTERN || (t->kind == TY_FUNC && tok != '{')) && !isref(name)) {
+                if (tok != ',')
+                    break;              /* not used by the program: not kept */
+                next();
+                continue;
+            }
+            t = permtype(t);
         }
         if (sc == K_TYPEDEF) {
             addsym(name, S_TYPEDEF, t);
@@ -2174,6 +2256,95 @@ static void external(void)
     }
     expect(';', ";");
     xrelease(m);
+}
+
+#pragma segment REFSCAN
+
+/* Collect every identifier on the program's own lines (not <system>
+   headers) of the preprocessed file.  Declarations in system headers of
+   names the program never mentions are then not kept at all. */
+static void addref(char *name)
+{
+    struct Ref *r;
+    int h;
+    if (isref(name))
+        return;
+    r = (struct Ref *)palloc(sizeof(struct Ref));
+    r->name = pstrdup(name);
+    h = hashstr(name) & (RHASH - 1);
+    r->next = refs[h];
+    refs[h] = r;
+}
+
+static void scanrefs(char *src)
+{
+    FILE *fp;
+    int c;
+    int q;
+    int n;
+    int sys;
+    int bol;
+    char name[MAXNAME];
+    fp = fopen(src, "r");
+    if (!fp)
+        fatal(25 /* cannot open */, src);
+    memset(refs, 0, sizeof(refs));
+    sys = 0;
+    bol = 1;
+    c = getc(fp);
+    while (c != EOF) {
+        if (bol && c == '#') {
+            /* "#<line> [!]file": '!' = system header */
+            while (c != EOF && c != ' ' && c != '\n')
+                c = getc(fp);
+            if (c == ' ') {
+                c = getc(fp);
+                sys = c == '!';
+            }
+            while (c != EOF && c != '\n')
+                c = getc(fp);
+            continue;
+        }
+        if (c == '\n') {
+            bol = 1;
+            c = getc(fp);
+            continue;
+        }
+        bol = 0;
+        if (sys) {
+            c = getc(fp);
+            continue;
+        }
+        if (c == '"' || c == '\'') {
+            q = c;
+            c = getc(fp);
+            while (c != EOF && c != q && c != '\n') {
+                if (c == '\\')
+                    c = getc(fp);
+                c = getc(fp);
+            }
+            c = getc(fp);
+            continue;
+        }
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+            n = 0;
+            while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9')) {
+                if (n < MAXNAME - 1)
+                    name[n++] = c;
+                c = getc(fp);
+            }
+            name[n] = 0;
+            addref(name);
+            continue;
+        }
+        if (c >= '0' && c <= '9') {
+            while ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '.' || c == '_')
+                c = getc(fp);
+            continue;
+        }
+        c = getc(fp);
+    }
+    fclose(fp);
 }
 
 #pragma segment CINIT
@@ -2272,6 +2443,7 @@ int compile(char *src, char *ir, char *mod)
     if (!fp)
         fatal(25 /* cannot open */, src);
     ir_open(ir, modname);
+    scanrefs(src);
     typeinit();
     helpers();
     cursegname = "";

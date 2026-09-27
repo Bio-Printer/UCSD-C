@@ -243,6 +243,7 @@ int hashstr(char *s);
 
 /* lexer */
 extern int tok;
+extern int insys;
 extern int tokval;
 extern int tokval2;
 extern int toklong;
