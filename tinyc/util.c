@@ -18,6 +18,62 @@ FILE *objout;
 char *curfile;
 int curline;
 
+/* ---- output: the compiler needs no printf (it is the library's, for
+   user programs); these few routines are all it uses ---- */
+char *itoa10(int n, char *b)
+{
+    char t[8];
+    int i;
+    int j;
+    unsigned v;
+    i = 0;
+    j = 0;
+    if (n < 0) {
+        b[j++] = '-';
+        v = -n;
+    } else
+        v = n;
+    do {
+        t[i++] = '0' + v % 10;
+        v = v / 10;
+    } while (v != 0);
+    while (i > 0)
+        b[j++] = t[--i];
+    b[j] = 0;
+    return b;
+}
+
+void say(char *s)
+{
+    fputs(s, stdout);
+}
+
+void sayn(int n)
+{
+    char b[8];
+    say(itoa10(n, b));
+}
+
+/* s padded with blanks to w characters (left-justified) */
+void sayw(char *s, int w)
+{
+    say(s);
+    w = w - strlen(s);
+    while (w-- > 0)
+        putchar(' ');
+}
+
+/* n right-justified in w characters */
+void saynw(int n, int w)
+{
+    char b[8];
+    itoa10(n, b);
+    w = w - strlen(b);
+    while (w-- > 0)
+        putchar(' ');
+    say(b);
+}
+
 /* Message texts live in a file (tcmsgs.txt; on the P-System TCMSGS.TEXT
    on the default or the boot volume): line n is message n.  Keeping them
    out of the code saves memory in every pass. */
@@ -44,7 +100,12 @@ static void message(int n)
     }
 #endif
     if (!fp) {
-        printf(n == 2 ? "out of memory" : "message #%d", n);
+        if (n == 2)
+            say("out of memory");
+        else {
+            say("message #");
+            sayn(n);
+        }
         return;
     }
     line = 1;
@@ -58,13 +119,20 @@ static void message(int n)
 
 static void report(char *kind, int n, char *arg)
 {
-    if (curfile)
-        printf("%s:%d: ", curfile, curline);
-    printf("%s", kind);
+    if (curfile) {
+        say(curfile);
+        say(":");
+        sayn(curline);
+        say(": ");
+    }
+    say(kind);
     message(n);
-    if (arg)
-        printf(" '%s'", arg);
-    printf("\n");
+    if (arg) {
+        say(" '");
+        say(arg);
+        say("'");
+    }
+    say("\n");
 }
 
 void error(int n, char *arg)
@@ -83,7 +151,11 @@ void warn(int n, char *arg)
 void memfail(int n)
 {
 #ifdef __TINYC__
-    printf("(asked for %d bytes, %d words free)\n", n, __cspi(40));
+    say("(asked for ");
+    sayn(n);
+    say(" bytes, ");
+    sayn(__cspi(40));
+    say(" words free)\n");
 #endif
     fatal(2 /* out of memory */, 0);
 }

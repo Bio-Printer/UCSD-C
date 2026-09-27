@@ -708,6 +708,10 @@ int link(char **objs, int nobjs, char *code, char *progname)
             if (!p->live || p->seg != s)
                 continue;
             lbuf[jtab] = p->procnum;
+#ifndef __TINYC__
+            if (getenv("TINYC_MAP"))
+                fprintf(stderr, "MAP %d %d %d %d %s\n", segnum[s], p->procnum, len, len + jtab, p->name);
+#endif
             if (codelen & 1)
                 lbuf[codelen++] = 0;
             fwrite(lbuf, 1, codelen, out);
@@ -734,8 +738,17 @@ int link(char **objs, int nobjs, char *code, char *progname)
     fclose(out);
     for (k = 0; k < norder; k++) {
         s = order[k];
-        printf("  segment %2d %-8s %5d bytes %3d procedures\n", segnum[s], segnum[s] == 1 ? progname : segnames[s], seglen[s], pnum[s]);
+        say("  segment ");
+        saynw(segnum[s], 2);
+        say(" ");
+        sayw(segnum[s] == 1 ? progname : segnames[s], 8);
+        saynw(seglen[s], 6);
+        say(" bytes ");
+        saynw(pnum[s], 3);
+        say(" procedures\n");
     }
-    printf("  globals %d words\n", globalwords - 3);
+    say("  globals ");
+    sayn(globalwords - 3);
+    say(" words\n");
     return nerrors == 0;
 }

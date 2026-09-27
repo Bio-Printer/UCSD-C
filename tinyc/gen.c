@@ -1555,7 +1555,9 @@ void gen_initflush(void)
         setlabel(initexit);
         ob(O_RNP);
         ob(0);
-        sprintf(name, "%s'init%d", genmod, ninit);
+        strcpy(name, genmod);
+        strcat(name, "'init");
+        itoa10(ninit, name + strlen(name));
         ninit++;
         endproc(name, "INIT", initexit, 0, 1);
         E->pc = 0;

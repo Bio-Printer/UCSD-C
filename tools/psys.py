@@ -65,7 +65,7 @@ class PSystem:
         open(sp, 'w').write(script_text)
         shutil.rmtree(self.out, ignore_errors=True)
         r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
-                            self.src, self.spare, sp, 'native', self.out, '', str(timeout)],
+                            self.src, self.spare, sp, os.environ.get('PSYS_MODE', 'native'), self.out, '', str(timeout)],
                            capture_output=True, text=True,
                            env=self.env())
         tr = ''

@@ -559,7 +559,7 @@ static void expand(char *s)
                 }
             }
             if (p - s == 8 && strncmp(s, "__LINE__", 8) == 0) {
-                sprintf(num, "%d", istack[idepth - 1].line);
+                itoa10(istack[idepth - 1].line, num);
                 put(num, strlen(num));
             } else if (p - s == 8 && strncmp(s, "__FILE__", 8) == 0) {
                 put("\"", 1);
@@ -1154,6 +1154,7 @@ static void ppdirective(char *s)
 
 int preprocess(char *src, char *out)
 {
+    char num[8];
     int r;
     int m;
     char *s;
@@ -1195,7 +1196,11 @@ int preprocess(char *src, char *out)
         curline = startline;
         if (outline != startline || outname != curfile) {
             /* '!' marks included files: the compiler skips their unused declarations */
-            fprintf(ppout, "#%d %s%s\n", startline, idepth > 1 ? "!" : "", curfile);
+            putc('#', ppout);
+            fputs(itoa10(startline, num), ppout);
+            fputs(idepth > 1 ? " !" : " ", ppout);
+            fputs(curfile, ppout);
+            putc('\n', ppout);
             outname = curfile;
         }
         outline = startline + 1;

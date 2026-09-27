@@ -45,7 +45,9 @@ static void passbegin(int xsize)
 static void passend(void)
 {
 #ifdef __TINYC__
-    printf("  (%d words free)\n", __cspi(40));
+    say("  (");
+    sayn(__cspi(40));
+    say(" words free)\n");
     __heaprestore();
 #endif
     resetpools();
@@ -56,17 +58,21 @@ static int compileone(char *src, char *tmpi, char *tmpr, char *obj)
 {
     char mod[10];
     basename8(src, mod);
-    printf("Preprocessing %s\n", src);
+    say("Preprocessing ");
+    say(src);
+    say("\n");
     passbegin(8000);
     if (!preprocess(src, tmpi))
         return 0;
     passend();
-    printf("Compiling\n");
+    say("Compiling\n");
     passbegin(2000);
     if (!compile(tmpi, tmpr, mod))
         return 0;
     passend();
-    printf("Generating code %s\n", obj);
+    say("Generating code ");
+    say(obj);
+    say("\n");
     passbegin(2400);
     if (!gencode(tmpr, obj))
         return 0;
@@ -79,7 +85,9 @@ static int linkall(char **objs, int n, char *out)
     char prog[10];
     int r;
     basename8(out, prog);
-    printf("Linking %s\n", out);
+    say("Linking ");
+    say(out);
+    say("\n");
     passbegin(1000);
     r = link(objs, n, out, prog);
     passend();
@@ -119,13 +127,13 @@ int main(int argc, char **argv)
     int i;
     int n;
     int conly;
-    printf("Tiny-C compiler for UCSD Pascal II.0  [0.2]\n");
+    say("Tiny-C compiler for UCSD Pascal II.0  [0.2]\n");
     nobjs = 0;
     conly = 0;
     out[0] = 0;
     lib[0] = 0;
 #ifdef __TINYC__
-    printf("Compile what file? ");
+    say("Compile what file? ");
     if (!fgets(line, 180, stdin))
         return 1;
     n = strlen(line);
@@ -147,7 +155,7 @@ int main(int argc, char **argv)
             s++;
         t = strchr(s, '=');
         if (!t) {
-            printf("use: /L OUT=A,B,...\n");
+            say("use: /L OUT=A,B,...\n");
             return 1;
         }
         *t++ = 0;
@@ -255,13 +263,13 @@ int main(int argc, char **argv)
     }
 #endif
     if (conly) {
-        printf("Done.\n");
+        say("Done.\n");
         return 0;
     }
     if (lib[0] && exists(lib))
         objs[nobjs++] = lib;
     if (!linkall(objs, nobjs, out))
         return 1;
-    printf("Done.\n");
+    say("Done.\n");
     return 0;
 }

@@ -19,6 +19,7 @@ def main(mods):
     ps.put('TINYC.CODE', open(code, 'rb').read())
     put_headers(ps)
     ps.put('TC.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'tc.h')).read())
+    ps.put('PARSE.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'parse.h')).read())
     for m in MODULES:
         ps.put(m.upper() + '.TEXT', open(os.path.join(ROOT, 'tinyc', m + '.c')).read())
     todo = mods or MODULES

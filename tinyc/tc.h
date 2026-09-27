@@ -229,6 +229,11 @@ extern int curline;
 void error(int n, char *arg);
 void fatal(int n, char *arg);
 void memfail(int n);
+char *itoa10(int n, char *b);
+void say(char *s);
+void sayn(int n);
+void sayw(char *s, int w);
+void saynw(int n, int w);
 void warn(int n, char *arg);
 char *palloc(int n);            /* permanent */
 char *falloc(int n);            /* until end of the current function */
