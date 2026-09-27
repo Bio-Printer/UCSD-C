@@ -6,6 +6,7 @@
  * signed division, shifts, xor) become calls to helpers in tcrt.h.
  */
 #include "tc.h"
+#pragma segment PARSE
 
 struct Type *ty_void;
 struct Type *ty_char;
@@ -752,7 +753,8 @@ static struct Node *primary(void)
         return n;
     case T_STR:
         n = mknode(N_STR, arrayof(ty_char, toklen), 0, 0);
-        n->str = tokstr;
+        n->str = xalloc(toklen);
+        memcpy(n->str, tokstr, toklen);
         n->slen = toklen;
         next();
         return n;
@@ -2041,6 +2043,8 @@ static void funcdef(struct Sym *fs, int isstatic)
     int pad;
     int off;
     int i;
+    char *seg;
+    seg = cursegname;           /* a #pragma read as lookahead belongs to the next function */
     ft = fs->type;
     if (fs->defined)
         error("function redefined", fs->name);
@@ -2093,7 +2097,7 @@ static void funcdef(struct Sym *fs, int isstatic)
     for (s = labels; s; s = s->next)
         if (!s->defined)
             error("undefined label", s->name);
-    gen_funcend(fs->name, ft, exitlab, isstatic);
+    gen_funcend(fs->name, ft, exitlab, isstatic, seg);
     popscope();
     curfn = 0;
     curft = 0;

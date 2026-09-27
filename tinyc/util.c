@@ -6,6 +6,7 @@
  *   expr  -- mark/release around every statement and every source line
  */
 #include "tc.h"
+#pragma segment MAIN
 
 int nerrors;
 char *curfile;
@@ -34,6 +35,14 @@ void warn(char *msg, char *arg)
     printf("\n");
 }
 
+void memfail(int n)
+{
+#ifdef __TINYC__
+    printf("(asked for %d bytes, %d words free)\n", n, __cspi(40));
+#endif
+    fatal("out of memory", 0);
+}
+
 void fatal(char *msg, char *arg)
 {
     if (curfile)
@@ -57,13 +66,13 @@ char *palloc(int n)
         if (n > PCHUNK / 2) {
             p = (char *)malloc(n);
             if (!p)
-                fatal("out of memory", 0);
+                memfail(n);
             memset(p, 0, n);
             return p;
         }
         pcur = (char *)malloc(PCHUNK);
         if (!pcur)
-            fatal("out of memory", 0);
+            memfail(PCHUNK);
         pleft = PCHUNK;
     }
     p = pcur;
@@ -94,7 +103,7 @@ char *falloc(int n)
             sz = n > PCHUNK ? n : PCHUNK;
             c = (struct Chunk *)malloc(sizeof(struct Chunk) + sz);
             if (!c)
-                fatal("out of memory", 0);
+                memfail(sz);
             c->size = sz;
             if (fchunk) {
                 c->next = fchunk->next;
@@ -129,7 +138,7 @@ char *xalloc(int n)
     if (!xbuf) {
         xbuf = (char *)malloc(XSIZE);
         if (!xbuf)
-            fatal("out of memory", 0);
+            memfail(XSIZE);
     }
     n = (n + 1) & ~1;
     if (xused + n > XSIZE)

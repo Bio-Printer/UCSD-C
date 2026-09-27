@@ -10,6 +10,7 @@
  * with defined(), #error, #line is ignored, #pragma is passed through.
  */
 #include "tc.h"
+#pragma segment PP
 
 struct Macro {
     char *name;
@@ -39,6 +40,7 @@ static int nexpanding;
 static int outline;             /* line number the compiler will assume for the next output line */
 static char *outfile;
 static char *incdir;
+static char openedpath[200];
 
 static char line[MAXEXP];
 static char ebuf[MAXEXP];
@@ -141,16 +143,31 @@ static FILE *openinc(char *name, int sys)
     strcat(path, ".TEXT");
     fp = fopen(path, "r");
     if (!fp && sys) {
-        strcpy(path + 1, path);
+        for (i = strlen(path); i >= 0; i--)
+            path[i + 1] = path[i];
         path[0] = '*';
         fp = fopen(path, "r");
     }
+    strcpy(openedpath, path);
     p = 0;
     return fp;
 #else
     fp = 0;
-    if (!sys)
+    if (!sys && idepth > 0) {
+        /* the directory of the including file */
+        strcpy(path, istack[idepth - 1].name);
+        p = strrchr(path, '/');
+        if (p) {
+            strcpy(p + 1, name);
+            fp = fopen(path, "r");
+            if (fp)
+                strcpy(openedpath, path);
+        }
+    }
+    if (!fp && !sys) {
         fp = fopen(name, "r");
+        strcpy(openedpath, name);
+    }
     if (!fp && incdir) {
         strcpy(path, incdir);
         p = path + strlen(path);
@@ -158,9 +175,13 @@ static FILE *openinc(char *name, int sys)
             *p++ = '/';
         strcpy(p, name);
         fp = fopen(path, "r");
+        if (fp)
+            strcpy(openedpath, path);
     }
-    if (!fp && sys)
+    if (!fp && sys) {
         fp = fopen(name, "r");
+        strcpy(openedpath, name);
+    }
     return fp;
 #endif
 }
@@ -1038,7 +1059,7 @@ static void doinclude(char *s)
         return;
     }
     istack[idepth].fp = fp;
-    istack[idepth].name = pstrdup(name);
+    istack[idepth].name = pstrdup(openedpath);
     istack[idepth].line = 0;
     idepth++;
 }

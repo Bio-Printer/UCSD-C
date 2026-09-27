@@ -6,6 +6,7 @@
  *            becomes NAME.CODE, temporaries TCTEMP.TEXT and TCTEMP.OBJ.
  */
 #include "tc.h"
+#pragma segment MAIN
 
 static void basename8(char *path, char *out)
 {

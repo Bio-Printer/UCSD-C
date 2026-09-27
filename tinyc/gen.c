@@ -10,6 +10,7 @@
  * of their own) that the program runs once at startup.
  */
 #include "tc.h"
+#pragma segment GEN
 
 /* opcodes */
 #define O_ABI  0x80
@@ -1418,14 +1419,14 @@ void gen_funcbegin(void)
     lvtemp = 0;
 }
 
-void gen_funcend(char *name, struct Type *ft, int exitlab, int isstatic)
+void gen_funcend(char *name, struct Type *ft, int exitlab, int isstatic, char *seg)
 {
     int rw;
     rw = retwords(ft);
     setlabel(exitlab);
     ob(O_RNP);
     ob(rw);
-    endproc(name, cursegname, exitlab, rw, isstatic ? 2 : 0);
+    endproc(name, seg, exitlab, rw, isstatic ? 2 : 0);
 }
 
 /* ---- initialisers ---- */

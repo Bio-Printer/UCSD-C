@@ -12,6 +12,7 @@
  * globals, run the initialisers, call main, then exit(main's result).
  */
 #include "tc.h"
+#pragma segment LINK
 
 #define MAXPROC 700
 #define LHASH 128
@@ -532,5 +533,9 @@ int link(char *obj, char *code, char *progname)
         }
     }
     fclose(out);
+    for (k = 0; k < norder; k++) {
+        s = order[k];
+        printf("  segment %2d %-8s %5d bytes %3d procedures\n", segnum[s], segnum[s] == 1 ? progname : segnames[s], seglen[s], pnum[s]);
+    }
     return nerrors == 0;
 }

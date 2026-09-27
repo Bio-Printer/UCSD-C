@@ -224,6 +224,7 @@ extern int curline;
 /* util */
 void error(char *msg, char *arg);
 void fatal(char *msg, char *arg);
+void memfail(int n);
 void warn(char *msg, char *arg);
 char *palloc(int n);            /* permanent */
 char *falloc(int n);            /* until end of the current function */
@@ -288,7 +289,7 @@ void gen_discard(struct Node *n);
 void gen_return(struct Node *n, struct Type *ft, int sretoff);
 int newtemp(int words);
 void gen_funcbegin(void);
-void gen_funcend(char *name, struct Type *ft, int exitlabel, int isstatic);
+void gen_funcend(char *name, struct Type *ft, int exitlabel, int isstatic, char *seg);
 void gen_initbegin(void);
 void gen_initend(void);
 void gen_initflush(void);

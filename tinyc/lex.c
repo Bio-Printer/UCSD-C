@@ -5,6 +5,7 @@
  * and P-System builds of the compiler agree bit for bit.
  */
 #include "tc.h"
+#pragma segment PARSE
 
 int tok;                        /* current token */
 int tokval;                     /* T_NUM: low 16 bits */
@@ -26,6 +27,9 @@ static int pval2;
 static int plong;
 static char pname[MAXNAME];
 static int havepeek;
+#define MAXSTR 600
+static char strbufs[2][MAXSTR];
+static int strslot;
 
 void pragma(char *s);
 
@@ -527,8 +531,10 @@ static void rawnext(void)
         return;
     }
     if (ch == '"') {
-        cap = 256;
-        buf = xalloc(cap);
+        /* two buffers: the current token and one of lookahead */
+        strslot = !strslot;
+        buf = strbufs[strslot];
+        cap = MAXSTR;
         n = 0;
         for (;;) {
             nextch();
@@ -544,11 +550,8 @@ static void rawnext(void)
                     nextch();
                 }
                 if (n >= cap - 1) {
-                    char *nb;
-                    nb = xalloc(cap * 2);
-                    memcpy(nb, buf, n);
-                    buf = nb;
-                    cap = cap * 2;
+                    error("string literal too long", 0);
+                    n = 0;
                 }
                 buf[n++] = c;
             }
