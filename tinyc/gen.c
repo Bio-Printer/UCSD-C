@@ -106,12 +106,6 @@ static struct Emit *E;
 static int ninit;
 static int ininit;
 
-int curlocal;
-int maxlocal;
-int nparamwords;
-int scratch;
-char *cursegname;
-FILE *objout;
 
 static int lvtemp;              /* compound assignment: temp holding the address, 0 = simple lvalue */
 static struct Node *lvnode;     /* compound assignment: the lvalue */
@@ -259,8 +253,32 @@ static void csp(int n)
     ob(n);
 }
 
+/* relocation targets outlive the statement they came from: keep one copy of each name */
+#define NHASH 64
+struct Name {
+    char *s;
+    struct Name *next;
+};
+static struct Name *names[NHASH];
+
+static char *intern(char *s)
+{
+    struct Name *n;
+    int h;
+    h = hashstr(s) & (NHASH - 1);
+    for (n = names[h]; n; n = n->next)
+        if (strcmp(n->s, s) == 0)
+            return n->s;
+    n = (struct Name *)palloc(sizeof(struct Name));
+    n->s = pstrdup(s);
+    n->next = names[h];
+    names[h] = n;
+    return n->s;
+}
+
 static void reloc(int type, char *name)
 {
+    name = intern(name);
     if (E->nrel >= E->maxrel)
         fatal("too many calls in one function", 0);
     E->relpos[E->nrel] = E->pc;
@@ -594,29 +612,27 @@ static void storeviapost(struct Type *t)
 static void gen_cast(struct Node *n)
 {
     struct Type *t;
-    struct Type *f;
+    int fk;
     t = n->type;
-    f = n->a->type;
+    fk = n->a->type->kind;
     if (t->kind == TY_VOID) {
         gen_discard(n->a);
         return;
     }
     gen_value(n->a);
-    if (isfloatty(t) && !isfloatty(f)) {
-        if (!islongty(f))
+    if (isfloatty(t) && !isfloatty(n->a->type)) {
+        if (!islongty(n->a->type))
             ob(O_FLT);
         return;
     }
-    if (!isfloatty(t) && isfloatty(f)) {
+    if (!isfloatty(t) && isfloatty(n->a->type)) {
         csp(CSP_TNC);
-        f = ty_int;
+        fk = TY_INT;
     }
-    if (t->kind == TY_UCHAR && f->kind != TY_UCHAR) {
+    if (t->kind == TY_UCHAR && fk != TY_UCHAR) {
         ldc(255);
         ob(O_LAND);
-    } else if (t->kind == TY_CHAR && f->kind != TY_CHAR && f->kind != TY_UCHAR) {
-        signext();
-    } else if (t->kind == TY_CHAR && f->kind == TY_UCHAR)
+    } else if (t->kind == TY_CHAR && fk != TY_CHAR)
         signext();
 }
 
@@ -1055,6 +1071,23 @@ void gen_value(struct Node *n)
     case N_STR:
         gen_str(n);
         return;
+    case N_HEAPSTR:
+        {
+            int t;
+            t = newtemp(1);
+            lla(t);
+            ldc((n->slen + 1) / 2);
+            csp(1);                     /* NEW */
+            n->op = N_STR;
+            gen_str(n);
+            ldc(0);
+            ldl(t);
+            ldc(0);
+            ldc(n->slen);
+            csp(CSP_MVL);
+            ldl(t);
+        }
+        return;
     case N_VAR:
     case N_MEMBER:
     case N_DEREF:
@@ -1308,8 +1341,9 @@ static void outs(char *s)
 
 void gen_objheader(char *modname)
 {
+    memset(names, 0, sizeof(names));
     setupemit(&fe, MAXCODE, MAXLABEL, MAXFIX, MAXREL);
-    setupemit(&ie, 2200, 60, 120, 60);
+    setupemit(&ie, 1600, 40, 80, 40);
     E = &fe;
     fputs("TCOB", objout);
     putc('M', objout);
@@ -1487,6 +1521,6 @@ void gen_initend(void)
     saveframe();
     E = &fe;
     loadframe();
-    if (ie.pc > ie.max - 600)
+    if (ie.pc > ie.max - 500)
         gen_initflush();
 }

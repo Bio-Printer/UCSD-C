@@ -28,7 +28,7 @@ static int plong;
 static char pname[MAXNAME];
 static int havepeek;
 #define MAXSTR 600
-static char strbufs[2][MAXSTR];
+static char *strbufs[2];
 static int strslot;
 
 void pragma(char *s);
@@ -47,6 +47,10 @@ static void nextch(void)
 
 void lexinit(FILE *fp)
 {
+    strbufs[0] = malloc(MAXSTR);
+    strbufs[1] = malloc(MAXSTR);
+    if (!strbufs[0] || !strbufs[1])
+        fatal("out of memory", 0);
     lexin = fp;
     atbol = 1;
     havepeek = 0;

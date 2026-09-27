@@ -19,11 +19,11 @@
 #define MAXEXP    1024     /* longest line after macro expansion */
 #define MAXINCL   8        /* #include nesting */
 #define MAXIF     32       /* #if nesting */
-#define MAXCODE   8000     /* code bytes in one procedure */
-#define MAXLABEL  400      /* labels in one procedure */
-#define MAXFIX    900      /* jump fixups in one procedure */
+#define MAXCODE   5000     /* code bytes in one procedure */
+#define MAXLABEL  300      /* labels in one procedure */
+#define MAXFIX    500      /* jump fixups in one procedure */
 #define MAXLONGJ  60       /* jump-table entries in one procedure (II.0 limit) */
-#define MAXREL    300      /* relocations in one procedure */
+#define MAXREL    200      /* relocations in one procedure */
 #define MAXSEGS   10       /* segment 1 and 7..15 */
 #define MAXNAME   64
 
@@ -233,6 +233,8 @@ void freset(void);
 int xmark(void);
 void xrelease(int m);
 char *pstrdup(char *s);
+void resetpools(void);
+void xsetsize(int n);
 int hashstr(char *s);
 
 /* lexer */
@@ -273,7 +275,8 @@ int twords(struct Type *t);
 int retwords(struct Type *ft);
 
 /* code generation (gen.c) */
-#define N_LVREF   43        /* value of the lvalue being updated (compound assignment) */
+#define N_LVREF   43
+#define N_HEAPSTR 44        /* string literal copied to the heap (global initialisers) */        /* value of the lvalue being updated (compound assignment) */
 extern int curlocal;
 extern int maxlocal;
 extern int nparamwords;
@@ -297,6 +300,24 @@ void gen_switch(int tempoff, int *vals, int *labs, int n, int deflab);
 void gen_stl(int off);
 void gen_objheader(char *modname);
 void gen_objend(int globalwords);
+
+/* intermediate file (ir.c) */
+void ir_open(char *name, char *modname);
+void ir_close(int globalwords);
+void ir_funcbegin(void);
+int ir_newlabel(void);
+void ir_setlabel(int l);
+void ir_jump(int l);
+void ir_branch(struct Node *n, int l, int jumpif);
+void ir_discard(struct Node *n);
+void ir_valuestl(struct Node *n, int t);
+void ir_return(struct Node *n, struct Type *ft, int sretoff);
+void ir_switch(int t, int *vals, int *labs, int n, int deflab);
+void ir_funcend(char *name, struct Type *ft, int exitlab, int isstatic, char *seg);
+void ir_initbegin(void);
+void ir_initend(void);
+void ir_initflush(void);
+int gencode(char *ir, char *obj);
 
 /* passes */
 int preprocess(char *src, char *out);

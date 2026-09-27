@@ -32,7 +32,7 @@ struct LProc {
     struct LProc *hnext;
 };
 
-static struct LProc *procs[MAXPROC];
+static struct LProc **procs;
 static int nprocs;
 static struct LProc *lhash[LHASH];
 static char *segnames[24];
@@ -386,9 +386,11 @@ int link(char *obj, char *code, char *progname)
     int rtype;
     int pnum[24];
     int *jt;
+    procs = (struct LProc **)malloc(MAXPROC * sizeof(struct LProc *));
     lbuf = (unsigned char *)malloc(MAXCODE + 16);
-    if (!lbuf)
+    if (!lbuf || !procs)
         fatal("out of memory", 0);
+    memset(lhash, 0, sizeof(lhash));
     nprocs = 0;
     nsegs = 0;
     segindex("");

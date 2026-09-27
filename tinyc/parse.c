@@ -50,6 +50,7 @@ static void statement(int brk, int cont);
 static struct Type *declspec(int *sclass);
 static struct Type *typename(void);
 static void initializer(struct Node *lv, struct Type *t, int global);
+static void init1(struct Node *lv, struct Type *t, int global);
 
 /* ---- intrinsic functions ---- */
 #define I_DVI     1
@@ -116,64 +117,6 @@ static struct Type *arrayof(struct Type *t, int n)
     a->base = t;
     a->len = n;
     return a;
-}
-
-int isintegral(struct Type *t)
-{
-    return t->kind >= TY_CHAR && t->kind <= TY_ULONG;
-}
-
-int isfloatty(struct Type *t)
-{
-    return t->kind >= TY_FLOAT && t->kind <= TY_LDOUBLE;
-}
-
-int islongty(struct Type *t)
-{
-    return t->kind == TY_LONG || t->kind == TY_ULONG;
-}
-
-int isunsignedty(struct Type *t)
-{
-    return t->kind == TY_UCHAR || t->kind == TY_UINT || t->kind == TY_ULONG;
-}
-
-int isword(struct Type *t)
-{
-    return (t->kind >= TY_CHAR && t->kind <= TY_UINT) || t->kind == TY_PTR;
-}
-
-int isptrlike(struct Type *t)
-{
-    return t->kind == TY_PTR;
-}
-
-int isscalar(struct Type *t)
-{
-    return isintegral(t) || isfloatty(t) || t->kind == TY_PTR;
-}
-
-int isaggregate(struct Type *t)
-{
-    return t->kind == TY_STRUCT || t->kind == TY_UNION || t->kind == TY_ARRAY;
-}
-
-int twords(struct Type *t)
-{
-    if (t->kind == TY_CHAR || t->kind == TY_UCHAR)
-        return 1;
-    return (t->size + 1) / 2;
-}
-
-int retwords(struct Type *ft)
-{
-    struct Type *r;
-    r = ft->base;
-    if (r->kind == TY_VOID)
-        return 0;
-    if (r->kind == TY_STRUCT || r->kind == TY_UNION)
-        return 1;
-    return twords(r);
 }
 
 static int sametype(struct Type *a, struct Type *b)
@@ -349,9 +292,19 @@ static int islvalue(struct Node *n)
     return n->op == N_VAR || n->op == N_MEMBER || n->op == N_DEREF;
 }
 
+/* in global initialisers a string literal would point into the INIT
+   segment, which is gone once the program runs: copy it to a global */
+static int globinit;
+static int allocglobal(struct Type *t);
+
 /* array -> pointer to first element, function -> function pointer */
 static struct Node *decay(struct Node *n)
 {
+    if (n->op == N_STR && globinit) {
+        n->op = N_HEAPSTR;          /* copied to the heap at startup */
+        n->type = ptrto(ty_char);
+        return n;
+    }
     if (n->type->kind == TY_ARRAY)
         return mknode(N_ADDR, ptrto(n->type->base), n, 0);
     if (n->type->kind == TY_FUNC)
@@ -1585,6 +1538,20 @@ static void initializer(struct Node *lv, struct Type *t, int global)
     int i;
     int m;
     int brace;
+    int save;
+    save = globinit;
+    globinit = global;
+    init1(lv, t, global);
+    globinit = save;
+}
+
+static void init1(struct Node *lv, struct Type *t, int global)
+{
+    struct Node *n;
+    struct Field *f;
+    int i;
+    int m;
+    int brace;
     if (t->kind == TY_ARRAY) {
         if (tok == T_STR && (t->base->kind == TY_CHAR || t->base->kind == TY_UCHAR)) {
             m = xmark();
@@ -1594,7 +1561,7 @@ static void initializer(struct Node *lv, struct Type *t, int global)
                 t->size = n->slen;
             } else if (n->slen - 1 > t->len)
                 error("initializer string too long", 0);
-            gen_discard(mknode(N_ASSIGN, t, lv, n));
+            ir_discard(mknode(N_ASSIGN, t, lv, n));
             xrelease(m);
             return;
         }
@@ -1607,7 +1574,7 @@ static void initializer(struct Node *lv, struct Type *t, int global)
         while (tok != '}' && tok != T_EOF) {
             if (t->len >= 0 && i >= t->len)
                 error("too many initializers", 0);
-            initializer(elem(lv, W16(i * t->base->size), t->base), t->base, global);
+            init1(elem(lv, W16(i * t->base->size), t->base), t->base, global);
             i++;
             if (tok != ',')
                 break;
@@ -1624,7 +1591,7 @@ static void initializer(struct Node *lv, struct Type *t, int global)
         if (tok != '{') {
             m = xmark();
             n = assign();
-            gen_discard(mknode(N_ASSIGN, t, lv, n));
+            ir_discard(mknode(N_ASSIGN, t, lv, n));
             xrelease(m);
             return;
         }
@@ -1635,7 +1602,7 @@ static void initializer(struct Node *lv, struct Type *t, int global)
                 error("too many initializers", 0);
                 break;
             }
-            initializer(elem(lv, f->offset, f->type), f->type, global);
+            init1(elem(lv, f->offset, f->type), f->type, global);
             f = t->kind == TY_UNION ? 0 : f->next;
             if (tok != ',')
                 break;
@@ -1651,7 +1618,7 @@ static void initializer(struct Node *lv, struct Type *t, int global)
     }
     m = xmark();
     n = assign();
-    gen_discard(mknode(N_ASSIGN, t, lv, cast(n, t)));
+    ir_discard(mknode(N_ASSIGN, t, lv, cast(n, t)));
     xrelease(m);
     if (brace)
         expect('}', "}");
@@ -1669,7 +1636,7 @@ static struct Sym *label(char *name)
     s->name = falloc(strlen(name) + 1);
     strcpy(s->name, name);
     s->kind = S_LABEL;
-    s->offset = newlabel();
+    s->offset = ir_newlabel();
     s->next = labels;
     labels = s;
     return s;
@@ -1716,9 +1683,9 @@ static void localdecl(void)
                 s->offset = t->size >= 0 ? allocglobal(t) : 0;
                 lv = mknode(N_VAR, t, 0, 0);
                 lv->sym = s;
-                gen_initbegin();
+                ir_initbegin();
                 initializer(lv, t, 1);
-                gen_initend();
+                ir_initend();
                 if (s->offset == 0)
                     s->offset = allocglobal(t);
             } else
@@ -1811,48 +1778,48 @@ static void statement(int brk, int cont)
     case K_IF:
         next();
         n = condparen();
-        l1 = newlabel();
-        branch(n, l1, 0);
+        l1 = ir_newlabel();
+        ir_branch(n, l1, 0);
         xrelease(m);
         curlocal = save;
         statement(brk, cont);
         if (tok == K_ELSE) {
             next();
-            l2 = newlabel();
-            jump(l2);
-            setlabel(l1);
+            l2 = ir_newlabel();
+            ir_jump(l2);
+            ir_setlabel(l1);
             statement(brk, cont);
-            setlabel(l2);
+            ir_setlabel(l2);
         } else
-            setlabel(l1);
+            ir_setlabel(l1);
         break;
     case K_WHILE:
         next();
-        l1 = newlabel();
-        l2 = newlabel();
-        setlabel(l1);
+        l1 = ir_newlabel();
+        l2 = ir_newlabel();
+        ir_setlabel(l1);
         n = condparen();
-        branch(n, l2, 0);
+        ir_branch(n, l2, 0);
         xrelease(m);
         curlocal = save;
         statement(l2, l1);
-        jump(l1);
-        setlabel(l2);
+        ir_jump(l1);
+        ir_setlabel(l2);
         break;
     case K_DO:
         next();
-        l1 = newlabel();
-        l2 = newlabel();
-        l3 = newlabel();
-        setlabel(l1);
+        l1 = ir_newlabel();
+        l2 = ir_newlabel();
+        l3 = ir_newlabel();
+        ir_setlabel(l1);
         statement(l3, l2);
-        setlabel(l2);
+        ir_setlabel(l2);
         if (tok != K_WHILE)
             error("while expected", 0);
         next();
         n = condparen();
-        branch(n, l1, 1);
-        setlabel(l3);
+        ir_branch(n, l1, 1);
+        ir_setlabel(l3);
         expect(';', ";");
         break;
     case K_FOR:
@@ -1863,26 +1830,26 @@ static void statement(int brk, int cont)
             localdecl();
         else {
             if (tok != ';')
-                gen_discard(expr());
+                ir_discard(expr());
             expect(';', ";");
         }
-        l1 = newlabel();
-        l2 = newlabel();
-        l3 = newlabel();
-        setlabel(l1);
+        l1 = ir_newlabel();
+        l2 = ir_newlabel();
+        l3 = ir_newlabel();
+        ir_setlabel(l1);
         if (tok != ';')
-            branch(cond(expr()), l3, 0);
+            ir_branch(cond(expr()), l3, 0);
         expect(';', ";");
         inc = 0;
         if (tok != ')')
             inc = expr();
         expect(')', ")");
         statement(l3, l2);
-        setlabel(l2);
+        ir_setlabel(l2);
         if (inc)
-            gen_discard(inc);
-        jump(l1);
-        setlabel(l3);
+            ir_discard(inc);
+        ir_jump(l1);
+        ir_setlabel(l3);
         popscope();
         break;
     case K_SWITCH:
@@ -1897,9 +1864,8 @@ static void statement(int brk, int cont)
             else
                 error("integer required", 0);
         }
-        t = newtemp(1);
-        gen_value(cast(n, ty_int));
-        gen_stl(t);
+        t = alloclocal(ty_int);
+        ir_valuestl(cast(n, ty_int), t);
         sv = swvals;
         sl = swlabs;
         sn = swn;
@@ -1910,15 +1876,15 @@ static void statement(int brk, int cont)
         swlabs = (int *)falloc(swmax * sizeof(int));
         swn = 0;
         swdef = -1;
-        l1 = newlabel();
-        l2 = newlabel();
-        jump(l1);
+        l1 = ir_newlabel();
+        l2 = ir_newlabel();
+        ir_jump(l1);
         xrelease(m);
         statement(l2, cont);
-        jump(l2);
-        setlabel(l1);
-        gen_switch(t, swvals, swlabs, swn, swdef >= 0 ? swdef : l2);
-        setlabel(l2);
+        ir_jump(l2);
+        ir_setlabel(l1);
+        ir_switch(t, swvals, swlabs, swn, swdef >= 0 ? swdef : l2);
+        ir_setlabel(l2);
         swvals = sv;
         swlabs = sl;
         swn = sn;
@@ -1948,8 +1914,8 @@ static void statement(int brk, int cont)
                 swmax = swmax * 2;
             }
             swvals[swn] = t;
-            swlabs[swn] = newlabel();
-            setlabel(swlabs[swn]);
+            swlabs[swn] = ir_newlabel();
+            ir_setlabel(swlabs[swn]);
             swn++;
         }
         statement(brk, cont);
@@ -1960,8 +1926,8 @@ static void statement(int brk, int cont)
         if (!swvals)
             error("default outside switch", 0);
         else {
-            swdef = newlabel();
-            setlabel(swdef);
+            swdef = ir_newlabel();
+            ir_setlabel(swdef);
         }
         statement(brk, cont);
         break;
@@ -1970,7 +1936,7 @@ static void statement(int brk, int cont)
         if (brk < 0)
             error("break outside loop or switch", 0);
         else
-            jump(brk);
+            ir_jump(brk);
         expect(';', ";");
         break;
     case K_CONTINUE:
@@ -1978,7 +1944,7 @@ static void statement(int brk, int cont)
         if (cont < 0)
             error("continue outside loop", 0);
         else
-            jump(cont);
+            ir_jump(cont);
         expect(';', ";");
         break;
     case K_RETURN:
@@ -1991,8 +1957,8 @@ static void statement(int brk, int cont)
             else if (curft->base->kind != TY_STRUCT && curft->base->kind != TY_UNION)
                 n = cast(n, curft->base);
         }
-        gen_return(n, curft, sretoff);
-        jump(exitlab);
+        ir_return(n, curft, sretoff);
+        ir_jump(exitlab);
         expect(';', ";");
         break;
     case K_GOTO:
@@ -2001,7 +1967,7 @@ static void statement(int brk, int cont)
             error("label expected", 0);
         else {
             s = label(tokname);
-            jump(s->offset);
+            ir_jump(s->offset);
             next();
         }
         expect(';', ";");
@@ -2012,14 +1978,14 @@ static void statement(int brk, int cont)
             if (s->defined)
                 error("label redefined", tokname);
             s->defined = 1;
-            setlabel(s->offset);
+            ir_setlabel(s->offset);
             next();
             next();
             statement(brk, cont);
             break;
         }
         n = expr();
-        gen_discard(n);
+        ir_discard(n);
         expect(';', ";");
         break;
     }
@@ -2050,7 +2016,6 @@ static void funcdef(struct Sym *fs, int isstatic)
     curfn = fs;
     curft = ft;
     labels = 0;
-    gen_funcbegin();
     pushscope();
     np = 0;
     pw = 0;
@@ -2090,12 +2055,13 @@ static void funcdef(struct Sym *fs, int isstatic)
     curlocal = nparamwords;
     scratch = ++curlocal;
     maxlocal = curlocal;
-    exitlab = newlabel();
+    ir_funcbegin();
+    exitlab = ir_newlabel();
     compound(-1, -1);
     for (s = labels; s; s = s->next)
         if (!s->defined)
             error("undefined label", s->name);
-    gen_funcend(fs->name, ft, exitlab, isstatic, seg);
+    ir_funcend(fs->name, ft, exitlab, isstatic, seg);
     popscope();
     curfn = 0;
     curft = 0;
@@ -2168,15 +2134,15 @@ static void external(void)
                 if (s->offset < 0) {
                     /* array of unknown size: allocate after the initializer */
                     s->offset = globoff;
-                    gen_initbegin();
+                    ir_initbegin();
                     initializer(lv, t, 1);
-                    gen_initend();
+                    ir_initend();
                     globoff = s->offset;
                     s->offset = allocglobal(t);
                 } else {
-                    gen_initbegin();
+                    ir_initbegin();
                     initializer(lv, t, 1);
-                    gen_initend();
+                    ir_initend();
                 }
             } else if (s->offset < 0 && t->size >= 0)
                 s->offset = allocglobal(t);
@@ -2273,26 +2239,23 @@ void pragma(char *s)
     }
 }
 
-int compile(char *src, char *obj, char *modname)
+int compile(char *src, char *ir, char *modname)
 {
     FILE *fp;
     fp = fopen(src, "r");
     if (!fp)
         fatal("cannot open", src);
-    objout = fopen(obj, "wb");
-    if (!objout)
-        fatal("cannot create", obj);
+    ir_open(ir, modname);
     typeinit();
     helpers();
     cursegname = "";
-    gen_objheader(modname);
     lexinit(fp);
     next();
-    while (tok != T_EOF)
+    while (tok != T_EOF) {
         external();
-    gen_initflush();
-    gen_objend(globoff);
-    fclose(objout);
+    }
+    ir_initflush();
+    ir_close(globoff);
     fclose(fp);
     return nerrors == 0;
 }

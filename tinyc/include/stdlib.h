@@ -281,6 +281,20 @@ void *bsearch(void *key, void *base, size_t n, size_t size, int (*cmp)(void *, v
     return NULL;
 }
 
+/* release the whole heap back to a mark (all blocks allocated since are gone) */
+char *__heapmk;
+
+void __heapsave(void)
+{
+    __cspv(32, &__heapmk);              /* MARK */
+}
+
+void __heaprestore(void)
+{
+    __cspv(33, &__heapmk);              /* RELEASE */
+    __freelist = NULL;
+}
+
 void __stdio_exit(void);
 
 void exit(int status)

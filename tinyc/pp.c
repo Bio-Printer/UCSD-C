@@ -42,8 +42,8 @@ static char *outfile;
 static char *incdir;
 static char openedpath[200];
 
-static char line[MAXEXP];
-static char ebuf[MAXEXP];
+static char *line;              /* both MAXEXP bytes, allocated per run */
+static char *ebuf;
 
 static int isid1(int c)
 {
@@ -1155,6 +1155,10 @@ int preprocess(char *src, char *out)
     int r;
     int m;
     char *s;
+    line = malloc(MAXEXP);
+    ebuf = malloc(MAXEXP);
+    if (!line || !ebuf)
+        fatal("out of memory", 0);
     ppout = fopen(out, "w");
     if (!ppout)
         fatal("cannot create", out);

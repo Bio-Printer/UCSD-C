@@ -25,6 +25,25 @@ static void basename8(char *path, char *out)
     out[n] = 0;
 }
 
+/* every pass gives its heap back: on the P-System memory is released
+   to where it was before the pass (the stdio files are all closed) */
+static void passbegin(void)
+{
+    curfile = 0;
+#ifdef __TINYC__
+    __heapsave();
+#endif
+}
+
+static void passend(void)
+{
+#ifdef __TINYC__
+    printf("  (%d words free)\n", __cspi(40));
+    __heaprestore();
+#endif
+    resetpools();
+}
+
 static void banner(void)
 {
     printf("Tiny-C compiler for UCSD Pascal II.0  [0.1]\n");
@@ -36,6 +55,7 @@ int main(int argc, char **argv)
     char out[200];
     char tmpi[200];
     char tmpo[200];
+    char tmpr[200];
     char prog[10];
     int i;
     int n;
@@ -64,6 +84,7 @@ int main(int argc, char **argv)
     }
     strcat(out, ".CODE");
     strcpy(tmpi, "TCTEMP.TEXT");
+    strcpy(tmpr, "TCTEMP.IR");
     strcpy(tmpo, "TCTEMP.OBJ");
     argc = 0;
     argv = 0;
@@ -94,21 +115,35 @@ int main(int argc, char **argv)
     if (s)
         *s = 0;
     strcpy(tmpo, tmpi);
+    strcpy(tmpr, tmpi);
+    strcat(tmpr, ".ir");
     strcat(tmpi, ".i");
     strcat(tmpo, ".obj");
 #endif
     basename8(out, prog);
     printf("Preprocessing %s\n", src);
+    passbegin();
+    xsetsize(8000);
     if (!preprocess(src, tmpi))
         return 1;
+    passend();
     printf("Compiling\n");
-    curfile = 0;
-    if (!compile(tmpi, tmpo, prog))
+    passbegin();
+    xsetsize(2400);
+    if (!compile(tmpi, tmpr, prog))
         return 1;
+    passend();
+    printf("Generating code\n");
+    passbegin();
+    xsetsize(2400);
+    if (!gencode(tmpr, tmpo))
+        return 1;
+    passend();
     printf("Linking %s\n", out);
-    curfile = 0;
+    passbegin();
     if (!link(tmpo, out, prog))
         return 1;
+    passend();
     printf("Done.\n");
     return 0;
 }

@@ -9,6 +9,12 @@
 #pragma segment MAIN
 
 int nerrors;
+int curlocal;                   /* frame of the function being compiled */
+int maxlocal;
+int nparamwords;
+int scratch;
+char *cursegname;
+FILE *objout;
 char *curfile;
 int curline;
 
@@ -128,20 +134,33 @@ void freset(void)
     fused = 0;
 }
 
-#define XSIZE 8000
 static char *xbuf;
 static int xused;
+static int xsize;
+
+/* the size of the expression pool for the next pass (host structures are
+   about three times larger than on the P-System) */
+void xsetsize(int n)
+{
+#ifdef __TINYC__
+    xsize = n;
+#else
+    xsize = n * 4;
+#endif
+}
 
 char *xalloc(int n)
 {
     char *p;
     if (!xbuf) {
-        xbuf = (char *)malloc(XSIZE);
+        if (xsize == 0)
+            xsetsize(3000);
+        xbuf = (char *)malloc(xsize);
         if (!xbuf)
-            memfail(XSIZE);
+            memfail(xsize);
     }
     n = (n + 1) & ~1;
-    if (xused + n > XSIZE)
+    if (xused + n > xsize)
         fatal("expression too complex", 0);
     p = xbuf + xused;
     xused += n;
@@ -157,6 +176,18 @@ int xmark(void)
 void xrelease(int m)
 {
     xused = m;
+}
+
+/* forget all pools (their memory was released, or is abandoned on a host) */
+void resetpools(void)
+{
+    pcur = 0;
+    pleft = 0;
+    ffirst = 0;
+    fchunk = 0;
+    fused = 0;
+    xbuf = 0;
+    xused = 0;
 }
 
 char *pstrdup(char *s)
