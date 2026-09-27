@@ -256,7 +256,7 @@ extern int insys;
 extern int tokval;
 extern int tokval2;
 extern int toklong;
-extern char tokname[MAXNAME];
+extern char *tokname;           /* [MAXNAME], allocated by lexinit */
 extern char *tokstr;
 extern int toklen;
 extern unsigned char tokreal[4];

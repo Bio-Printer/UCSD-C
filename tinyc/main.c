@@ -196,25 +196,36 @@ static int command(char *s, char *lib)
     return linkall(objs, nobjs, out);
 }
 
-/* @FILE: the commands in FILE.TEXT */
+/* @FILE: the commands in FILE.TEXT.  The file is not kept open (its
+   buffer would take memory from every pass): before each command it is
+   opened, the lines already done are skipped, the next one is read and
+   the file is closed again. */
 static int batch(char *name, char *lib)
 {
     FILE *f;
     char path[40];
     char line[200];
+    int done;
+    int k;
     int n;
     strcpy(path, name);
     n = strlen(path);
     if (n <= 5 || strcmp(path + n - 5, ".TEXT") != 0)
         strcat(path, ".TEXT");
-    f = fopen(path, "r");
-    if (!f) {
-        say("cannot open ");
-        say(path);
-        say("\n");
-        return 0;
-    }
-    while (fgets(line, 180, f)) {
+    for (done = 0;; done++) {
+        f = fopen(path, "r");
+        if (!f) {
+            say("cannot open ");
+            say(path);
+            say("\n");
+            return 0;
+        }
+        for (k = 0; k <= done; k++)
+            if (!fgets(line, 180, f))
+                break;
+        fclose(f);
+        if (k <= done)
+            return 1;                       /* the end of the file */
         n = strlen(line);
         while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == ' '))
             line[--n] = 0;
@@ -225,13 +236,10 @@ static int batch(char *name, char *lib)
         say(line);
         say("\n");
         if (!command(line, lib)) {
-            fclose(f);
             say("Stopped.\n");
             return 0;
         }
     }
-    fclose(f);
-    return 1;
 }
 #endif
 

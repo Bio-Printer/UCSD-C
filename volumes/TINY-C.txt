@@ -3,7 +3,7 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   FILE            BLOCKS  WHAT
 
   TINYC.CODE         110  the Tiny-C compiler: X(ecute TINYC
-  TCLIB.OBJ           50  the C library, linked into every program
+  TCLIB.OBJ           51  the C library, linked into every program
   TCMSGS.TEXT          8  the compiler's messages (line n = message n)
   README.TEXT          6  how to use and rebuild Tiny-C
   BUILD.TEXT           4  X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE
@@ -22,7 +22,7 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   STDLIB.H.TEXT        6  header: malloc, free, atoi, rand, qsort, exit, ...
   STRING.H.TEXT        4  header: strcpy, strcmp, strlen, memcpy, memset, ...
   TCRT.H.TEXT          6  header: runtime helpers the compiler calls (reference only)
-  MAIN.TEXT           18  compiler: the driver: commands, @FILE, the passes
+  MAIN.TEXT           20  compiler: the driver: commands, @FILE, the passes
   UTIL.TEXT           14  compiler: messages, output helpers, memory pools
   TYPES.TEXT           6  compiler: type predicates
   PP.TEXT             48  compiler: pass 1: the preprocessor
@@ -31,10 +31,10 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   EXPR.TEXT           46  compiler: parser: expressions
   DECL.TEXT           22  compiler: parser: declarations and initializers
   STMT.TEXT           38  compiler: parser: statements, functions, pragmas
-  IR.TEXT             22  compiler: the intermediate file between parser and code generator
+  IR.TEXT             24  compiler: the intermediate file between parser and code generator
   GEN.TEXT            62  compiler: pass 3: P-code generation, object files
-  LINK.TEXT           38  compiler: the linker: object files -> code file
-  TC.H.TEXT           22  compiler: shared declarations (every module)
+  LINK.TEXT           40  compiler: the linker: object files -> code file
+  TC.H.TEXT           24  compiler: shared declarations (every module)
   PARSE.H.TEXT        10  compiler: the parser modules' shared declarations
   ASSERT.TEXT          4  library: <assert.h>
   CONIO.TEXT           4  library: <conio.h>
@@ -42,8 +42,8 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   FLTFMT.TEXT          8  library: printf's %f %e %g (linked only when floats are used)
   IO.TEXT              6  library: <io.h>
   MATH.TEXT            6  library: <math.h>
-  STDIO.TEXT          40  library: <stdio.h>
-  STDLIB.TEXT         12  library: <stdlib.h>
+  STDIO.TEXT          42  library: <stdio.h>
+  STDLIB.TEXT         14  library: <stdlib.h>
   STRING.TEXT          8  library: <string.h>
   TCRT.TEXT           18  library: runtime helpers: C division, shifts, unsigned, longs
   LIBINT.H.TEXT        6  library: the library modules' shared declarations

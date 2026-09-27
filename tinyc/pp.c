@@ -32,16 +32,18 @@ static struct Incl *istack;
 static int idepth;
 static FILE *ppout;
 static int incomment;
-static int ifstate[MAXIF];      /* 0 = skipping, 1 = active, 2 = done (a branch was taken) */
-static int ifparent[MAXIF];
+/* the tables below are allocated per run (in the pass's memory), not
+   global: globals take memory from every pass */
+static int *ifstate;            /* [MAXIF] 0 = skipping, 1 = active, 2 = done (a branch was taken) */
+static int *ifparent;           /* [MAXIF] */
 static int iflevel;
 static int active;
-static struct Macro *expanding[32];
+static struct Macro **expanding;       /* [32] */
 static int nexpanding;
 static int outline;             /* line number the compiler will assume for the next output line */
 static char *outfile;
 static char *incdir;
-static char openedpath[200];
+static char *openedpath;        /* [200] */
 
 static char *line;              /* both MAXEXP bytes, allocated per run */
 static char *ebuf;
@@ -196,7 +198,7 @@ static FILE *openinc(char *name, int sys)
 
 static char *outname;            /* file the compiler will assume */
 static int startline;           /* first physical line of the current logical line */
-static char pragbuf[MAXLINE];
+static char *pragbuf;           /* [MAXLINE] */
 
 /* read one physical line into buf; strips the newline. 0 at end of file */
 static int rawline(char *buf, int max)
@@ -1168,7 +1170,12 @@ int preprocess(char *src, char *out)
     ebuf = malloc(MAXEXP);
     mtab = (struct Macro **)calloc(MHASH, sizeof(struct Macro *));
     istack = (struct Incl *)calloc(MAXINCL, sizeof(struct Incl));
-    if (!line || !ebuf || !mtab || !istack)
+    ifstate = (int *)malloc(MAXIF * sizeof(int));
+    ifparent = (int *)malloc(MAXIF * sizeof(int));
+    expanding = (struct Macro **)malloc(32 * sizeof(struct Macro *));
+    openedpath = malloc(200);
+    pragbuf = malloc(MAXLINE);
+    if (!line || !ebuf || !mtab || !istack || !ifstate || !ifparent || !expanding || !openedpath || !pragbuf)
         fatal(2 /* out of memory */, 0);
     ppout = fopen(out, "w");
     if (!ppout)

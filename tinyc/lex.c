@@ -12,7 +12,7 @@ int insys;                      /* reading a <system> header */
 int tokval;                     /* T_NUM: low 16 bits */
 int tokval2;                    /* T_NUM: high 16 bits (long constants) */
 int toklong;                    /* T_NUM: 1 = long, and bit 2 = unsigned */
-char tokname[MAXNAME];          /* T_ID */
+char *tokname;                  /* T_ID [MAXNAME], allocated by lexinit */
 char *tokstr;                   /* T_STR (xalloc'd) */
 int toklen;                     /* T_STR length including the final NUL */
 unsigned char tokreal[4];       /* T_FNUM image */
@@ -26,7 +26,7 @@ static int ptok;
 static int pval;
 static int pval2;
 static int plong;
-static char pname[MAXNAME];
+static char *pname;             /* [MAXNAME] */
 static int havepeek;
 #define MAXSTR 260               /* LPA holds at most 255 bytes */
 static char *strbufs[2];
@@ -50,7 +50,9 @@ void lexinit(FILE *fp)
 {
     strbufs[0] = malloc(MAXSTR);
     strbufs[1] = malloc(MAXSTR);
-    if (!strbufs[0] || !strbufs[1])
+    tokname = malloc(MAXNAME);
+    pname = malloc(MAXNAME);
+    if (!strbufs[0] || !strbufs[1] || !tokname || !pname)
         fatal(2 /* out of memory */, 0);
     lexin = fp;
     atbol = 1;

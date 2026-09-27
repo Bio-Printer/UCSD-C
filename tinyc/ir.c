@@ -29,7 +29,7 @@ static int irinit;
 
 /* types already written in the current record: later uses are 0xFF + index */
 #define MAXTSEEN 64
-static struct Type *tseen[MAXTSEEN];
+static struct Type **tseen;     /* [MAXTSEEN], allocated per compile */
 static int ntseen;
 
 static void irb(int b)
@@ -142,6 +142,9 @@ void ir_open(char *name, char *modname)
     irout = fopen(name, "wb");
     if (!irout)
         fatal(24 /* cannot create */, name);
+    tseen = (struct Type **)malloc(MAXTSEEN * sizeof(struct Type *));
+    if (!tseen)
+        fatal(2 /* out of memory */, 0);
     irlabels = 0;
     irinit = 0;
     ntseen = 0;
@@ -281,7 +284,7 @@ void ir_initflush(void)
 #pragma segment GEN
 
 static FILE *irin;
-static struct Type *rseen[MAXTSEEN];
+static struct Type **rseen;     /* [MAXTSEEN], allocated per run */
 static int nrseen;
 static int *lmap;
 static int nlmap;
@@ -451,6 +454,9 @@ int gencode(char *irname, char *obj)
         fatal(24 /* cannot create */, obj);
     nlmap = MAXLABEL;
     lmap = (int *)malloc(nlmap * sizeof(int));
+    rseen = (struct Type **)malloc(MAXTSEEN * sizeof(struct Type *));
+    if (!rseen)
+        fatal(2 /* out of memory */, 0);
     vals = (int *)malloc(1024 * sizeof(int));
     labs = (int *)malloc(1024 * sizeof(int));
     if (!lmap || !vals || !labs)

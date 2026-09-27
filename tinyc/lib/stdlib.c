@@ -266,15 +266,24 @@ void *bsearch(void *key, void *base, size_t n, size_t size, int (*cmp)(void *, v
 }
 
 char *__heapmk;
+/* MARK / RELEASE around a pass.  The free list is set aside at the mark
+   and put back after the release: a pass never takes a block freed before
+   it (that block would be lost -- the pass's memory goes back all at
+   once), and blocks freed before the mark (a file opened and closed
+   between passes) are reused afterwards instead of being lost. */
+unsigned *__savedfree;
+
 void __heapsave(void)
 {
+    __savedfree = __freelist;
+    __freelist = NULL;
     __cspv(32, &__heapmk);              /* MARK */
 }
 
 void __heaprestore(void)
 {
     __cspv(33, &__heapmk);              /* RELEASE */
-    __freelist = NULL;
+    __freelist = __savedfree;
 }
 
 void exit(int status)

@@ -64,9 +64,9 @@ static int *usemod;             /* module-level references ('U': e.g. __fltused)
 static int *usedata;
 static int nuses;
 static int nmods;
-static char *segnames[24];
+static char **segnames;         /* [24], allocated per run */
 static int nsegs;
-static int segnum[24];          /* segment index -> II.0 segment number */
+static int *segnum;             /* [24] segment index -> II.0 segment number */
 static int globalwords;
 static FILE *lin;
 static unsigned char *lbuf;
@@ -610,6 +610,10 @@ int link(char **objs, int nobjs, char *code, char *progname)
     nprocs = 0;
     ndatas = 0;
     nmods = 0;
+    segnames = (char **)malloc(24 * sizeof(char *));
+    segnum = (int *)malloc(24 * sizeof(int));
+    if (!segnames || !segnum)
+        fatal(2 /* out of memory */, 0);
     nsegs = 0;
     segindex("");
     pass1();

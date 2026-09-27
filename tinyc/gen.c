@@ -260,7 +260,7 @@ struct Name {
     char *s;
     struct Name *next;
 };
-static struct Name *names[NHASH];
+static struct Name **names;     /* [NHASH], allocated per run */
 
 static char *intern(char *s)
 {
@@ -1389,7 +1389,9 @@ static char *genmod;
 void gen_objheader(char *modname)
 {
     genmod = modname;
-    memset(names, 0, sizeof(names));
+    names = (struct Name **)calloc(NHASH, sizeof(struct Name *));
+    if (!names)
+        fatal(2 /* out of memory */, 0);
     ninit = 0;
     ininit = 0;
     lvtemp = 0;

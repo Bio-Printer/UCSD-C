@@ -159,7 +159,9 @@ FILE *fopen(char *name, char *mode)
         f->flags = __F_READ | __F_WRITE;
     if (__istext(name))
         f->flags = f->flags | __F_TEXT;
-    f->bufsize = (f->flags & __F_TEXT) ? 1024 : 512;
+    /* a text file is written a 1K page at a time (a line may not cross a
+       page), but read a block at a time: half the memory for the buffer */
+    f->bufsize = (f->flags & __F_TEXT) && (f->flags & __F_WRITE) ? 1024 : 512;
     f->buf = malloc(f->bufsize);
     f->fib = malloc(80);
     if (!f->buf || !f->fib) {
@@ -209,7 +211,7 @@ FILE *fopen(char *name, char *mode)
         } else if (f->flags & __F_READ) {
             f->len = 0;
             f->pos = 0;
-            f->blk = 0;             /* next page to read is blk + 2 */
+            f->blk = 2 - f->bufsize / 512;  /* the text starts at block 2 */
         }
     } else if (mode[0] == 'a') {
         n = 0;
@@ -234,8 +236,9 @@ int __textgetc(FILE *f)
         if (f->pos >= f->len) {
             if (f->flags & __F_EOF)
                 return EOF;
-            f->blk = f->blk + 2;
-            n = __blockio(f, 2, f->blk, 1);
+            n = f->bufsize / 512;           /* blocks per read: 1, or 2 (r+) */
+            f->blk = f->blk + n;
+            n = __blockio(f, n, f->blk, 1);
             if (n <= 0) {
                 f->flags = f->flags | __F_EOF;
                 f->len = 0;
@@ -245,13 +248,16 @@ int __textgetc(FILE *f)
             f->pos = 0;
         }
         c = f->buf[f->pos++];
+        if (f->dle < 0) {                   /* the count after a DLE (maybe */
+            f->dle = c - 32;                /* in the next block) */
+            continue;
+        }
         if (c == 0) {
-            f->pos = f->len;        /* the rest of the page is padding */
+            f->pos = f->len;        /* the rest of the block is padding */
             continue;
         }
         if (c == 16) {
-            if (f->pos < f->len)
-                f->dle = f->buf[f->pos++] - 32;
+            f->dle = -1;
             continue;
         }
         if (c == 13)
@@ -459,7 +465,7 @@ long ftell(FILE *f)
 void rewind(FILE *f)
 {
     if (f->flags & __F_TEXT) {
-        f->blk = 0;
+        f->blk = 2 - f->bufsize / 512;
         f->pos = 0;
         f->len = 0;
         f->dle = 0;

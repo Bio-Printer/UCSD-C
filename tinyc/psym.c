@@ -17,9 +17,10 @@ struct Type *ty_double;
 struct Type *ty_ldouble;
 struct Type *ty_charp;
 
-struct Sym *htab[HSIZE];
-struct Sym *ttab[HSIZE];
-struct Sym *scopes[40];
+/* the symbol tables are allocated by each compile (in its pass memory) */
+struct Sym **htab;              /* [HSIZE] */
+struct Sym **ttab;              /* [HSIZE] */
+struct Sym **scopes;            /* [40] */
 int level;
 struct Sym *labels;
 int globoff;                    /* next free word of the module's static variables */
