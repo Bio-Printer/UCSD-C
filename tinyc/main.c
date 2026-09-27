@@ -8,6 +8,7 @@
  *              NAME             compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
  *              /C NAME          compile only -> NAME.OBJ
  *              /L OUT=A,B,...   link A.OBJ, B.OBJ ... and TCLIB.OBJ -> OUT.CODE
+ *              /J OUT=A,B,...   join A.OBJ, B.OBJ ... into the library OUT.OBJ
  *              @FILE            run the commands in FILE.TEXT, one per line
  *                               (blank lines and lines starting ';' skipped),
  *                               stopping at the first that fails
@@ -126,22 +127,24 @@ static int command(char *s, char *lib)
     int nobjs;
     int n;
     int conly;
+    int joining;
     nobjs = 0;
     while (*s == ' ')
         s++;
-    if (s[0] == '/' && s[1] == 'L') {
-        /* /L OUT=A,B,... */
+    if (s[0] == '/' && (s[1] == 'L' || s[1] == 'J')) {
+        /* /L OUT=A,B,...  or  /J OUT=A,B,... */
+        joining = s[1] == 'J';
         s = s + 2;
         while (*s == ' ')
             s++;
         t = strchr(s, '=');
         if (!t) {
-            say("use: /L OUT=A,B,...\n");
+            say("use: /L OUT=A,B,...  or  /J LIB=A,B,...\n");
             return 0;
         }
         *t++ = 0;
         strcpy(out, s);
-        strcat(out, ".CODE");
+        strcat(out, joining ? ".OBJ" : ".CODE");
         while (*t) {
             s = t;
             while (*t && *t != ',')
@@ -158,6 +161,12 @@ static int command(char *s, char *lib)
             strcpy(objs[nobjs], s);
             strcat(objs[nobjs], ".OBJ");
             nobjs++;
+        }
+        if (joining) {
+            say("Joining ");
+            say(out);
+            say("\n");
+            return join(objs, nobjs, out);
         }
     } else {
         conly = 0;
@@ -182,7 +191,7 @@ static int command(char *s, char *lib)
             return 1;
         objs[nobjs++] = obj;
     }
-    if (lib[0] && exists(lib))
+    if (lib[0])                         /* found once, at the start (see main) */
         objs[nobjs++] = lib;
     return linkall(objs, nobjs, out);
 }
@@ -265,6 +274,10 @@ int main(int argc, char **argv)
         strcpy(lib, "*TCLIB.OBJ");
     if (!exists(lib))
         strcpy(lib, "TINY-C:TCLIB.OBJ");
+    /* looked for once: fopen outside a pass would leak its buffer (the
+       free list is dropped when a pass gives its memory back) */
+    if (!exists(lib))
+        lib[0] = 0;
     if (*s == '@')
         n = batch(s + 1, lib);
     else

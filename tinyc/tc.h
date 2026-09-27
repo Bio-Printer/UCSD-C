@@ -341,5 +341,6 @@ void gen_objuse(char *name);
 int preprocess(char *src, char *out);
 int compile(char *src, char *obj, char *modname);
 int link(char **objs, int nobjs, char *code, char *progname);
+int join(char **objs, int nobjs, char *out);
 
 #endif

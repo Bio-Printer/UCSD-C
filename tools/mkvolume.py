@@ -33,6 +33,7 @@ answer "Compile what file?" with
     NAME                 compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
     /C NAME              compile only -> NAME.OBJ
     /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
+    /J LIB=A,B,...       join A.OBJ, B.OBJ, ... into the library LIB.OBJ
     @FILE                run the commands in FILE.TEXT, one per line
                          (blank lines and lines starting with ; skipped)
 X(ecute NAME runs a program.  A program on another volume (e.g. TCEXTRA:)
@@ -45,11 +46,12 @@ BUILD.TEXT compiles the compiler's 12 modules and links TINYC2.CODE,
 which is identical to TINYC.CODE apart from its name (check it with
 CMPCODE on TCEXTRA:).  To use it, rename it with the Filer.
 
-THE LIBRARY: TCLIB.OBJ is the library modules' objects one after
-another.  Each module compiles with /C to exactly the object in it.
-TINYC links TCLIB.OBJ whenever it finds one; to link with rebuilt
-modules instead, rename TCLIB.OBJ and list them, e.g.
-    /L PROG=PROG,TCRT,STDIO,STDLIB,STRING,CTYPE,MATH,FLTFMT,...
+REBUILDING THE LIBRARY:  X(ecute TINYC, answer  @LIBS
+LIBS.TEXT compiles the 10 library modules and joins them (/J) into
+TCLIB2.OBJ, identical to TCLIB.OBJ (check it with CMPCODE).  To use it,
+remove TCLIB.OBJ and rename TCLIB2.OBJ to TCLIB.OBJ with the Filer.
+
+THE DEMO PROGRAMS: see DEMOS.TEXT on TCEXTRA: (@DEMOS).
 
 FILES.TEXT lists every file on this volume.
 """
@@ -61,12 +63,23 @@ program is here as source (NAME.TEXT) and ready to run (NAME.CODE):
 X(ecute TCEXTRA:NAME.  To compile one yourself, set the prefix to
 TCEXTRA: and X(ecute TINY-C:TINYC, answer NAME.
 
-CMPCODE compares two code files byte by byte (the program name in
-block 0 aside): after @BUILD on TINY-C:, compare TINY-C:TINYC.CODE with
-TINY-C:TINYC2.CODE; it prints IDENTICAL.
+REBUILDING THEM ALL:  set the prefix to TCEXTRA:, X(ecute TINY-C:TINYC,
+answer  @DEMOS.  DEMOS.TEXT compiles and links every program here (each
+leaves a NAME.OBJ as well; remove those with the Filer if you like).
+
+CMPCODE compares two files byte by byte (for .CODE files the program
+name in block 0 aside): after @BUILD on TINY-C:, compare
+TINY-C:TINYC.CODE with TINY-C:TINYC2.CODE, after @LIBS TINY-C:TCLIB.OBJ
+with TINY-C:TCLIB2.OBJ; it prints IDENTICAL.
 
 FILES.TEXT lists every file on this volume.
 """
+
+LIBMODS_ = sorted(f[:-2] for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c'))
+LIBS = """; LIBS -- rebuild the C library: X(ecute TINYC, answer @LIBS
+; Compiles every library module, then joins them into TCLIB2.OBJ.
+""" + ''.join('/C %s\n' % m.upper() for m in LIBMODS_) + \
+    '/J TCLIB2=%s\n' % ','.join(m.upper() for m in LIBMODS_)
 
 BUILD = """; BUILD -- rebuild the Tiny-C compiler: X(ecute TINYC, answer @BUILD
 ; Compiles every module, then links them into TINYC2.CODE.
@@ -185,6 +198,7 @@ def tiny_c():
     t.textfile('TCMSGS.TEXT', os.path.join(INC, 'tcmsgs.txt'), "the compiler's messages (line n = message n)")
     t.text('README.TEXT', README_TC, 'how to use and rebuild Tiny-C')
     t.text('BUILD.TEXT', BUILD, 'X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE')
+    t.text('LIBS.TEXT', LIBS, 'X TINYC, @LIBS: rebuilds the library -> TCLIB2.OBJ')
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
             t.textfile(f.upper() + '.TEXT', os.path.join(INC, f), 'header: ' + describe(os.path.join(INC, f)))
@@ -207,6 +221,10 @@ def extras():
     e.text('README.TEXT', README_EX, 'what is on this volume')
     progs = [os.path.join(TESTS, f) for f in sorted(os.listdir(TESTS)) if f.endswith('.c')]
     progs.append(os.path.join(ROOT, 'verify', 'cmpcode.c'))
+    names = [os.path.splitext(os.path.basename(p))[0].upper()[:10] for p in progs]
+    e.text('DEMOS.TEXT', '; DEMOS -- compile and link every program on TCEXTRA:\n'
+           '; prefix TCEXTRA:, X(ecute TINY-C:TINYC, answer @DEMOS\n' +
+           ''.join(n + '\n' for n in names), 'X TINY-C:TINYC, @DEMOS: rebuilds every program here')
     for p in progs:
         name = os.path.splitext(os.path.basename(p))[0].upper()[:10]
         e.textfile(name + '.TEXT', p, describe(p))

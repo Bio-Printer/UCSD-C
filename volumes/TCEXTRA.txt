@@ -1,8 +1,9 @@
-TCEXTRA:  34 files  (a UCSD directory holds 77)
+TCEXTRA:  35 files  (a UCSD directory holds 77)
 
   FILE            BLOCKS  WHAT
 
   README.TEXT          4  what is on this volume
+  DEMOS.TEXT           4  X TINY-C:TINYC, @DEMOS: rebuilds every program here
   BOXES.TEXT           4  conio.h: clear the screen, draw boxes with gotoxy ...
   BOXES.CODE           5    (ready to run)
   CALC.TEXT            6  a calculator: recursive descent over + - * / % ( ) ...

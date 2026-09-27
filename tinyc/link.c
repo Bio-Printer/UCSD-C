@@ -771,3 +771,40 @@ int link(char **objs, int nobjs, char *code, char *progname)
     say(" words\n");
     return nerrors == 0;
 }
+
+/* /J OUT=A,B,...: one library file from object files, one after another.
+   A file on the P-System is padded with NULs to a whole block, and an
+   object file ends in 'E', so trailing NULs are dropped (the linker reads
+   a NUL as the end of a file). */
+int join(char **objs, int nobjs, char *out)
+{
+    FILE *o;
+    FILE *f;
+    int i;
+    int c;
+    int zeros;
+    o = fopen(out, "wb");
+    if (!o)
+        fatal(24 /* cannot create */, out);
+    for (i = 0; i < nobjs; i++) {
+        f = fopen(objs[i], "rb");
+        if (!f)
+            fatal(25 /* cannot open */, objs[i]);
+        zeros = 0;
+        while ((c = getc(f)) != EOF) {
+            if (c == 0) {
+                zeros++;
+                continue;
+            }
+            for (; zeros > 0; zeros--)
+                putc(0, o);
+            putc(c, o);
+        }
+        fclose(f);
+    }
+    fclose(o);
+    say("  joined ");
+    sayn(nobjs);
+    say(" object files\n");
+    return 1;
+}

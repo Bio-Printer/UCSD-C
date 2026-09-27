@@ -1,7 +1,9 @@
 /* cmpcode.c -- compare two code files byte by byte (Tiny-C Verify).
  *
- * Block 0 names segment 1 after the program (bytes 72..79), so a compiler
- * linked as TINYC2 differs from TINYC there only; those bytes are skipped.
+ * In a code file block 0 names segment 1 after the program (bytes 72..79),
+ * so a compiler linked as TINYC2 differs from TINYC there only: for .CODE
+ * files those bytes are skipped.  Other files (e.g. libraries) are
+ * compared in full.
  * Prints IDENTICAL or the first differences.
  */
 #include <stdio.h>
@@ -28,6 +30,7 @@ int main(void)
     int c;
     int d;
     int diffs;
+    int code;
     ask("First file? ", a);
     ask("Second file? ", b);
     f = fopen(a, "rb");
@@ -36,12 +39,13 @@ int main(void)
         printf("cannot open %s\n", f ? b : a);
         return 1;
     }
+    code = strstr(a, ".CODE") != 0;
     pos = 0;
     diffs = 0;
     for (;;) {
         c = getc(f);
         d = getc(g);
-        if (c != d && !(pos >= 72 && pos < 80)) {
+        if (c != d && !(code && pos >= 72 && pos < 80)) {
             if (diffs < 5)
                 printf("differ at %ld: %d %d\n", pos, c, d);
             diffs++;

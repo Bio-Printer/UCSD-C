@@ -1,12 +1,13 @@
-TINY-C:  45 files  (a UCSD directory holds 77)
+TINY-C:  46 files  (a UCSD directory holds 77)
 
   FILE            BLOCKS  WHAT
 
-  TINYC.CODE         109  the Tiny-C compiler: X(ecute TINYC
+  TINYC.CODE         110  the Tiny-C compiler: X(ecute TINYC
   TCLIB.OBJ           50  the C library, linked into every program
   TCMSGS.TEXT          8  the compiler's messages (line n = message n)
   README.TEXT          6  how to use and rebuild Tiny-C
   BUILD.TEXT           4  X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE
+  LIBS.TEXT            4  X TINYC, @LIBS: rebuilds the library -> TCLIB2.OBJ
   ASSERT.H.TEXT        4  header: assert()
   CONIO.H.TEXT         4  header: console: getch, putch, cputs, kbhit, gotoxy, clrscr
   CTYPE.H.TEXT         4  header: isdigit, isalpha, toupper, ...
