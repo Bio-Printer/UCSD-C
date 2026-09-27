@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""tcverify.py [z80|native] -- run the Tiny-C Verify pack (verify/TCVERIFY.SCRIPT
+on TCVERIFY.BLK as unit #5) exactly as Verify P-System would, and report.
+Build the pack first with mkverify.py.  Native mode runs with the Z80
+interpreter's memory reclaimed (Tiny-C needs that memory); VERIFY_RECLAIM=0
+turns it off."""
+import os, sys, subprocess, tempfile, shutil, zipfile
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+import ucsdvol
+from psys import ensure_setup, BUILD
+
+
+def main(a):
+    mode = a[0] if a else 'native'
+    ensure_setup()
+    d = tempfile.mkdtemp(prefix='tcverify_')
+    with zipfile.ZipFile(os.path.join(ROOT, 'verify', 'TCVERIFY.zip')) as z:
+        z.extract('TCVERIFY.BLK', d)
+    spare = os.path.join(d, 'SPARE.BLK')
+    ucsdvol.main(['new', spare, 'SPARE', '400'])
+    out = os.path.join(d, 'out')
+    env = dict(os.environ)
+    if mode == 'native' and env.get('VERIFY_RECLAIM', '1') == '1':
+        env['VERIFY_RECLAIM'] = '1'
+    else:
+        env.pop('VERIFY_RECLAIM', None)
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
+                        os.path.join(d, 'TCVERIFY.BLK'), spare, os.path.join(ROOT, 'verify', 'TCVERIFY.SCRIPT'),
+                        mode, out, '', '7200'], capture_output=True, text=True, env=env)
+    ok = 'VERIFY SCRIPT COMPLETED' in r.stdout
+    tail = [l for l in r.stderr.split('\n') if l.strip()][-3:]
+    print('\n'.join(tail))
+    print(r.stdout.strip()[-800:])
+    print('Tiny-C Verify (%s): %s   (work: %s)' % (mode, 'PASSED' if ok else 'FAILED', d))
+    return 0 if ok else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

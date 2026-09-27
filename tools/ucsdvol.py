@@ -151,6 +151,8 @@ def main(a):
         blocks = int(a[3]) if len(a) > 3 else os.path.getsize(img) // BLK if os.path.exists(img) else 10000
         d = bytearray(blocks * BLK)
         vn = a[2].upper().encode()
+        if len(vn) > 7:
+            raise SystemExit("volume name longer than 7 characters: " + a[2])
         struct.pack_into('<HHHB', d, 2 * BLK, 0, 6, 0, len(vn))
         d[2 * BLK + 7: 2 * BLK + 7 + len(vn)] = vn
         struct.pack_into('<HHHH', d, 2 * BLK + 14, blocks, 0, 0, 0)
