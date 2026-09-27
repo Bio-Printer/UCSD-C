@@ -47,7 +47,7 @@ static int rd(void)
     int c;
     c = getc(lin);
     if (c == EOF)
-        fatal("object file truncated", 0);
+        fatal(103 /* object file truncated */, 0);
     return c;
 }
 
@@ -84,7 +84,7 @@ static int segindex(char *name)
         if (strcmp(segnames[i], name) == 0)
             return i;
     if (nsegs >= 24)
-        fatal("too many segments", name);
+        fatal(104 /* too many segments */, name);
     segnames[nsegs] = pstrdup(name);
     return nsegs++;
 }
@@ -95,12 +95,12 @@ static void openobj(char *obj)
     int i;
     lin = fopen(obj, "rb");
     if (!lin)
-        fatal("cannot open", obj);
+        fatal(25 /* cannot open */, obj);
     for (i = 0; i < 4; i++)
         magic[i] = rd();
     magic[4] = 0;
     if (strcmp(magic, "TCOB") != 0)
-        fatal("not a Tiny-C object file", obj);
+        fatal(105 /* not a Tiny-C object file */, obj);
 }
 
 /* read one record; the procedure's code goes to lbuf. returns the record type */
@@ -121,7 +121,7 @@ static int record(char *name, char *seg, int *flags, int *parmsz, int *rw, int *
     if (c == 'E')
         return c;
     if (c != 'P')
-        fatal("bad object file record", 0);
+        fatal(106 /* bad object file record */, 0);
     *flags = rd();
     rds(name);
     rds(seg);
@@ -164,9 +164,9 @@ static void pass1(char *obj)
             rds(rname);
         }
         if (findproc(name))
-            fatal("function defined twice", name);
+            fatal(107 /* function defined twice */, name);
         if (nprocs >= MAXPROC)
-            fatal("too many functions", 0);
+            fatal(108 /* too many functions */, 0);
         p = (struct LProc *)palloc(sizeof(struct LProc));
         p->name = pstrdup(name);
         p->seg = segindex(seg);
@@ -217,7 +217,7 @@ static void pass2(char *obj)
             rds(rname);
             t = findproc(rname);
             if (!t) {
-                error("undefined function", rname);
+                error(109 /* undefined function */, rname);
                 p->rel[i] = -1;
             } else {
                 for (c = 0; procs[c] != t; c++)
@@ -389,7 +389,7 @@ int link(char *obj, char *code, char *progname)
     procs = (struct LProc **)malloc(MAXPROC * sizeof(struct LProc *));
     lbuf = (unsigned char *)malloc(MAXCODE + 16);
     if (!lbuf || !procs)
-        fatal("out of memory", 0);
+        fatal(2 /* out of memory */, 0);
     memset(lhash, 0, sizeof(lhash));
     nprocs = 0;
     nsegs = 0;
@@ -400,7 +400,7 @@ int link(char *obj, char *code, char *progname)
         return 0;
     mainp = findproc("main");
     if (!mainp) {
-        error("no main function", 0);
+        error(110 /* no main function */, 0);
         return 0;
     }
     for (i = 0; procs[i] != mainp; i++)
@@ -430,7 +430,7 @@ int link(char *obj, char *code, char *progname)
         if (!p->live || segnum[p->seg])
             continue;
         if (norder >= 10)
-            fatal("more than 10 segments", segnames[p->seg]);
+            fatal(111 /* more than 10 segments */, segnames[p->seg]);
         segnum[p->seg] = norder + 6;
         order[norder++] = p->seg;
     }
@@ -443,7 +443,7 @@ int link(char *obj, char *code, char *progname)
         s = p->seg;
         p->procnum = ++pnum[s];
         if (p->procnum > 255)
-            fatal("more than 255 functions in segment", segnames[s]);
+            fatal(112 /* more than 255 functions in segment */, segnames[s]);
         seglen[s] = seglen[s] + ((p->codelen + 1) & ~1);
     }
     makeentry(mainp, exitp);
@@ -457,7 +457,7 @@ int link(char *obj, char *code, char *progname)
     }
     out = fopen(code, "wb");
     if (!out)
-        fatal("cannot create", code);
+        fatal(24 /* cannot create */, code);
     blk0 = (unsigned char *)malloc(512);
     memset(blk0, 0, 512);
     for (k = 0; k < norder; k++) {
@@ -528,7 +528,7 @@ int link(char *obj, char *code, char *progname)
         putc(pnum[s], out);
         len = len + 2;
         if (len != seglen[s])
-            fatal("internal: segment length", segnames[s]);
+            fatal(113 /* internal: segment length */, segnames[s]);
         while (len & 511) {
             putc(0, out);
             len++;

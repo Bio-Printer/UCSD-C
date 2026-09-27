@@ -280,7 +280,7 @@ static int ppgetline(void)
         if (!rawline(tmp, MAXLINE))
             break;
         if (n + (int)strlen(tmp) >= MAXEXP - 2)
-            fatal("line too long", 0);
+            fatal(4 /* line too long */, 0);
         strcat(line, tmp);
         n = strlen(line);
         joined = 1;
@@ -296,7 +296,7 @@ static int ppgetline(void)
             uncomment(tmp);
             n = strlen(line);
             if (n + (int)strlen(tmp) >= MAXEXP - 2)
-                fatal("line too long", 0);
+                fatal(4 /* line too long */, 0);
             line[n] = ' ';
             strcpy(line + n + 1, tmp);
             joined = 1;
@@ -313,7 +313,7 @@ static char *outend;
 static void put(char *s, int n)
 {
     if (outp + n >= outend)
-        fatal("macro expansion too long", 0);
+        fatal(5 /* macro expansion too long */, 0);
     memcpy(outp, s, n);
     outp += n;
 }
@@ -417,7 +417,7 @@ static char *expandcall(struct Macro *m, char *p)
     start = q;
     for (;;) {
         if (*q == 0)
-            fatal("unterminated macro call", m->name);
+            fatal(6 /* unterminated macro call */, m->name);
         if (*q == '"' || *q == '\'') {
             q = skiplit(q);
             continue;
@@ -426,7 +426,7 @@ static char *expandcall(struct Macro *m, char *p)
             depth++;
         else if ((*q == ',' || *q == ')') && depth == 0) {
             if (nargs >= 32)
-                fatal("too many macro arguments", m->name);
+                fatal(7 /* too many macro arguments */, m->name);
             n = q - start;
             args[nargs] = trim(start, &n);
             alen[nargs] = n;
@@ -444,7 +444,7 @@ static char *expandcall(struct Macro *m, char *p)
     if (nargs == 1 && alen[0] == 0 && m->nparams == 0)
         nargs = 0;
     if (nargs != m->nparams)
-        error("wrong number of macro arguments", m->name);
+        error(8 /* wrong number of macro arguments */, m->name);
     /* substitute into a temporary buffer, then rescan it */
     xm = xmark();
     res = xalloc(MAXEXP);
@@ -544,7 +544,7 @@ static void expand(char *s)
             if (m && !isexpanding(m)) {
                 if (m->nparams < 0) {
                     if (nexpanding >= 30)
-                        fatal("macro nesting too deep", m->name);
+                        fatal(9 /* macro nesting too deep */, m->name);
                     expanding[nexpanding++] = m;
                     expand(m->body);
                     nexpanding--;
@@ -672,7 +672,7 @@ static int eprimary(void)
             ep++;
         return 0;
     }
-    error("bad #if expression", 0);
+    error(10 /* bad #if expression */, 0);
     return 0;
 }
 
@@ -691,7 +691,7 @@ static int emul(void)
             op = *ep++;
             r = eprimary();
             if (r == 0)
-                error("division by zero in #if", 0);
+                error(11 /* division by zero in #if */, 0);
             else if (op == '/')
                 v = v / r;
             else
@@ -955,7 +955,7 @@ static void dodefine(char *s)
     char *p;
     s = word(s, name, MAXNAME);
     if (!name[0]) {
-        error("bad #define", 0);
+        error(12 /* bad #define */, 0);
         return;
     }
     np = -1;
@@ -970,7 +970,7 @@ static void dodefine(char *s)
                 break;
             }
             if (np >= 32)
-                fatal("too many macro parameters", name);
+                fatal(13 /* too many macro parameters */, name);
             s = word(s, pnames[np], MAXNAME);
             np++;
             while (*s == ' ' || *s == '\t')
@@ -981,7 +981,7 @@ static void dodefine(char *s)
                 s++;
                 break;
             } else {
-                error("bad macro parameter list", name);
+                error(14 /* bad macro parameter list */, name);
                 return;
             }
         }
@@ -1043,7 +1043,7 @@ static void doinclude(char *s)
     sys = *s == '<';
     close = sys ? '>' : '"';
     if (*s != '"' && *s != '<') {
-        error("bad #include", 0);
+        error(15 /* bad #include */, 0);
         return;
     }
     s++;
@@ -1052,10 +1052,10 @@ static void doinclude(char *s)
         name[n++] = *s++;
     name[n] = 0;
     if (idepth >= MAXINCL)
-        fatal("#include nested too deeply", name);
+        fatal(16 /* #include nested too deeply */, name);
     fp = openinc(name, sys);
     if (!fp) {
-        error("cannot open include file", name);
+        error(17 /* cannot open include file */, name);
         return;
     }
     istack[idepth].fp = fp;
@@ -1073,7 +1073,7 @@ static void ppdirective(char *s)
     if (strcmp(w, "ifdef") == 0 || strcmp(w, "ifndef") == 0 || strcmp(w, "if") == 0) {
         char name[MAXNAME];
         if (iflevel >= MAXIF)
-            fatal("#if nested too deeply", 0);
+            fatal(18 /* #if nested too deeply */, 0);
         ifparent[iflevel] = active;
         if (!active)
             v = 0;
@@ -1092,7 +1092,7 @@ static void ppdirective(char *s)
     }
     if (strcmp(w, "elif") == 0) {
         if (iflevel == 0) {
-            error("#elif without #if", 0);
+            error(19 /* #elif without #if */, 0);
             return;
         }
         if (ifstate[iflevel - 1] != 0 || !ifparent[iflevel - 1]) {
@@ -1107,7 +1107,7 @@ static void ppdirective(char *s)
     }
     if (strcmp(w, "else") == 0) {
         if (iflevel == 0) {
-            error("#else without #if", 0);
+            error(20 /* #else without #if */, 0);
             return;
         }
         if (ifstate[iflevel - 1] == 0 && ifparent[iflevel - 1]) {
@@ -1121,7 +1121,7 @@ static void ppdirective(char *s)
     }
     if (strcmp(w, "endif") == 0) {
         if (iflevel == 0) {
-            error("#endif without #if", 0);
+            error(21 /* #endif without #if */, 0);
             return;
         }
         iflevel--;
@@ -1139,7 +1139,7 @@ static void ppdirective(char *s)
     } else if (strcmp(w, "include") == 0)
         doinclude(s);
     else if (strcmp(w, "error") == 0)
-        error("#error", s);
+        error(22 /* #error */, s);
     else if (strcmp(w, "pragma") == 0) {
         strcpy(pragbuf, "#pragma");
         strcat(pragbuf, s);
@@ -1147,7 +1147,7 @@ static void ppdirective(char *s)
     else if (strcmp(w, "line") == 0 || w[0] == 0)
         ;
     else
-        error("unknown ppdirective", w);
+        error(23 /* unknown ppdirective */, w);
 }
 
 int preprocess(char *src, char *out)
@@ -1158,16 +1158,16 @@ int preprocess(char *src, char *out)
     line = malloc(MAXEXP);
     ebuf = malloc(MAXEXP);
     if (!line || !ebuf)
-        fatal("out of memory", 0);
+        fatal(2 /* out of memory */, 0);
     ppout = fopen(out, "w");
     if (!ppout)
-        fatal("cannot create", out);
+        fatal(24 /* cannot create */, out);
     incdir = getenv("TINYC_INCLUDE");
     mdefine("__TINYC__", 9, -1, "1");
     mdefine("__UCSD__", 8, -1, "1");
     istack[0].fp = fopen(src, "r");
     if (!istack[0].fp)
-        fatal("cannot open", src);
+        fatal(25 /* cannot open */, src);
     istack[0].name = pstrdup(src);
     istack[0].line = 0;
     idepth = 1;
@@ -1187,12 +1187,12 @@ int preprocess(char *src, char *out)
                 crtdone = 1;
                 istack[0].fp = openinc("tcrt.h", 1);
                 if (!istack[0].fp)
-                    fatal("cannot open include file", "tcrt.h");
+                    fatal(17 /* cannot open include file */, "tcrt.h");
                 istack[0].name = "tcrt.h";
                 istack[0].line = 0;
                 idepth = 1;
                 if (iflevel)
-                    error("missing #endif", 0);
+                    error(26 /* missing #endif */, 0);
                 iflevel = 0;
                 active = 1;
                 continue;
@@ -1227,7 +1227,7 @@ int preprocess(char *src, char *out)
         xrelease(m);
     }
     if (iflevel)
-        error("missing #endif", 0);
+        error(26 /* missing #endif */, 0);
     fclose(ppout);
     return nerrors == 0;
 }

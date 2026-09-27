@@ -9,6 +9,9 @@
  * is a UCSD text file: 2 header blocks, then 1K pages of whole lines
  * ended by CR and padded with NULs, leading blanks as DLE + count.  Other
  * files are binary and always a whole number of 512-byte blocks.
+ *
+ * #define NO_FLOAT_PRINTF before including this file to leave %f, %e and
+ * %g out of printf (about 1.5K of code less).
  */
 #ifndef __STDIO_H
 #define __STDIO_H
@@ -700,6 +703,7 @@ void __ofield(char *pre, char *body, int n, int reversed, int width, int left, i
         __opad(pad, ' ');
 }
 
+#ifndef NO_FLOAT_PRINTF
 /* floating point: f, e or g style */
 int __fdigits(double v, int prec, int style, int alt, char *out)
 {
@@ -812,6 +816,8 @@ int __fdigits(double v, int prec, int style, int alt, char *out)
     }
     return n;
 }
+
+#endif
 
 int __vformat(char *fmt, va_list ap)
 {
@@ -940,6 +946,7 @@ int __vformat(char *fmt, va_list ap)
                 n = prec;
             __ofield("", s, n, 0, width, left, 0);
             break;
+#ifndef NO_FLOAT_PRINTF
         case 'f':
         case 'e':
         case 'E':
@@ -958,6 +965,7 @@ int __vformat(char *fmt, va_list ap)
                 strcpy(pre, " ");
             __ofield(pre, buf, n, 0, width, left, zero);
             break;
+#endif
         case 'n':
             *va_arg(ap, int *) = __on;
             break;

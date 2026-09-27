@@ -50,7 +50,7 @@ void lexinit(FILE *fp)
     strbufs[0] = malloc(MAXSTR);
     strbufs[1] = malloc(MAXSTR);
     if (!strbufs[0] || !strbufs[1])
-        fatal("out of memory", 0);
+        fatal(2 /* out of memory */, 0);
     lexin = fp;
     atbol = 1;
     havepeek = 0;
@@ -145,7 +145,9 @@ static int mac(unsigned char *acc, int base, int d)
     return d != 0;
 }
 
-/* ---- decimal to real conversion with big integers (bytes, little endian) ---- */
+/* ---- decimal to real conversion with big integers (bytes, little endian) ----
+   (a segment of its own: loaded only while a floating constant is converted) */
+#pragma segment REALLIT
 #define BIGN 48
 
 static int bitlen(unsigned char *a)
@@ -181,7 +183,7 @@ static void bigmul(unsigned char *a, int m)
         c = (v >> 8) & 255;
     }
     if (c)
-        error("floating constant too large", 0);
+        error(27 /* floating constant too large */, 0);
 }
 
 static void bigshl(unsigned char *a)
@@ -320,7 +322,7 @@ static void makereal(unsigned char *digits, int nd, int exp10, unsigned char *ou
         }
     }
     if (e2 + 128 > 255) {
-        error("floating constant too large", 0);
+        error(27 /* floating constant too large */, 0);
         return;
     }
     if (e2 + 128 < 1)
@@ -330,6 +332,8 @@ static void makereal(unsigned char *digits, int nd, int exp10, unsigned char *ou
     out[2] = m2;
     out[3] = m3;
 }
+
+#pragma segment PARSE
 
 static void number(void)
 {
@@ -409,7 +413,7 @@ static void number(void)
             exp10 = exp10 + esign * ev;
         }
         if (exp10 + nd > 40)
-            error("floating constant too large", 0);
+            error(27 /* floating constant too large */, 0);
         while (ch == 'f' || ch == 'F' || ch == 'l' || ch == 'L')
             nextch();
         if (exp10 + nd < -40)
@@ -437,7 +441,7 @@ static void number(void)
         nextch();
     }
     if (ovf)
-        error("integer constant too large", 0);
+        error(28 /* integer constant too large */, 0);
     tokval = W16(acc[0] + acc[1] * 256);
     tokval2 = W16(acc[2] + acc[3] * 256);
     if (acc[2] || acc[3])
@@ -524,7 +528,7 @@ static void rawnext(void)
             nextch();
         }
         if (ch != '\'')
-            error("bad character constant", 0);
+            error(29 /* bad character constant */, 0);
         nextch();
         tokval = tokval & 255;
         if (tokval > 127)
@@ -544,7 +548,7 @@ static void rawnext(void)
             nextch();
             while (ch != '"') {
                 if (ch == '\n' || ch == EOF) {
-                    error("unterminated string", 0);
+                    error(30 /* unterminated string */, 0);
                     break;
                 }
                 if (ch == '\\')
@@ -554,7 +558,7 @@ static void rawnext(void)
                     nextch();
                 }
                 if (n >= cap - 1) {
-                    error("string literal too long", 0);
+                    error(31 /* string literal too long */, 0);
                     n = 0;
                 }
                 buf[n++] = c;
@@ -635,7 +639,7 @@ static void rawnext(void)
         if (ch == '.') {
             nextch();
             if (ch == '.') { nextch(); tok = T_ELLIPSIS; return; }
-            error("bad token '..'", 0);
+            error(32 /* bad token '..' */, 0);
         }
         break;
     }

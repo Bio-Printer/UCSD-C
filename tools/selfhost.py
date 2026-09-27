@@ -20,6 +20,7 @@ def put_headers(ps):
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
             ps.put(f.upper() + '.TEXT', open(os.path.join(INC, f)).read())
+    ps.put('TCMSGS.TEXT', open(os.path.join(INC, 'tcmsgs.txt')).read())
 
 
 def compile_on_psystem(src_files, main_name, tc_code=None, timeout=1800, blocks=4000):
