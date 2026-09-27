@@ -83,6 +83,9 @@ static struct Type *mktype(int kind, int size, int align)
     return t;
 }
 
+/* set-up code runs once per compile: a segment of its own */
+#pragma segment CINIT
+
 void typeinit(void)
 {
     ty_void = mktype(TY_VOID, 1, 1);
@@ -98,6 +101,8 @@ void typeinit(void)
     ty_charp = ptrto(ty_char);
     globoff = 3;
 }
+
+#pragma segment PARSE
 
 struct Type *ptrto(struct Type *t)
 {
@@ -182,7 +187,7 @@ static void pushscope(void)
 {
     level++;
     if (level >= 40)
-        fatal("blocks nested too deeply", 0);
+        fatal(33 /* blocks nested too deeply */, 0);
     scopes[level] = 0;
 }
 
@@ -210,7 +215,7 @@ static int allocglobal(struct Type *t)
         w = 1;
     globoff = globoff + w;
     if (globoff > 16000 || globoff < 0)
-        fatal("too many global variables", 0);
+        fatal(34 /* too many global variables */, 0);
     return off;
 }
 
@@ -224,7 +229,7 @@ static int alloclocal(struct Type *t)
     if (curlocal > maxlocal)
         maxlocal = curlocal;
     if (curlocal > 12000)
-        fatal("local variables too large", 0);
+        fatal(35 /* local variables too large */, 0);
     return curlocal - w + 1;
 }
 
@@ -233,7 +238,7 @@ static int alloclocal(struct Type *t)
 static void expect(int t, char *what)
 {
     if (tok != t) {
-        error("expected", what);
+        error(36 /* expected */, what);
         return;
     }
     next();
@@ -317,7 +322,7 @@ static struct Sym *helper(char *name)
     struct Sym *s;
     s = lookup(name);
     if (!s || s->kind != S_FUNC)
-        fatal("runtime helper not declared (tcrt.h)", name);
+        fatal(37 /* runtime helper not declared (tcrt.h) */, name);
     return s;
 }
 
@@ -370,11 +375,11 @@ struct Node *cast(struct Node *n, struct Type *t)
         return fk == tk && f != t ? mknode(N_CAST, t, n, 0) : n;
     if (tk == TY_STRUCT || tk == TY_UNION || tk == TY_ARRAY || tk == TY_FUNC) {
         if (fk != tk)
-            error("invalid conversion", 0);
+            error(38 /* invalid conversion */, 0);
         return n;
     }
     if (!isscalar(f)) {
-        error("invalid conversion", 0);
+        error(38 /* invalid conversion */, 0);
         return n;
     }
     /* long <-> others go through helpers */
@@ -525,7 +530,7 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
             return n;
         }
         if (!isscalar(at) || !isscalar(bt)) {
-            error("invalid comparison", 0);
+            error(39 /* invalid comparison */, 0);
             return mknum(0, ty_int);
         }
         t = arith(at, bt);
@@ -538,13 +543,13 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
         return mknode(op, ty_int, a, b);
     }
     if (!isscalar(at) || !isscalar(bt) || at->kind == TY_PTR || bt->kind == TY_PTR) {
-        error("invalid operands", 0);
+        error(40 /* invalid operands */, 0);
         return mknum(0, ty_int);
     }
     if (op == N_SHL || op == N_SHR) {
         t = arith(at, ty_int);
         if (!isintegral(t) || !isintegral(bt)) {
-            error("invalid shift", 0);
+            error(41 /* invalid shift */, 0);
             return mknum(0, ty_int);
         }
         a = cast(a, t);
@@ -563,7 +568,7 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
     }
     t = arith(at, bt);
     if ((op == N_MOD || op == N_AND || op == N_OR || op == N_XOR) && isfloatty(t)) {
-        error("invalid operands", 0);
+        error(40 /* invalid operands */, 0);
         return mknum(0, ty_int);
     }
     a = cast(a, t);
@@ -573,7 +578,7 @@ static struct Node *binop(int op, struct Node *a, struct Node *b)
         return mknode(N_CAST, t, call1(lhelper(op, uns), a, b), 0);
     if (isconst(a) && isconst(b) && !isfloatty(t)) {
         if ((op == N_DIV || op == N_MOD) && b->val == 0)
-            error("division by zero", 0);
+            error(42 /* division by zero */, 0);
         else
             return mknum(fold(op, a->val, b->val, uns), t);
     }
@@ -601,7 +606,7 @@ static struct Node *cond(struct Node *n)
 {
     n = decay(n);
     if (!isscalar(n->type))
-        error("scalar required", 0);
+        error(43 /* scalar required */, 0);
     if (isfloatty(n->type))
         n = binop(N_NE, n, fzero());
     return n;
@@ -628,7 +633,7 @@ static struct Node *arglist(struct Type *ft, int *nargs)
                 p = p->next;
             } else {
                 if (!ft->variadic && !ft->oldstyle)
-                    error("too many arguments", 0);
+                    error(44 /* too many arguments */, 0);
                 a = decay(a);
                 if (a->type->kind == TY_CHAR || a->type->kind == TY_UCHAR)
                     a = cast(a, ty_int);
@@ -648,7 +653,7 @@ static struct Node *arglist(struct Type *ft, int *nargs)
         next();
     }
     if (ft && p)
-        error("too few arguments", 0);
+        error(45 /* too few arguments */, 0);
     expect(')', ")");
     *nargs = n;
     return first;
@@ -665,7 +670,7 @@ static struct Node *intrinsic(int code)
     n->a = arglist(0, &na);
     if (code == I_VASTART) {
         if (!curft || !curft->variadic)
-            error("__va_start outside a variadic function", 0);
+            error(46 /* __va_start outside a variadic function */, 0);
         n->val2 = vaoff;
         n->type = ty_charp;
     } else if (code == I_CSPV || code == I_CXP0V || code == I_EXITP)
@@ -676,7 +681,7 @@ static struct Node *intrinsic(int code)
         n->type = ptrto(ty_int);
     if ((code >= I_CSPV && code <= I_CXP0I) || code == I_OSVAR || code == I_OSVARA) {
         if (!n->a || !isconst(n->a))
-            error("constant expected", intrnames[code]);
+            error(47 /* constant expected */, intrnames[code]);
     }
     return n;
 }
@@ -722,7 +727,7 @@ static struct Node *primary(void)
                     return intrinsic(i);
         }
         if (!s) {
-            error("undeclared identifier", tokname);
+            error(48 /* undeclared identifier */, tokname);
             next();
             return mknum(0, ty_int);
         }
@@ -735,14 +740,14 @@ static struct Node *primary(void)
             return n;
         }
         if (s->kind == S_TYPEDEF) {
-            error("unexpected type name", s->name);
+            error(49 /* unexpected type name */, s->name);
             return mknum(0, ty_int);
         }
         n = mknode(N_VAR, s->type, 0, 0);
         n->sym = s;
         return n;
     }
-    error("expression expected", 0);
+    error(50 /* expression expected */, 0);
     next();
     return mknum(0, ty_int);
 }
@@ -774,14 +779,14 @@ static struct Node *member(struct Node *n, char *name)
     struct Node *m;
     int off;
     if (n->type->kind != TY_STRUCT && n->type->kind != TY_UNION) {
-        error("not a structure", name);
+        error(51 /* not a structure */, name);
         return n;
     }
     if (n->type->size < 0)
-        error("incomplete structure", n->type->tag);
+        error(52 /* incomplete structure */, n->type->tag);
     f = findfield(n->type, name, &off);
     if (!f) {
-        error("no such member", name);
+        error(53 /* no such member */, name);
         return n;
     }
     m = mknode(N_MEMBER, f->type, n, 0);
@@ -793,7 +798,7 @@ static struct Node *deref(struct Node *n)
 {
     n = decay(n);
     if (n->type->kind != TY_PTR) {
-        error("pointer required", 0);
+        error(54 /* pointer required */, 0);
         return n;
     }
     if (n->type->base->kind == TY_FUNC)
@@ -822,7 +827,7 @@ static struct Node *postfix(void)
             else if (n->type->kind == TY_PTR && n->type->base->kind == TY_FUNC) {
                 ft = n->type->base;
             } else
-                error("not a function", 0);
+                error(55 /* not a function */, 0);
             c = mknode(N_CALL, ft ? ft->base : ty_int, n, 0);
             c->b = arglist(ft, &na);
             c->val = na;
@@ -830,19 +835,19 @@ static struct Node *postfix(void)
         } else if (tok == '.') {
             next();
             if (tok != T_ID)
-                error("member name expected", 0);
+                error(56 /* member name expected */, 0);
             n = member(n, tokname);
             next();
         } else if (tok == T_ARROW) {
             next();
             if (tok != T_ID)
-                error("member name expected", 0);
+                error(56 /* member name expected */, 0);
             n = member(deref(n), tokname);
             next();
         } else if (tok == T_INC || tok == T_DEC) {
             struct Node *u;
             if (!islvalue(n))
-                error("lvalue required", 0);
+                error(57 /* lvalue required */, 0);
             u = mknode(N_LVREF, n->type, 0, 0);
             u = cast(binop(tok == T_INC ? N_ADD : N_SUB, u, mknum(1, ty_int)), n->type);
             n = mknode(N_POSTINC, n->type, n, u);
@@ -874,7 +879,7 @@ static struct Node *unary(void)
         if (islongty(n->type))
             return mknode(N_CAST, n->type, call1("__lneg", n, 0), 0);
         if (!isintegral(n->type) && !isfloatty(n->type))
-            error("invalid operand", 0);
+            error(58 /* invalid operand */, 0);
         t = isfloatty(n->type) ? n->type : arith(n->type, ty_int);
         return mknode(N_NEG, t, cast(n, t), 0);
     case '+':
@@ -885,7 +890,7 @@ static struct Node *unary(void)
         next();
         n = castexpr();
         if (!isintegral(n->type))
-            error("invalid operand", 0);
+            error(58 /* invalid operand */, 0);
         if (islongty(n->type))
             return mknode(N_CAST, n->type, call1("__lnot", n, 0), 0);
         t = arith(n->type, ty_int);
@@ -907,7 +912,7 @@ static struct Node *unary(void)
         if (n->op == N_FUNC)
             return mknode(N_ADDR, ptrto(n->type), n, 0);
         if (!islvalue(n))
-            error("lvalue required", 0);
+            error(57 /* lvalue required */, 0);
         return mknode(N_ADDR, ptrto(n->type), n, 0);
     case T_INC:
     case T_DEC:
@@ -915,7 +920,7 @@ static struct Node *unary(void)
         next();
         n = unary();
         if (!islvalue(n))
-            error("lvalue required", 0);
+            error(57 /* lvalue required */, 0);
         u = mknode(N_LVREF, n->type, 0, 0);
         u = cast(binop(op, u, mknum(1, ty_int)), n->type);
         return mknode(N_OPASSIGN, n->type, n, u);
@@ -936,7 +941,7 @@ static struct Node *unary(void)
             t = n->type;
         }
         if (t->size < 0)
-            error("sizeof incomplete type", 0);
+            error(59 /* sizeof incomplete type */, 0);
         return mknum(t->size, ty_uint);
     }
     return postfix();
@@ -1070,11 +1075,11 @@ static struct Node *assign(void)
         next();
         b = assign();
         if (!islvalue(a) || a->type->kind == TY_ARRAY)
-            error("lvalue required", 0);
+            error(57 /* lvalue required */, 0);
         if (a->type->kind == TY_STRUCT || a->type->kind == TY_UNION) {
             if (!sametype(a->type, b->type) || a->type != b->type)
                 if (a->type != b->type)
-                    error("incompatible structure assignment", 0);
+                    error(60 /* incompatible structure assignment */, 0);
             return mknode(N_ASSIGN, a->type, a, b);
         }
         return mknode(N_ASSIGN, a->type, a, cast(b, a->type));
@@ -1095,7 +1100,7 @@ static struct Node *assign(void)
         next();
         b = assign();
         if (!islvalue(a))
-            error("lvalue required", 0);
+            error(57 /* lvalue required */, 0);
         u = mknode(N_LVREF, a->type, 0, 0);
         u = cast(binop(op, u, b), a->type);
         return mknode(N_OPASSIGN, a->type, a, u);
@@ -1125,7 +1130,7 @@ static int constexpr(void)
     if (!isconst(n)) {
         if (n->op == N_NUM)
             return n->val;
-        error("constant expression required", 0);
+        error(61 /* constant expression required */, 0);
         xrelease(m);
         return 0;
     }
@@ -1185,7 +1190,7 @@ static void dcl(struct Dcl *d)
         if (tok == '[') {
             next();
             if (d->n >= 12)
-                fatal("declarator too complex", 0);
+                fatal(62 /* declarator too complex */, 0);
             d->kind[d->n] = TY_ARRAY;
             d->len[d->n] = -1;
             if (tok != ']')
@@ -1200,7 +1205,7 @@ static void dcl(struct Dcl *d)
             ft->variadic = variadic;
             ft->oldstyle = oldstyle;
             if (d->n >= 12)
-                fatal("declarator too complex", 0);
+                fatal(62 /* declarator too complex */, 0);
             d->kind[d->n] = TY_FUNC;
             d->ft[d->n] = ft;
             d->n++;
@@ -1209,7 +1214,7 @@ static void dcl(struct Dcl *d)
     }
     for (i = 0; i < nstars; i++) {
         if (d->n >= 12)
-            fatal("declarator too complex", 0);
+            fatal(62 /* declarator too complex */, 0);
         d->kind[d->n++] = TY_PTR;
     }
 }
@@ -1223,12 +1228,12 @@ static struct Type *applydcl(struct Type *t, struct Dcl *d)
             t = ptrto(t);
         else if (d->kind[i] == TY_ARRAY) {
             if (t->kind == TY_FUNC)
-                error("array of functions", 0);
+                error(63 /* array of functions */, 0);
             t = arrayof(t, d->len[i]);
         } else {
             f = d->ft[i];
             if (t->kind == TY_FUNC || t->kind == TY_ARRAY)
-                error("function returning an array or function", 0);
+                error(64 /* function returning an array or function */, 0);
             f->base = t;
             t = f;
         }
@@ -1327,7 +1332,7 @@ static struct Type *structspec(int isunion)
     t = 0;
     if (tok != '{') {
         if (!tag[0]) {
-            error("structure tag expected", 0);
+            error(65 /* structure tag expected */, 0);
             return ty_int;
         }
         s = lookuptag(tag);
@@ -1343,7 +1348,7 @@ static struct Type *structspec(int isunion)
         if (s && s->level == level && s->type->size < 0)
             t = s->type;
         else if (s && s->level == level)
-            error("structure redefined", tag);
+            error(66 /* structure redefined */, tag);
     }
     if (!t) {
         t = mktype(isunion ? TY_UNION : TY_STRUCT, -1, 2);
@@ -1377,7 +1382,7 @@ static struct Type *structspec(int isunion)
         for (;;) {
             ft = declarator(base, name);
             if (ft->size < 0 || ft->kind == TY_FUNC)
-                error("invalid member type", name);
+                error(67 /* invalid member type */, name);
             f = (struct Field *)palloc(sizeof(struct Field));
             f->name = pstrdup(name);
             f->type = ft;
@@ -1560,20 +1565,20 @@ static void init1(struct Node *lv, struct Type *t, int global)
                 t->len = n->slen;
                 t->size = n->slen;
             } else if (n->slen - 1 > t->len)
-                error("initializer string too long", 0);
+                error(68 /* initializer string too long */, 0);
             ir_discard(mknode(N_ASSIGN, t, lv, n));
             xrelease(m);
             return;
         }
         if (tok != '{') {
-            error("{ expected", 0);
+            error(69 /* { expected */, 0);
             return;
         }
         next();
         i = 0;
         while (tok != '}' && tok != T_EOF) {
             if (t->len >= 0 && i >= t->len)
-                error("too many initializers", 0);
+                error(70 /* too many initializers */, 0);
             init1(elem(lv, W16(i * t->base->size), t->base), t->base, global);
             i++;
             if (tok != ',')
@@ -1599,7 +1604,7 @@ static void init1(struct Node *lv, struct Type *t, int global)
         f = t->fields;
         while (tok != '}' && tok != T_EOF) {
             if (!f) {
-                error("too many initializers", 0);
+                error(70 /* too many initializers */, 0);
                 break;
             }
             init1(elem(lv, f->offset, f->type), f->type, global);
@@ -1658,7 +1663,7 @@ static void localdecl(void)
     for (;;) {
         t = declarator(base, name);
         if (!name[0])
-            error("name expected", 0);
+            error(71 /* name expected */, 0);
         if (sc == K_TYPEDEF)
             addsym(name, S_TYPEDEF, t);
         else if (t->kind == TY_FUNC || sc == K_EXTERN) {
@@ -1694,7 +1699,7 @@ static void localdecl(void)
             if (tok == '=' && t->kind == TY_ARRAY && t->len < 0) {
                 next();
                 if (tok != T_STR)
-                    error("array size required", name);
+                    error(72 /* array size required */, name);
                 else {
                     t->len = toklen;
                     t->size = toklen;
@@ -1706,7 +1711,7 @@ static void localdecl(void)
                 initializer(lv, t, 0);
             } else {
                 if (t->size < 0)
-                    error("incomplete type", name);
+                    error(73 /* incomplete type */, name);
                 s = addsym(name, S_LOCAL, t);
                 s->offset = alloclocal(t);
                 if (tok == '=') {
@@ -1815,7 +1820,7 @@ static void statement(int brk, int cont)
         statement(l3, l2);
         ir_setlabel(l2);
         if (tok != K_WHILE)
-            error("while expected", 0);
+            error(74 /* while expected */, 0);
         next();
         n = condparen();
         ir_branch(n, l1, 1);
@@ -1862,7 +1867,7 @@ static void statement(int brk, int cont)
             if (islongty(n->type))
                 n = cast(n, ty_int);
             else
-                error("integer required", 0);
+                error(75 /* integer required */, 0);
         }
         t = alloclocal(ty_int);
         ir_valuestl(cast(n, ty_int), t);
@@ -1896,12 +1901,12 @@ static void statement(int brk, int cont)
         t = constexpr();
         expect(':', ":");
         if (!swvals)
-            error("case outside switch", 0);
+            error(76 /* case outside switch */, 0);
         else {
             int i;
             for (i = 0; i < swn; i++)
                 if (swvals[i] == t)
-                    error("duplicate case", 0);
+                    error(77 /* duplicate case */, 0);
             if (swn >= swmax) {
                 int *nv;
                 int *nl;
@@ -1924,7 +1929,7 @@ static void statement(int brk, int cont)
         next();
         expect(':', ":");
         if (!swvals)
-            error("default outside switch", 0);
+            error(78 /* default outside switch */, 0);
         else {
             swdef = ir_newlabel();
             ir_setlabel(swdef);
@@ -1934,7 +1939,7 @@ static void statement(int brk, int cont)
     case K_BREAK:
         next();
         if (brk < 0)
-            error("break outside loop or switch", 0);
+            error(79 /* break outside loop or switch */, 0);
         else
             ir_jump(brk);
         expect(';', ";");
@@ -1942,7 +1947,7 @@ static void statement(int brk, int cont)
     case K_CONTINUE:
         next();
         if (cont < 0)
-            error("continue outside loop", 0);
+            error(80 /* continue outside loop */, 0);
         else
             ir_jump(cont);
         expect(';', ";");
@@ -1953,7 +1958,7 @@ static void statement(int brk, int cont)
         if (tok != ';') {
             n = expr();
             if (curft->base->kind == TY_VOID)
-                error("void function returns a value", 0);
+                error(81 /* void function returns a value */, 0);
             else if (curft->base->kind != TY_STRUCT && curft->base->kind != TY_UNION)
                 n = cast(n, curft->base);
         }
@@ -1964,7 +1969,7 @@ static void statement(int brk, int cont)
     case K_GOTO:
         next();
         if (tok != T_ID)
-            error("label expected", 0);
+            error(82 /* label expected */, 0);
         else {
             s = label(tokname);
             ir_jump(s->offset);
@@ -1976,7 +1981,7 @@ static void statement(int brk, int cont)
         if (tok == T_ID && peek() == ':') {
             s = label(tokname);
             if (s->defined)
-                error("label redefined", tokname);
+                error(83 /* label redefined */, tokname);
             s->defined = 1;
             ir_setlabel(s->offset);
             next();
@@ -2011,7 +2016,7 @@ static void funcdef(struct Sym *fs, int isstatic)
     seg = cursegname;           /* a #pragma read as lookahead belongs to the next function */
     ft = fs->type;
     if (fs->defined)
-        error("function redefined", fs->name);
+        error(84 /* function redefined */, fs->name);
     fs->defined = 1;
     curfn = fs;
     curft = ft;
@@ -2021,7 +2026,7 @@ static void funcdef(struct Sym *fs, int isstatic)
     pw = 0;
     for (p = ft->params; p; p = p->next) {
         if (np >= 32)
-            fatal("too many parameters", fs->name);
+            fatal(85 /* too many parameters */, fs->name);
         pv[np++] = p;
         pw = pw + twords(p->type);
     }
@@ -2044,7 +2049,7 @@ static void funcdef(struct Sym *fs, int isstatic)
             s = addsym(p->name, S_LOCAL, p->type);
             s->offset = off;
         } else if (!ft->oldstyle)
-            error("parameter name missing", fs->name);
+            error(86 /* parameter name missing */, fs->name);
         off = off + twords(p->type);
     }
     if (ft->base->kind == TY_STRUCT || ft->base->kind == TY_UNION) {
@@ -2060,7 +2065,7 @@ static void funcdef(struct Sym *fs, int isstatic)
     compound(-1, -1);
     for (s = labels; s; s = s->next)
         if (!s->defined)
-            error("undefined label", s->name);
+            error(87 /* undefined label */, s->name);
     ir_funcend(fs->name, ft, exitlab, isstatic, seg);
     popscope();
     curfn = 0;
@@ -2086,7 +2091,7 @@ static void external(void)
     for (;;) {
         t = declarator(base, name);
         if (!name[0]) {
-            error("name expected", 0);
+            error(71 /* name expected */, 0);
             next();
             return;
         }
@@ -2095,7 +2100,7 @@ static void external(void)
         } else if (t->kind == TY_FUNC) {
             s = lookup(name);
             if (s && s->kind != S_FUNC) {
-                error("redeclared", name);
+                error(88 /* redeclared */, name);
                 s = 0;
             }
             if (!s)
@@ -2113,7 +2118,7 @@ static void external(void)
         } else {
             s = lookup(name);
             if (s && (s->kind != S_GLOBAL || s->level != 0)) {
-                error("redeclared", name);
+                error(88 /* redeclared */, name);
                 s = 0;
             }
             if (!s) {
@@ -2154,6 +2159,8 @@ static void external(void)
     expect(';', ";");
     xrelease(m);
 }
+
+#pragma segment CINIT
 
 /* declare the runtime helpers the code generator calls (defined in tcrt.h) */
 static void declhelper(char *name, struct Type *ret, struct Type *a, struct Type *b)
@@ -2216,6 +2223,8 @@ static void helpers(void)
     declhelper("__ftoul", ty_ulong, ty_double, 0);
 }
 
+#pragma segment PARSE
+
 void pragma(char *s)
 {
     char name[MAXNAME];
@@ -2244,7 +2253,7 @@ int compile(char *src, char *ir, char *modname)
     FILE *fp;
     fp = fopen(src, "r");
     if (!fp)
-        fatal("cannot open", src);
+        fatal(25 /* cannot open */, src);
     ir_open(ir, modname);
     typeinit();
     helpers();

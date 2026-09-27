@@ -109,7 +109,6 @@ static int ininit;
 
 static int lvtemp;              /* compound assignment: temp holding the address, 0 = simple lvalue */
 static struct Node *lvnode;     /* compound assignment: the lvalue */
-static int nosx;                /* load chars without sign extension */
 
 static void setupemit(struct Emit *e, int max, int maxlab, int maxfix, int maxrel)
 {
@@ -125,7 +124,7 @@ static void setupemit(struct Emit *e, int max, int maxlab, int maxfix, int maxre
     e->reltype = (int *)malloc(maxrel * sizeof(int));
     e->relname = (char **)malloc(maxrel * sizeof(char *));
     if (!e->code || !e->labpos || !e->fixlab || !e->relname)
-        fatal("out of memory", 0);
+        fatal(2 /* out of memory */, 0);
     e->pc = 0;
     e->nlab = 0;
     e->nfix = 0;
@@ -154,7 +153,7 @@ static void loadframe(void)
 static void ob(int b)
 {
     if (E->pc >= E->max)
-        fatal("function too large", 0);
+        fatal(95 /* function too large */, 0);
     E->code[E->pc++] = b & 255;
 }
 
@@ -280,7 +279,7 @@ static void reloc(int type, char *name)
 {
     name = intern(name);
     if (E->nrel >= E->maxrel)
-        fatal("too many calls in one function", 0);
+        fatal(96 /* too many calls in one function */, 0);
     E->relpos[E->nrel] = E->pc;
     E->reltype[E->nrel] = type;
     E->relname[E->nrel] = name;
@@ -307,7 +306,7 @@ static void drop(int n)
 int newlabel(void)
 {
     if (E->nlab >= E->maxlab)
-        fatal("function too large (labels)", 0);
+        fatal(89 /* function too large (labels) */, 0);
     E->labpos[E->nlab] = -1;
     return E->nlab++;
 }
@@ -321,7 +320,7 @@ static void jmpop(int op, int l)
 {
     ob(op);
     if (E->nfix >= E->maxfix)
-        fatal("function too large (jumps)", 0);
+        fatal(97 /* function too large (jumps) */, 0);
     E->fixpos[E->nfix] = E->pc;
     E->fixlab[E->nfix] = l;
     E->nfix++;
@@ -337,7 +336,7 @@ void jump(int l)
 static void caseword(int l)
 {
     if (E->nfix >= E->maxfix)
-        fatal("function too large (jumps)", 0);
+        fatal(97 /* function too large (jumps) */, 0);
     E->fixpos[E->nfix] = E->pc;
     E->fixlab[E->nfix] = -2 - l;
     E->nfix++;
@@ -414,7 +413,7 @@ static void lvinfo(struct Node *n, struct LV *lv)
         lv->ptr = n;
         return;
     }
-    error("lvalue required", 0);
+    error(57 /* lvalue required */, 0);
     lv->kind = LV_LOCAL;
     lv->off = scratch;
     lv->boff = 0;
@@ -485,8 +484,26 @@ static void signext(void)
 static void loadchar(struct Type *t)
 {
     ob(O_LDB);
-    if (t->kind == TY_CHAR && !nosx)
+    if (t->kind == TY_CHAR)
         signext();
+}
+
+static int islv(struct Node *n)
+{
+    return n->op == N_VAR || n->op == N_MEMBER || n->op == N_DEREF;
+}
+
+/* a value of which only the low byte matters: char loads skip the sign
+   extension, and conversions to char are unnecessary */
+static void gen_lowbyte(struct Node *n)
+{
+    while (n->op == N_CAST && isword(n->type) && isword(n->a->type))
+        n = n->a;
+    if (islv(n) && ischar(n->type)) {
+        gen_byteaddr(n);
+        ob(O_LDB);
+    } else
+        gen_value(n);
 }
 
 /* load the value of lvalue n */
@@ -747,7 +764,7 @@ static void gen_call(struct Node *n, int want)
         ldl(t);
         ob(O_STO);
         if (E->pc != A + 3 + L)
-            fatal("internal: indirect call layout", 0);
+            fatal(98 /* internal: indirect call layout */, 0);
         ob(O_CXP);
         ob(0);
         ob(0);
@@ -829,7 +846,7 @@ static void gen_str(struct Node *n)
 {
     int i;
     if (n->slen > 255)
-        error("string literal longer than 254 characters", 0);
+        error(99 /* string literal longer than 254 characters */, 0);
     ob(O_LPA);
     ob(n->slen);
     for (i = 0; i < n->slen; i++)
@@ -877,9 +894,10 @@ static void gen_cmpops(struct Node *n)
     b = n->b;
     eq = n->op == N_EQ || n->op == N_NE;
     uns = !eq && (isunsignedty(a->type) || a->type->kind == TY_PTR);
-    nosx = eq && charsafe(a, b);
-    gen_value(a);
-    nosx = 0;
+    if (eq && charsafe(a, b))
+        gen_lowbyte(a);
+    else
+        gen_value(a);
     if (uns) {
         ldc(-32768);
         ob(O_ADI);
@@ -887,9 +905,10 @@ static void gen_cmpops(struct Node *n)
     if (uns && b->op == N_NUM)
         ldc(b->val ^ -32768);
     else {
-        nosx = eq && charsafe(b, a);
-        gen_value(b);
-        nosx = 0;
+        if (eq && charsafe(b, a))
+            gen_lowbyte(b);
+        else
+            gen_value(b);
         if (uns) {
             ldc(-32768);
             ob(O_ADI);
@@ -980,11 +999,8 @@ void branch(struct Node *n, int l, int jumpif)
     if (islongty(t)) {
         gen_value(n);
         ob(O_LOR);
-    } else {
-        nosx = 1;
-        gen_value(n);
-        nosx = 0;
-    }
+    } else
+        gen_lowbyte(n);
     ldc(0);
     jmpop(jumpif ? O_EFJ : O_NFJ, l);
 }
@@ -1028,7 +1044,10 @@ static void gen_assign(struct Node *n, int want)
         if (n->op == N_POSTINC && want)
             gen_load(lhs);
         storepre(lhs);
-        gen_value(rhs);
+        if (ischar(t))
+            gen_lowbyte(rhs);
+        else
+            gen_value(rhs);
         storepost(lhs);
         if (want && n->op != N_POSTINC)
             gen_load(lhs);
@@ -1041,7 +1060,10 @@ static void gen_assign(struct Node *n, int want)
         if (n->op == N_POSTINC && want)
             loadvia(ta, t);
         storeviapre(ta, t);
-        gen_value(rhs);
+        if (ischar(t))
+            gen_lowbyte(rhs);
+        else
+            gen_value(rhs);
         storeviapost(t);
         if (want && n->op != N_POSTINC)
             loadvia(ta, t);
@@ -1200,7 +1222,7 @@ void gen_value(struct Node *n)
         ob(O_LOR);
         return;
     }
-    error("internal: cannot generate node", 0);
+    error(100 /* internal: cannot generate node */, 0);
 }
 
 void gen_discard(struct Node *n)
@@ -1379,7 +1401,7 @@ static void endproc(char *name, char *seg, int exitlab, int rw, int flags)
             continue;
         t = E->labpos[E->fixlab[i]];
         if (t < 0) {
-            error("internal: undefined label", name);
+            error(101 /* internal: undefined label */, name);
             continue;
         }
         off = t - (pos + 1);
@@ -1392,7 +1414,7 @@ static void endproc(char *name, char *seg, int exitlab, int rw, int flags)
                 break;
         if (k == nlong) {
             if (nlong >= MAXLONGJ)
-                fatal("function too large (more than 60 long jumps); split it", name);
+                fatal(102 /* function too large (more than 60 long jumps); split it */, name);
             longlab[nlong++] = t;
         }
         E->code[pos] = (256 - 10 - 2 * k) & 255;

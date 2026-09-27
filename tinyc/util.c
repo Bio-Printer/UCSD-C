@@ -18,27 +18,66 @@ FILE *objout;
 char *curfile;
 int curline;
 
-void error(char *msg, char *arg)
+/* Message texts live in a file (tcmsgs.txt; on the P-System TCMSGS.TEXT
+   on the default or the boot volume): line n is message n.  Keeping them
+   out of the code saves memory in every pass. */
+static void message(int n)
 {
-    if (curfile)
-        printf("%s:%d: ", curfile, curline);
-    printf("error: %s", msg);
-    if (arg)
-        printf(" '%s'", arg);
-    printf("\n");
-    nerrors++;
-    if (nerrors >= 20)
-        fatal("too many errors", 0);
+    FILE *fp;
+    int c;
+    int line;
+    char path[200];
+    char *dir;
+    fp = 0;
+#ifdef __TINYC__
+    if (n != 2) {                   /* not when out of memory: fopen needs a buffer */
+        fp = fopen("TCMSGS.TEXT", "r");
+        if (!fp)
+            fp = fopen("*TCMSGS.TEXT", "r");
+    }
+#else
+    dir = getenv("TINYC_INCLUDE");
+    if (dir) {
+        strcpy(path, dir);
+        strcat(path, "/tcmsgs.txt");
+        fp = fopen(path, "r");
+    }
+#endif
+    if (!fp) {
+        printf(n == 2 ? "out of memory" : "message #%d", n);
+        return;
+    }
+    line = 1;
+    while (line < n && (c = getc(fp)) != EOF)
+        if (c == '\n')
+            line++;
+    while ((c = getc(fp)) != EOF && c != '\n')
+        putchar(c);
+    fclose(fp);
 }
 
-void warn(char *msg, char *arg)
+static void report(char *kind, int n, char *arg)
 {
     if (curfile)
         printf("%s:%d: ", curfile, curline);
-    printf("warning: %s", msg);
+    printf("%s", kind);
+    message(n);
     if (arg)
         printf(" '%s'", arg);
     printf("\n");
+}
+
+void error(int n, char *arg)
+{
+    report("error: ", n, arg);
+    nerrors++;
+    if (nerrors >= 20)
+        fatal(1 /* too many errors */, 0);
+}
+
+void warn(int n, char *arg)
+{
+    report("warning: ", n, arg);
 }
 
 void memfail(int n)
@@ -46,17 +85,12 @@ void memfail(int n)
 #ifdef __TINYC__
     printf("(asked for %d bytes, %d words free)\n", n, __cspi(40));
 #endif
-    fatal("out of memory", 0);
+    fatal(2 /* out of memory */, 0);
 }
 
-void fatal(char *msg, char *arg)
+void fatal(int n, char *arg)
 {
-    if (curfile)
-        printf("%s:%d: ", curfile, curline);
-    printf("fatal: %s", msg);
-    if (arg)
-        printf(" '%s'", arg);
-    printf("\n");
+    report("fatal: ", n, arg);
     exit(2);
 }
 
@@ -161,7 +195,7 @@ char *xalloc(int n)
     }
     n = (n + 1) & ~1;
     if (xused + n > xsize)
-        fatal("expression too complex", 0);
+        fatal(3 /* expression too complex */, 0);
     p = xbuf + xused;
     xused += n;
     memset(p, 0, n);

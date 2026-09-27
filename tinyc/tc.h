@@ -8,6 +8,9 @@
 #ifndef TC_H
 #define TC_H
 
+#ifdef __TINYC__
+#define NO_FLOAT_PRINTF             /* the compiler prints no floats */
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -222,10 +225,10 @@ extern char *curfile;
 extern int curline;
 
 /* util */
-void error(char *msg, char *arg);
-void fatal(char *msg, char *arg);
+void error(int n, char *arg);
+void fatal(int n, char *arg);
 void memfail(int n);
-void warn(char *msg, char *arg);
+void warn(int n, char *arg);
 char *palloc(int n);            /* permanent */
 char *falloc(int n);            /* until end of the current function */
 char *xalloc(int n);            /* until end of the current statement */

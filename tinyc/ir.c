@@ -137,7 +137,7 @@ void ir_open(char *name, char *modname)
 {
     irout = fopen(name, "wb");
     if (!irout)
-        fatal("cannot create", name);
+        fatal(24 /* cannot create */, name);
     fputs("TCIR", irout);
     irb('H');
     irs(modname);
@@ -162,7 +162,7 @@ void ir_funcbegin(void)
 int ir_newlabel(void)
 {
     if (irlabels >= MAXLABEL)
-        fatal("function too large (labels)", 0);
+        fatal(89 /* function too large (labels) */, 0);
     return irlabels++;
 }
 
@@ -270,7 +270,7 @@ static int rb(void)
     int c;
     c = getc(irin);
     if (c == EOF)
-        fatal("intermediate file truncated", 0);
+        fatal(90 /* intermediate file truncated */, 0);
     return c;
 }
 
@@ -381,7 +381,7 @@ static struct Node *rnode(void)
 static int lab(int l)
 {
     if (l < 0 || l >= nlmap)
-        fatal("internal: bad label in intermediate file", 0);
+        fatal(91 /* internal: bad label in intermediate file */, 0);
     if (lmap[l] < 0)
         lmap[l] = newlabel();
     return lmap[l];
@@ -419,21 +419,21 @@ int gencode(char *irname, char *obj)
     struct Type *ft;
     irin = fopen(irname, "rb");
     if (!irin)
-        fatal("cannot open", irname);
+        fatal(25 /* cannot open */, irname);
     for (i = 0; i < 4; i++)
         magic[i] = rb();
     magic[4] = 0;
     if (strcmp(magic, "TCIR") != 0 || rb() != 'H')
-        fatal("not an intermediate file", irname);
+        fatal(92 /* not an intermediate file */, irname);
     objout = fopen(obj, "wb");
     if (!objout)
-        fatal("cannot create", obj);
+        fatal(24 /* cannot create */, obj);
     nlmap = MAXLABEL;
     lmap = (int *)malloc(nlmap * sizeof(int));
     vals = (int *)malloc(1024 * sizeof(int));
     labs = (int *)malloc(1024 * sizeof(int));
     if (!lmap || !vals || !labs)
-        fatal("out of memory", 0);
+        fatal(2 /* out of memory */, 0);
     m = xmark();
     modname = pstrdup(rstr());
     xrelease(m);
@@ -485,7 +485,7 @@ int gencode(char *irname, char *obj)
             t = rw();
             n = rw();
             if (n > 1024)
-                fatal("too many cases", 0);
+                fatal(93 /* too many cases */, 0);
             for (i = 0; i < n; i++) {
                 vals[i] = rw();
                 labs[i] = lab(rw());
@@ -520,7 +520,7 @@ int gencode(char *irname, char *obj)
             fclose(objout);
             return nerrors == 0;
         default:
-            fatal("bad intermediate file record", 0);
+            fatal(94 /* bad intermediate file record */, 0);
         }
         xrelease(m);
     }
