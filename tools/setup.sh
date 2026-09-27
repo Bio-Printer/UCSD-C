@@ -19,7 +19,9 @@ if [ ! -f build/data/Big_Disk.BLK ]; then
 fi
 # P-Code mode boots natively and never executes pascal.bin (the Z80 loader);
 # LoadFiles only needs the file to exist.
-[ -f build/data/pascal.bin ] || head -c 4096 /dev/zero > build/data/pascal.bin
+# pascal.bin (the Z80 loader) is needed only in Z80 mode; P-Code mode boots natively
+if [ -f pascal.bin ]; then cp pascal.bin build/data/pascal.bin
+else [ -f build/data/pascal.bin ] || head -c 4096 /dev/zero > build/data/pascal.bin; fi
 if [ ! -x build/run_verify ] || [ build/pm/UCSDPascal/PSystemEngine.cpp -nt build/run_verify ]; then
     g++ -std=c++17 -O2 -w -I tools/runner/linux-shim -I build/pm/UCSDPascal \
         -o build/run_verify tools/runner/run_verify.cpp \
