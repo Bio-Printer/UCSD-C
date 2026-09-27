@@ -51,7 +51,10 @@ def main(mods):
         try:
             p = ps.get('TINYC2.CODE')
             h = open(code, 'rb').read()
-            print('TINYC2.CODE', 'IDENTICAL to the host-built TINYC.CODE' if p == h else 'DIFFERENT', len(p), len(h))
+            # block 0 names segment 1 after the program: TINYC2 here, TINYC on the host
+            h = h[:72] + b'TINYC2  ' + h[80:]
+            print('TINYC2.CODE', 'IDENTICAL to the host-built TINYC.CODE (apart from its name)' if p == h
+                  else 'DIFFERENT', len(p), len(h))
         except SystemExit as e:
             print(e)
     if not ok:

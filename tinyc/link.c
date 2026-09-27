@@ -26,20 +26,18 @@
 #define MAXMOD  64
 #define LHASH 128
 
+/* kept small: the P-System links the compiler itself (about 500 of these) */
 struct LProc {
     char *name;
-    int mod;
-    int seg;                /* index into segnames */
-    int flags;              /* 1 = initialiser */
-    int parmsz;
-    int rw;
-    int codelen;
-    int jtab;
-    int nrel;
-    int *rel;               /* >= 0 procedure, <= -2 variable -2-k, -1 none */
-    int live;
-    int procnum;
     struct LProc *hnext;
+    int *rel;               /* what it uses, each once: >= 0 procedure, <= -2 variable -2-k */
+    int nrel;
+    int codelen;
+    unsigned char mod;
+    unsigned char seg;      /* index into segnames */
+    unsigned char flags;    /* 1 = initialiser */
+    unsigned char live;
+    unsigned char procnum;
 };
 
 struct LData {
@@ -76,6 +74,8 @@ static char **objfiles;
 static int nobjfiles;
 static int curfilei;
 static int curmod;
+static int mainparmsz;          /* main's parameter words and result words */
+static int mainrw;
 
 static int rd(void)
 {
@@ -302,11 +302,12 @@ static void pass1(void)
         p->mod = curmod;
         p->seg = segindex(seg);
         p->flags = flags;
-        p->parmsz = parmsz;
-        p->rw = rw;
         p->codelen = codelen;
-        p->jtab = jtab;
         p->nrel = n;
+        if (strcmp(name, "main") == 0) {
+            mainparmsz = parmsz;
+            mainrw = rw;
+        }
         h = hashstr(name) & (LHASH - 1);
         p->hnext = lhash[h];
         lhash[h] = p;
@@ -329,9 +330,14 @@ static void pass2(void)
     int i;
     int k;
     int type;
+    int m;
+    int j;
+    int v;
+    int *tmp;
     struct LProc *p;
     struct LProc *t;
     struct LData *d;
+    tmp = (int *)lbuf;              /* the code is not needed here */
     rewindobjs();
     k = 0;
     nuses = 0;
@@ -352,25 +358,38 @@ static void pass2(void)
             continue;
         p = procs[k++];
         n = rdw();
-        p->rel = (int *)palloc(n * sizeof(int) + 2);
+        m = 0;
         for (i = 0; i < n; i++) {
             rdw();
             type = rd();
             rds(rname);
-            p->rel[i] = -1;
+            v = -1;
             if (type == 1 || type == 2) {
                 t = findproc(rname);
                 if (!t)
                     error(109 /* undefined function */, rname);
                 else
-                    p->rel[i] = procindex(t);
+                    v = procindex(t);
             } else if (type == 4) {
                 d = finddata(rname);
                 if (!d || d->mod < 0)
                     error(114 /* undefined variable */, rname);
                 else
-                    p->rel[i] = -2 - dataindex(d);
+                    v = -2 - dataindex(d);
             }
+            if (v == -1)
+                continue;
+            for (j = 0; j < m && tmp[j] != v; j++)
+                ;
+            if (j == m && m < (MAXCODE + 16) / (int)sizeof(int))
+                tmp[m++] = v;
+        }
+        p->nrel = m;
+        p->rel = 0;
+        if (m) {
+            p->rel = (int *)palloc(m * sizeof(int));
+            for (j = 0; j < m; j++)
+                p->rel[j] = tmp[j];
         }
     }
 }
@@ -474,11 +493,11 @@ static void makeentry(struct LProc *mainp, struct LProc *exitp)
     for (i = 0; i < nprocs; i++)
         if (procs[i]->live && (procs[i]->flags & 1))
             ecall(procs[i]);
-    for (i = 0; i < mainp->parmsz / 2; i++)
+    for (i = 0; i < mainparmsz / 2; i++)
         eb(0);
     ecall(mainp);
     if (exitp) {
-        if (mainp->rw == 0)
+        if (mainrw == 0)
             eb(0);
         ecall(exitp);
     }
@@ -647,7 +666,7 @@ int link(char **objs, int nobjs, char *code, char *progname)
             continue;
         s = p->seg;
         p->procnum = ++pnum[s];
-        if (p->procnum > 255)
+        if (pnum[s] > 255)
             fatal(112 /* more than 255 functions in segment */, segnames[s]);
         seglen[s] = seglen[s] + ((p->codelen + 1) & ~1);
     }
