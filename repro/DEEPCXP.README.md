@@ -41,3 +41,20 @@ this. A recursive-descent compiler does that all the time.
 Suggested fix: make the search unbounded, as the Z80 loop is, or at least
 much larger (the chain always ends at the lex-0 frame). If a bail-out is
 kept, it has to push the IPC and set A = target before jumping to 137F.
+
+## The fix I tested
+
+`deepcxp-engine.patch` changes the cap from 64 to 30000 in two places:
+
+* `UCSDPascal/NativeCxp.inc` (CXP)
+* `UCSDPascal/PSystemEngine.cpp` (native CIP)
+
+A 64K stack can't hold more than about 5,500 frames, so the search now
+always finishes in native code and the broken bail-out is never reached.
+The comment above the CIP loop ("a handful of iterations") is wrong: the
+loop walks the *dynamic* chain, so its length is the recursion depth, not
+the lexical nesting depth.
+
+The linux-harness copies have the same loop: `harness.cpp`,
+`remove_file.cpp` and `NativeCxp.inc`. The bail-out code itself is still
+wrong (see above) if anyone ever relies on it.

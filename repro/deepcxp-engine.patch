@@ -1,0 +1,22 @@
+--- a/NativeCxp.inc	2026-09-27 04:35:32.256662995 +0000
++++ b/NativeCxp.inc	2026-09-27 04:35:32.258734169 +0000
+@@ -150,7 +150,7 @@
+         uint8_t  target  = cxLexM1;
+         uint16_t examine = cxNewMP, result = 0;
+         bool found = false;
+-        for (int iter = 0; iter < 64; iter++) {
++        for (int iter = 0; iter < 30000; iter++) {
+             uint16_t fJtab = cxRd((uint16_t)(examine + 4));
+             uint16_t fDyn  = cxRd((uint16_t)(examine + 2));
+             result = fDyn;
+--- a/PSystemEngine.cpp	2026-09-27 04:35:32.256534324 +0000
++++ b/PSystemEngine.cpp	2026-09-27 04:35:32.258609316 +0000
+@@ -3482,7 +3482,7 @@
+                     uint16_t examineAddr = newMP; // BC := ^new MSCW to start
+                     uint16_t result = 0;
+                     bool found = false;
+-                    for (int iter = 0; iter < 64; iter++) { // defensive cap; real code has none,
++                    for (int iter = 0; iter < 30000; iter++) { // defensive cap; real code has none,
+                                                               // but a valid program's own lexical
+                                                               // nesting always finds a match within
+                                                               // a handful of iterations
