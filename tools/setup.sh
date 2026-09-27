@@ -12,7 +12,11 @@ if [ ! -f build/img/Big_Disk.BLK ]; then
 fi
 if [ ! -d build/linux-harness ]; then (cd build && unzip -q -o ../linux-harness.zip); fi
 mkdir -p build/data
-cp --update=none build/img/Big_Disk.BLK build/data/Big_Disk.BLK
+if [ ! -f build/data/Big_Disk.BLK ]; then
+    cp build/img/Big_Disk.BLK build/data/Big_Disk.BLK
+    # the image still holds a scratch file M that fills the volume
+    python3 tools/ucsdvol.py rm build/data/Big_Disk.BLK M
+fi
 # P-Code mode boots natively and never executes pascal.bin (the Z80 loader);
 # LoadFiles only needs the file to exist.
 [ -f build/data/pascal.bin ] || head -c 4096 /dev/zero > build/data/pascal.bin
