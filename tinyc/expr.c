@@ -577,6 +577,8 @@ struct Node *postfix(void)
             } else
                 error(55 /* not a function */, 0);
             c = mknode(N_CALL, ft ? ft->base : ty_int, n, 0);
+            if (n->op == N_FUNC && n->sym->seg && curfnseg && strcmp(n->sym->seg, curfnseg) == 0)
+                n->val = 1;             /* the callee is in this segment: CGP */
             c->b = arglist(ft, &na);
             c->val = na;
             n = c;

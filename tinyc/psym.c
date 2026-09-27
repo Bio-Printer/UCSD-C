@@ -25,6 +25,8 @@ int level;
 struct Sym *labels;
 int globoff;                    /* next free word of the module's static variables */
 char *modname;
+int segexplicit;               /* a #pragma segment has been seen */
+char *curfnseg;                 /* the segment of the function being compiled */
 int usesfloat;          /* the module uses floating point (links printf's %f) */
 int nofltused;
 

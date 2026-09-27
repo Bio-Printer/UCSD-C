@@ -113,3 +113,4 @@ more than 255 functions in segment
 internal: segment length
 undefined variable
 variable defined twice
+function is not in the segment its prototype says (#pragma segment)

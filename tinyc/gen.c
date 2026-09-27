@@ -23,6 +23,7 @@
 #define O_LOR  0x8D
 #define O_MODI 0x8E
 #define O_MPI  0x8F
+#define O_IXA  0xA4
 #define O_MPR  0x90
 #define O_NGI  0x91
 #define O_NGR  0x92
@@ -65,6 +66,7 @@
 #define O_NEQI 0xCB
 #define O_STL  0xCC
 #define O_CXP  0xCD
+#define O_CGP  0xCF
 #define O_LPA  0xD0
 #define O_EFJ  0xD3
 #define O_NFJ  0xD4
@@ -79,6 +81,7 @@
 #define R_FNPTR   2         /* LDCI word at pos+1: seg | proc << 8 */
 #define R_GSTAT   3         /* 2-byte global operand at pos: module static */
 #define R_GNAME   4         /* 2-byte global operand at pos: named variable */
+#define R_NEAR    5         /* CGP p at pos: a call within the segment */
 
 struct Emit {
     unsigned char *code;
@@ -315,6 +318,18 @@ int newlabel(void)
 
 void setlabel(int l)
 {
+    int i;
+    /* a UJP to this very label just before it (a return at the end of a
+       function, an if without else ...) is 2 bytes for nothing: drop it,
+       with the labels already set after it */
+    if (E->nfix > 0 && E->fixpos[E->nfix - 1] == E->pc - 1 && E->fixlab[E->nfix - 1] == l &&
+        E->code[E->pc - 2] == O_UJP) {
+        E->nfix--;
+        E->pc = E->pc - 2;
+        for (i = 0; i < E->nlab; i++)
+            if (E->labpos[i] == E->pc + 2)
+                E->labpos[i] = E->pc;
+    }
     E->labpos[l] = E->pc;
 }
 
@@ -768,7 +783,11 @@ static void gen_call(struct Node *n, int want)
         ldc(0);
         pw++;
     }
-    if (fs) {
+    if (fs && n->a->val) {
+        reloc(R_NEAR, fs->name);        /* the parser knows it is in this segment */
+        ob(O_CGP);
+        ob(0);
+    } else if (fs) {
         reloc(R_CALL, fs->name);
         ob(O_CXP);
         ob(0);
@@ -1029,6 +1048,18 @@ void branch(struct Node *n, int l, int jumpif)
 }
 
 /* assignment family */
+/* does the tree refer to the lvalue being updated (compound assignment)? */
+static int haslvref(struct Node *n)
+{
+    for (; n; n = n->next) {
+        if (n->op == N_LVREF)
+            return 1;
+        if ((n->a && haslvref(n->a)) || (n->b && haslvref(n->b)) || (n->c && haslvref(n->c)))
+            return 1;
+    }
+    return 0;
+}
+
 static void gen_assign(struct Node *n, int want)
 {
     struct Node *lhs;
@@ -1074,6 +1105,16 @@ static void gen_assign(struct Node *n, int want)
         storepost(lhs);
         if (want && n->op != N_POSTINC)
             gen_load(lhs);
+    } else if (n->op == N_ASSIGN && !want && !haslvref(rhs)) {
+        /* a plain store whose value is not used: the address stays on
+           the stack (no temporary: STL t; SLDL t saved) */
+        gen_addr(lhs);
+        if (ischar(t)) {
+            ldc(0);
+            gen_lowbyte(rhs);
+        } else
+            gen_value(rhs);
+        storeviapost(t);
     } else {
         ta = newtemp(1);
         gen_addr(lhs);
@@ -1219,6 +1260,13 @@ void gen_value(struct Node *n)
     case N_SUB:
     case N_MUL:
         gen_value(n->a);
+        if (n->op == N_ADD && t->kind == TY_PTR && n->b->op == N_MUL && n->b->b->op == N_NUM &&
+            n->b->b->val > 0 && !(n->b->b->val & 1)) {
+            /* pointer + index * (a whole number of words): IXA */
+            gen_value(n->b->a);
+            opbig(O_IXA, n->b->b->val / 2);
+            return;
+        }
         if (n->op == N_ADD && n->b->op == N_NUM && !isfloatty(t) && n->b->val > 0 && !(n->b->val & 1) && n->b->val < 256) {
             opbig(O_INC, n->b->val / 2);
             return;

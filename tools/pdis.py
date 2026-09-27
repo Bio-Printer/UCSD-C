@@ -109,6 +109,9 @@ def disasm(seg, start, end, jtab, out):
                 lo = lo - 65536 if lo > 32767 else lo
                 hi = hi - 65536 if hi > 32767 else hi
                 pc += 4
+                if not 0 <= hi - lo < 1024:         # not a table (bad decode): stop here
+                    out.append((a, name + ' ?? %d..%d' % (lo, hi)))
+                    return out
                 els = pc
                 pc += 2   # the else jump is a UJP instruction
                 tgts = []

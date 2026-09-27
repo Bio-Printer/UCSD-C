@@ -364,7 +364,7 @@ static void pass2(void)
             type = rd();
             rds(rname);
             v = -1;
-            if (type == 1 || type == 2) {
+            if (type == 1 || type == 2 || type == 5) {
                 t = findproc(rname);
                 if (!t)
                     error(109 /* undefined function */, rname);
@@ -555,6 +555,12 @@ static void patchproc(struct LProc *p, int pos, int type, char *rname)
     } else if (type == 2) {
         lbuf[pos + 1] = segnum[t->seg];
         lbuf[pos + 2] = t->procnum;
+    } else if (type == 5) {
+        /* CGP p: the compiler took the callee to be in this segment (its
+           definition, or a prototype under #pragma segment) */
+        if (t->seg != p->seg)
+            error(116 /* function is not in this segment */, rname);
+        lbuf[pos + 1] = t->procnum;
     }
 }
 

@@ -1,4 +1,7 @@
 /* libint.h -- private declarations shared by the library sources */
+/* every library function is in the program's main segment: declared so,
+   calls between them are 2-byte CGPs (see tc.h; the linker checks) */
+#pragma segment MAIN
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>

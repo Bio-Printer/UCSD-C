@@ -2,6 +2,8 @@
    (psym.c, expr.c, decl.c, stmt.c) */
 #ifndef PARSE_H
 #define PARSE_H
+/* the prototypes are declared under their functions' segments (see tc.h) */
+#pragma segment PARSE
 
 #define HSIZE 128
 #define I_DVI     1
@@ -44,6 +46,8 @@ extern struct Sym *labels;
 extern char *modname;
 extern int nofltused;
 extern int usesfloat;
+extern int segexplicit;
+extern char *curfnseg;
 extern int globoff;
 extern struct Sym *curfn;
 extern struct Type *curft;
@@ -61,7 +65,9 @@ extern unsigned char *refbits;
 extern int globinit;
 
 struct Type *mktype(int kind, int size, int align);
+#pragma segment CINIT
 void typeinit(void);
+#pragma segment PARSE
 struct Type *ptrto(struct Type *t);
 struct Type *arrayof(struct Type *t, int n);
 struct Type *permtype(struct Type *t);
@@ -126,10 +132,13 @@ struct Node *condparen(void);
 void statement(int brk, int cont);
 void funcdef(struct Sym *fs, int isstatic);
 void external(void);
+#pragma segment REFSCAN
 void addref(char *name);
 void scanrefs(char *src);
+#pragma segment CINIT
 void declhelper(char *name, struct Type *ret, struct Type *a, struct Type *b);
 void helpers(void);
+#pragma segment PARSE
 void pragma(char *s);
 int compile(char *src, char *ir, char *mod);
 #endif

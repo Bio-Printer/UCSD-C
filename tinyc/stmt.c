@@ -387,6 +387,8 @@ void funcdef(struct Sym *fs, int isstatic)
     int i;
     char *seg;
     seg = cursegname;           /* a #pragma read as lookahead belongs to the next function */
+    fs->seg = seg;              /* calls from the same segment can be CGP */
+    curfnseg = seg;
     ft = fs->type;
     if (fs->defined)
         error(84 /* function redefined */, fs->name);
@@ -440,6 +442,7 @@ void funcdef(struct Sym *fs, int isstatic)
         if (!s->defined)
             error(87 /* undefined label */, s->name);
     ir_funcend(fs->lname ? fs->lname : fs->name, ft, exitlab, isstatic, seg);
+    curfnseg = 0;               /* file-scope initialisers run in segment INIT */
     popscope();
     curfn = 0;
     curft = 0;
@@ -493,6 +496,9 @@ void external(void)
                 s = addsym(name, S_FUNC, t);
             else if (!s->defined && t->params)
                 s->type = t;
+            if (!s->seg && segexplicit)
+                s->seg = cursegname;    /* declared under #pragma segment: the
+                                           linker checks it (message 116) */
             if (sc == K_STATIC && !s->isstatic) {
                 s->isstatic = 1;
                 s->lname = palloc(strlen(modname) + strlen(name) + 2);
@@ -597,12 +603,15 @@ void scanrefs(char *src)
     c = getc(fp);
     while (c != EOF) {
         if (bol && c == '#') {
-            /* "#<line> [!]file": '!' = system header */
-            while (c != EOF && c != ' ' && c != '\n')
-                c = getc(fp);
-            if (c == ' ') {
-                c = getc(fp);
-                sys = c == '!';
+            /* "#<line> [!]file": '!' = system header (not "#pragma ...") */
+            c = getc(fp);
+            if (c >= '0' && c <= '9') {
+                while (c != EOF && c != ' ' && c != '\n')
+                    c = getc(fp);
+                if (c == ' ') {
+                    c = getc(fp);
+                    sys = c == '!';
+                }
             }
             while (c != EOF && c != '\n')
                 c = getc(fp);
@@ -736,6 +745,7 @@ void pragma(char *s)
         if (strcmp(name, "MAIN") == 0)
             name[0] = 0;
         cursegname = pstrdup(name);
+        segexplicit = 1;
     } else if (strncmp(s, "nofltused", 9) == 0)
         nofltused = 1;              /* library modules: float use does not link %f */
 }
@@ -760,6 +770,8 @@ int compile(char *src, char *ir, char *mod)
     swlabs = 0;
     swn = 0;
     swmax = 0;
+    segexplicit = 0;
+    curfnseg = 0;
     modname = mod;
     usesfloat = 0;
     nofltused = 0;

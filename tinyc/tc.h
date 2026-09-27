@@ -129,16 +129,19 @@ struct Param {
     struct Param *next;
 };
 
+/* the small fields are bytes (unsigned: a signed char costs a sign
+   extension on every load): there are hundreds of types and symbols in
+   the compile pass */
 struct Type {
-    int kind;
+    unsigned char kind;
+    unsigned char variadic;
+    unsigned char oldstyle; /* f() -- parameters unknown */
     int size;               /* bytes; -1 = incomplete */
-    int align;
+    int align;              /* -1 = a temporary type (see mktype) */
     struct Type *base;      /* pointer/array element, function result */
     int len;                /* array length, -1 = unknown */
     struct Field *fields;   /* struct/union */
     struct Param *params;   /* function */
-    int variadic;
-    int oldstyle;           /* f() -- parameters unknown */
     char *tag;
     struct Type *ptrto;     /* cached pointer-to-this type */
 };
@@ -154,13 +157,14 @@ struct Type {
 
 struct Sym {
     char *name;
-    int kind;
+    unsigned char kind;
+    unsigned char level;    /* scope level (0 = file) */
+    unsigned char isstatic;
+    unsigned char defined;  /* functions: has a body; globals: 1 common, 2 initialised */
     struct Type *type;
     int offset;             /* word offset (globals, locals), enum value, label number */
-    int level;              /* scope level (0 = file) */
-    int isstatic;
-    int defined;            /* functions: has a body; globals: 1 common, 2 initialised */
     char *lname;            /* link name when it differs (static functions) */
+    char *seg;              /* functions: the segment, when known (0 = unknown) */
     struct Sym *next;       /* hash chain */
     struct Sym *scopenext;  /* symbols of one scope */
 };
@@ -229,6 +233,12 @@ extern int nerrors;
 extern char *curfile;
 extern int curline;
 
+/* Each group of prototypes below is declared under the segment its
+   functions are in: a call from the same segment is then a 2-byte CGP
+   instead of a 3-byte CXP (the linker checks it: message 116).  Every
+   module sets its own #pragma segment after its #includes. */
+#pragma segment MAIN
+
 /* util */
 void error(int n, char *arg);
 void fatal(int n, char *arg);
@@ -260,6 +270,7 @@ extern char *tokname;           /* [MAXNAME], allocated by lexinit */
 extern char *tokstr;
 extern int toklen;
 extern unsigned char tokreal[4];
+#pragma segment PARSE
 void lexinit(FILE *fp);
 void next(void);
 int peek(void);
@@ -277,6 +288,7 @@ extern struct Type *ty_float;
 extern struct Type *ty_double;
 extern struct Type *ty_ldouble;
 struct Type *ptrto(struct Type *t);
+#pragma segment MAIN
 int isintegral(struct Type *t);
 int isfloatty(struct Type *t);
 int islongty(struct Type *t);
@@ -289,6 +301,7 @@ int twords(struct Type *t);
 int retwords(struct Type *ft);
 
 /* code generation (gen.c) */
+#pragma segment GEN
 #define N_LVREF   43
 #define N_HEAPSTR 44        /* string literal copied to the heap (global initialisers) */        /* value of the lvalue being updated (compound assignment) */
 extern int curlocal;
@@ -316,6 +329,7 @@ void gen_objheader(char *modname);
 void gen_objend(int globalwords);
 
 /* intermediate file (ir.c) */
+#pragma segment PARSE
 void ir_open(char *name, char *modname);
 void ir_close(int globalwords);
 void ir_funcbegin(void);
@@ -331,16 +345,21 @@ void ir_funcend(char *name, struct Type *ft, int exitlab, int isstatic, char *se
 void ir_initbegin(void);
 void ir_initend(void);
 void ir_initflush(void);
-int gencode(char *ir, char *obj);
 void ir_data(char *name, int words, int strong);
-void gen_objdata(char *name, int words, int strong);
 void ir_use(char *name);
+#pragma segment GEN
+int gencode(char *ir, char *obj);
+void gen_objdata(char *name, int words, int strong);
 void gen_objuse(char *name);
 
 /* passes */
+#pragma segment PP
 int preprocess(char *src, char *out);
+#pragma segment PARSE
 int compile(char *src, char *obj, char *modname);
+#pragma segment LINK
 int link(char **objs, int nobjs, char *code, char *progname);
 int join(char **objs, int nobjs, char *out);
+#pragma segment MAIN
 
 #endif
