@@ -11,25 +11,27 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import ucsdvol
-from tcrun import compile_c, INC
+from tcrun import compile_c, build_lib, INC
 
 README = """TINY-C for UCSD Pascal II.0
 
-  X(ecute TINYC            then answer: Compile what file? NAME
-  (reads NAME.TEXT from the prefix volume, writes NAME.CODE)
+  X(ecute TINYC            then answer "Compile what file?" with
+      NAME                 compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
+      /C NAME              compile only -> NAME.OBJ
+      /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
   X(ecute NAME             runs the program
 
-Headers: STDIO.H STDLIB.H STRING.H CTYPE.H MATH.H CONIO.H IO.H FCNTL.H
+TCLIB.OBJ is the precompiled C library (only what a program uses is
+linked in).  Headers: STDIO.H STDLIB.H STRING.H CTYPE.H MATH.H CONIO.H IO.H FCNTL.H
 STDARG.H STDDEF.H LIMITS.H FLOAT.H ASSERT.H, and TCRT.H (runtime helpers,
 added to every program automatically).  TCMSGS.TEXT holds the compiler's
-messages.  Temporary files: TCTEMP.TEXT, TCTEMP.IR, TCTEMP.OBJ.
+messages.  Temporary files: TCTEMP.TEXT, TCTEMP.IR.
 
 Test programs: DEMO (compiles on the P-System today), SIEVE HANOI QUEENS STRUCTS CONTROL FUNCPTR LONGS FLOATS
 FCOMPARE STRINGS.  Set the prefix to this volume first (F(iler, P(refix).
 
-Current limit: the compile pass has little memory left, so programs that
-include STDIO.H do not yet compile ON the P-System (they compile with the
-host build of Tiny-C, and the code runs here).
+Current limit: memory is tight in the compile pass; a program that
+includes several of the larger headers (e.g. STRUCTS) may still run out.
 """
 
 
@@ -42,6 +44,7 @@ def main():
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
             v.write(f.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
+    v.write('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
     v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     tests = os.path.join(ROOT, 'tests')
     for f in sorted(os.listdir(tests)):
