@@ -28,7 +28,7 @@ def main(a):
         env.pop('VERIFY_RECLAIM', None)
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
                         os.path.join(d, 'TCVERIFY.BLK'), spare, os.path.join(ROOT, 'verify', 'TCVERIFY.SCRIPT'),
-                        mode, out, '', '7200'], capture_output=True, text=True, env=env)
+                        mode, out, '', os.environ.get('TCV_MAX', '7200')], capture_output=True, text=True, env=env)
     ok = 'VERIFY SCRIPT COMPLETED' in r.stdout
     tail = [l for l in r.stderr.split('\n') if l.strip()][-3:]
     print('\n'.join(tail))

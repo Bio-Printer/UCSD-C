@@ -69,7 +69,12 @@ static int nsegs;
 static int *segnum;             /* [24] segment index -> II.0 segment number */
 static int globalwords;
 static FILE *lin;
-static unsigned char *lbuf;
+static unsigned char *lbuf;     /* the largest procedure (allocated after pass 1) */
+static int lbufsize;
+static int maxcode;             /* pass 1: the largest procedure, the most relocations */
+static int maxnrel;
+static int capprocs;            /* the tables grow as needed */
+static int capdatas;
 static char **objfiles;
 static int nobjfiles;
 static int curfilei;
@@ -226,8 +231,28 @@ static void record(int c, char *name, char *seg, int *flags, int *parmsz, int *r
     n = rdw();
     *codelen = n;
     *jtab = rdw();
+    if (!lbuf) {                        /* pass 1: only the sizes */
+        if (n > maxcode)
+            maxcode = n;
+        for (i = 0; i < n; i++)
+            rd();
+        return;
+    }
     for (i = 0; i < n; i++)
         lbuf[i] = rd();
+}
+
+/* double a table's size (the old one goes back to the free list) */
+static char **grow(char **t, int n, int *cap)
+{
+    char **g;
+    *cap = *cap * 2;
+    g = (char **)malloc(*cap * sizeof(char *));
+    if (!g)
+        fatal(2 /* out of memory */, 0);
+    memcpy(g, t, n * sizeof(char *));
+    free(t);
+    return g;
 }
 
 static void pass1(void)
@@ -266,6 +291,8 @@ static void pass1(void)
             if (!d) {
                 if (ndatas >= MAXDATA)
                     fatal(108 /* too many functions */, 0);
+                if (ndatas >= capdatas)
+                    datas = (struct LData **)grow((char **)datas, ndatas, &capdatas);
                 d = (struct LData *)palloc(sizeof(struct LData));
                 d->name = pstrdup(name);
                 d->mod = -1;
@@ -297,6 +324,10 @@ static void pass1(void)
             error(107 /* function defined twice */, name);
         if (nprocs >= MAXPROC)
             fatal(108 /* too many functions */, 0);
+        if (nprocs >= capprocs)
+            procs = (struct LProc **)grow((char **)procs, nprocs, &capprocs);
+        if (n > maxnrel)
+            maxnrel = n;
         p = (struct LProc *)palloc(sizeof(struct LProc));
         p->name = pstrdup(name);
         p->mod = curmod;
@@ -381,7 +412,7 @@ static void pass2(void)
                 continue;
             for (j = 0; j < m && tmp[j] != v; j++)
                 ;
-            if (j == m && m < (MAXCODE + 16) / (int)sizeof(int))
+            if (j == m && m < lbufsize / (int)sizeof(int))
                 tmp[m++] = v;
         }
         p->nrel = m;
@@ -598,11 +629,15 @@ int link(char **objs, int nobjs, char *code, char *progname)
     int *jt;
     objfiles = objs;
     nobjfiles = nobjs;
-    procs = (struct LProc **)malloc(MAXPROC * sizeof(struct LProc *));
-    datas = (struct LData **)malloc(MAXDATA * sizeof(struct LData *));
-    lbuf = (unsigned char *)malloc(MAXCODE + 16);
+    capprocs = 64;
+    capdatas = 32;
+    procs = (struct LProc **)malloc(capprocs * sizeof(struct LProc *));
+    datas = (struct LData **)malloc(capdatas * sizeof(struct LData *));
+    lbuf = 0;
+    maxcode = 0;
+    maxnrel = 0;
     entry = (unsigned char *)malloc(600);
-    if (!lbuf || !procs || !datas || !entry)
+    if (!procs || !datas || !entry)
         fatal(2 /* out of memory */, 0);
     lhash = (struct LProc **)calloc(LHASH, sizeof(struct LProc *));
     dhash = (struct LData **)calloc(LHASH, sizeof(struct LData *));
@@ -623,6 +658,15 @@ int link(char **objs, int nobjs, char *code, char *progname)
     nsegs = 0;
     segindex("");
     pass1();
+    /* the code buffer: the largest procedure; pass 2 uses it for a
+       procedure's references (ints) */
+    lbufsize = maxcode;
+    if (lbufsize < maxnrel * (int)sizeof(int))
+        lbufsize = maxnrel * (int)sizeof(int);
+    lbufsize = lbufsize + 16;
+    lbuf = (unsigned char *)malloc(lbufsize);
+    if (!lbuf)
+        fatal(2 /* out of memory */, 0);
     pass2();
     if (nerrors)
         return 0;

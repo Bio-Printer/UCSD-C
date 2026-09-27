@@ -123,8 +123,9 @@ struct Field {
     struct Field *next;
 };
 
+/* parameter names are not part of a function type (types with the same
+   signature are shared); a definition's names are in pnames (decl.c) */
 struct Param {
-    char *name;
     struct Type *type;
     struct Param *next;
 };
@@ -144,6 +145,7 @@ struct Type {
     struct Param *params;   /* function */
     char *tag;
     struct Type *ptrto;     /* cached pointer-to-this type */
+    struct Type *next;      /* function types: the list of distinct ones */
 };
 
 /* ---- symbols ---- */

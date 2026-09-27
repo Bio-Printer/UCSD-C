@@ -123,6 +123,50 @@ struct Type *arrayof(struct Type *t, int n)
     return a;
 }
 
+/* the permanent function type with f's signature: function types are
+   shared (a module declares hundreds of functions with a few dozen
+   signatures).  f is a temporary whose result and parameter types are
+   permanent. */
+struct Type *functypes;
+
+struct Type *functype(struct Type *f)
+{
+    struct Type *t;
+    struct Param *p;
+    struct Param *q;
+    struct Param *last;
+    for (t = functypes; t; t = t->next) {
+        if (t->base != f->base || t->variadic != f->variadic || t->oldstyle != f->oldstyle)
+            continue;
+        for (p = t->params, q = f->params; p && q; p = p->next, q = q->next)
+            if (p->type != q->type)
+                break;
+        if (!p && !q)
+            return t;
+    }
+    t = (struct Type *)palloc(sizeof(struct Type));
+    t->kind = TY_FUNC;
+    t->size = 2;
+    t->align = 2;
+    t->len = -1;
+    t->base = f->base;
+    t->variadic = f->variadic;
+    t->oldstyle = f->oldstyle;
+    last = 0;
+    for (q = f->params; q; q = q->next) {
+        p = (struct Param *)palloc(sizeof(struct Param));
+        p->type = q->type;
+        if (last)
+            last->next = p;
+        else
+            t->params = p;
+        last = p;
+    }
+    t->next = functypes;
+    functypes = t;
+    return t;
+}
+
 /* a permanent copy of a type built tentatively */
 struct Type *permtype(struct Type *t)
 {
@@ -136,22 +180,22 @@ struct Type *permtype(struct Type *t)
         return ptrto(permtype(t->base));
     if (t->kind == TY_ARRAY)
         return arrayof(permtype(t->base), t->len);
-    n = mktype(TY_FUNC, 2, 2);
+    n = (struct Type *)xalloc(sizeof(struct Type));
+    n->kind = TY_FUNC;
     n->base = permtype(t->base);
     n->variadic = t->variadic;
     n->oldstyle = t->oldstyle;
     last = 0;
     for (p = t->params; p; p = p->next) {
-        q = (struct Param *)palloc(sizeof(struct Param));
+        q = (struct Param *)xalloc(sizeof(struct Param));
         q->type = permtype(p->type);
-        q->name = p->name;          /* used only by an immediately following body */
         if (last)
             last->next = q;
         else
             n->params = q;
         last = q;
     }
-    return n;
+    return functype(n);
 }
 
 /* ---- the names the program itself uses (see scanrefs) ----

@@ -2,7 +2,7 @@ TINY-C:  46 files  (a UCSD directory holds 77)
 
   FILE            BLOCKS  WHAT
 
-  TINYC.CODE         102  the Tiny-C compiler: X(ecute TINYC
+  TINYC.CODE         103  the Tiny-C compiler: X(ecute TINYC
   TCLIB.OBJ           48  the C library, linked into every program
   TCMSGS.TEXT          8  the compiler's messages (line n = message n)
   README.TEXT          6  how to use and rebuild Tiny-C
@@ -27,13 +27,13 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   TYPES.TEXT           6  compiler: type predicates
   PP.TEXT             48  compiler: pass 1: the preprocessor
   LEX.TEXT            30  compiler: pass 2: the tokenizer
-  PSYM.TEXT           16  compiler: parser: types and symbols
+  PSYM.TEXT           18  compiler: parser: types and symbols
   EXPR.TEXT           46  compiler: parser: expressions
   DECL.TEXT           22  compiler: parser: declarations and initializers
   STMT.TEXT           38  compiler: parser: statements, functions, pragmas
   IR.TEXT             24  compiler: the intermediate file between parser and code generator
   GEN.TEXT            66  compiler: pass 3: P-code generation, object files
-  LINK.TEXT           40  compiler: the linker: object files -> code file
+  LINK.TEXT           42  compiler: the linker: object files -> code file
   TC.H.TEXT           26  compiler: shared declarations (every module)
   PARSE.H.TEXT        12  compiler: the parser modules' shared declarations
   ASSERT.TEXT          4  library: <assert.h>

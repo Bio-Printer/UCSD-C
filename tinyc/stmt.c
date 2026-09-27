@@ -420,8 +420,8 @@ void funcdef(struct Sym *fs, int isstatic)
     }
     for (i = np - 1; i >= 0; i--) {
         p = pv[i];
-        if (p->name) {
-            s = addsym(p->name, S_LOCAL, p->type);
+        if (i < npnames && pnames[i]) {
+            s = addsym(pnames[i], S_LOCAL, p->type);
             s->offset = off;
         } else if (!ft->oldstyle)
             error(86 /* parameter name missing */, fs->name);
@@ -672,12 +672,10 @@ void declhelper(char *name, struct Type *ret, struct Type *a, struct Type *b)
     ft->base = ret;
     if (a) {
         p = (struct Param *)palloc(sizeof(struct Param));
-        p->name = "a";
         p->type = a;
         ft->params = p;
         if (b) {
             p->next = (struct Param *)palloc(sizeof(struct Param));
-            p->next->name = "b";
             p->next->type = b;
         }
     }
@@ -758,7 +756,10 @@ int compile(char *src, char *ir, char *mod)
     htab = (struct Sym **)calloc(HSIZE, sizeof(struct Sym *));
     ttab = (struct Sym **)calloc(HSIZE, sizeof(struct Sym *));
     scopes = (struct Sym **)calloc(40, sizeof(struct Sym *));
-    if (!htab || !ttab || !scopes)
+    pnames = (char **)calloc(32, sizeof(char *));
+    functypes = 0;
+    npnames = 0;
+    if (!htab || !ttab || !scopes || !pnames)
         fatal(2 /* out of memory */, 0);
     level = 0;
     labels = 0;

@@ -53,7 +53,11 @@ void dcl(struct Dcl *d)
         } else if (tok == '(') {
             next();
             pl = paramlist(&variadic, &oldstyle);
-            ft = mktype(TY_FUNC, 2, 2);
+            ft = (struct Type *)xalloc(sizeof(struct Type));   /* see functype */
+            ft->kind = TY_FUNC;
+            ft->size = 2;
+            ft->align = -1;
+            ft->len = -1;
             ft->params = pl;
             ft->variadic = variadic;
             ft->oldstyle = oldstyle;
@@ -88,15 +92,25 @@ struct Type *applydcl(struct Type *t, struct Dcl *d)
             if (t->kind == TY_FUNC || t->kind == TY_ARRAY)
                 error(64 /* function returning an array or function */, 0);
             f->base = t;
-            t = f;
+            t = tentative ? f : functype(f);    /* (permtype does it later) */
         }
     }
     return t;
 }
 
+/* The parameter names of a definition: the first parameter list at the
+   outermost level of the declarator (not those of function-pointer
+   parameters).  Only the function body that follows uses them. */
+char **pnames;                  /* [32], allocated by compile */
+int npnames;
+static int pdepth;              /* paramlist nesting */
+static int pnamed;              /* this declarator's names are recorded */
+
 struct Type *declarator(struct Type *base, char *name)
 {
     struct Dcl d;
+    if (pdepth == 0)
+        pnamed = 0;
     d.n = 0;
     d.name[0] = 0;
     dcl(&d);
@@ -115,6 +129,7 @@ struct Type *typename(void)
 
 struct Param *paramlist(int *variadic, int *oldstyle)
 {
+    int record;
     struct Param *first;
     struct Param *last;
     struct Param *p;
@@ -125,6 +140,11 @@ struct Param *paramlist(int *variadic, int *oldstyle)
     *oldstyle = 0;
     first = 0;
     last = 0;
+    record = pdepth == 0 && !pnamed;
+    if (record) {
+        pnamed = 1;
+        npnames = 0;
+    }
     if (tok == ')') {
         next();
         *oldstyle = 1;
@@ -142,25 +162,21 @@ struct Param *paramlist(int *variadic, int *oldstyle)
             break;
         }
         t = declspec(&sc);
+        pdepth++;
         t = declarator(t, name);
+        pdepth--;
         if (t->kind == TY_ARRAY)
             t = ptrto(t->base);
         else if (t->kind == TY_FUNC)
             t = ptrto(t);
-        if (tentative) {
-            p = (struct Param *)xalloc(sizeof(struct Param));
-            p->name = 0;
-            if (name[0]) {          /* a definition in a header needs its names */
-                p->name = xalloc(strlen(name) + 1);
-                strcpy(p->name, name);
+        p = (struct Param *)xalloc(sizeof(struct Param));   /* see functype */
+        if (record && npnames < 32) {
+            pnames[npnames] = 0;
+            if (name[0]) {
+                pnames[npnames] = xalloc(strlen(name) + 1);
+                strcpy(pnames[npnames], name);
             }
-        } else {
-            p = (struct Param *)palloc(sizeof(struct Param));
-            p->name = 0;
-            if (name[0]) {          /* only needed while the function body is compiled */
-                p->name = falloc(strlen(name) + 1);
-                strcpy(p->name, name);
-            }
+            npnames++;
         }
         p->type = t;
         if (last)

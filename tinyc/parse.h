@@ -61,6 +61,9 @@ extern int swmax;
 extern int swdef;
 extern char *intrnames[];
 extern int tentative;
+extern struct Type *functypes;
+extern char **pnames;
+extern int npnames;
 extern unsigned char *refbits;
 extern int globinit;
 
@@ -71,6 +74,7 @@ void typeinit(void);
 struct Type *ptrto(struct Type *t);
 struct Type *arrayof(struct Type *t, int n);
 struct Type *permtype(struct Type *t);
+struct Type *functype(struct Type *f);
 int refhash2(char *s);
 int isref(char *name);
 int sametype(struct Type *a, struct Type *b);
