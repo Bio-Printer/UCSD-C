@@ -15,7 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __TINYC__
+#define W16(x) (x)                  /* int is 16 bits already */
+#else
 #define W16(x) ((((x) & 65535) ^ 32768) - 32768)   /* wrap to a signed 16-bit value */
+#endif
 
 /* ---- limits ---- */
 #define MAXLINE   512      /* longest source line */
