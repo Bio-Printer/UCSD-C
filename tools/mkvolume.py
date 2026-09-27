@@ -34,7 +34,9 @@ FLOATS FCOMPARE STRINGS.  Set the prefix to this volume first (F(iler,
 P(refix).
 
 The compiler's own sources are here too (%s,
-TC.H PARSE.H).  To rebuild the compiler on the P-System:
+TC.H PARSE.H).  To rebuild the compiler on the P-System, compile each
+module separately, then link them (there is no TC.TEXT: the whole
+compiler as one file does not fit in memory):
   X(ecute TINYC   /C MAIN        (and the same for every module)
   X(ecute TINYC   /L TINYC2=%s
 TINYC2.CODE comes out identical to TINYC.CODE (apart from its name).
