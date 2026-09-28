@@ -30,7 +30,8 @@ README_TC = """TINY-C for UCSD Pascal II.0                        volume TINY-C:
 
 Use: set the prefix to TINY-C: (F(iler, P(refix), then X(ecute TINYC and
 answer "Compile what file?" with
-    NAME                 compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
+    NAME                 compile NAME.C.TEXT (or NAME.TEXT), link with
+                         TCLIB.OBJ -> NAME.CODE  (NAME.C works too)
     /C NAME              compile only -> NAME.OBJ
     /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
     /J LIB=A,B,...       join A.OBJ, B.OBJ, ... into the library LIB.OBJ
@@ -58,13 +59,17 @@ works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
 EXP, ATAN, SQT, LOG or LN: math.h's sqrt, sin ... stop there with
 "Unimplemented instruction"; P-Code mode has them.)
 
+SOURCE FILES are NAME.C.TEXT and headers NAME.H.TEXT: the P-System
+takes a file's kind from its last suffix, and only .TEXT files are text
+the Editor and Filer handle as such.  #include "x.h" reads X.H.TEXT.
+
 FILES.TEXT lists every file on this volume.
 """
 
 README_EX = """TINY-C EXTRAS                                     volume TCEXTRA:
 
 Test and demo programs for Tiny-C (the compiler is on TINY-C:).  Every
-program is here as source (NAME.TEXT) and ready to run (NAME.CODE):
+program is here as source (NAME.C.TEXT) and ready to run (NAME.CODE):
 X(ecute TCEXTRA:NAME.  To compile one yourself, set the prefix to
 TCEXTRA: and X(ecute TINY-C:TINYC, answer NAME.
 
@@ -209,13 +214,13 @@ def tiny_c():
             t.textfile(f.upper() + '.TEXT', os.path.join(INC, f), 'header: ' + describe(os.path.join(INC, f)))
     for m in MODULES:
         p = os.path.join(SRC, m + '.c')
-        t.textfile(m.upper() + '.TEXT', p, 'compiler: ' + describe(p))
+        t.textfile(m.upper() + '.C.TEXT', p, 'compiler: ' + describe(p))
     for h in ('tc.h', 'parse.h'):
         p = os.path.join(SRC, h)
         t.textfile(h.upper() + '.TEXT', p, 'compiler: ' + describe(p))
     for m in LIBMODS:
         p = os.path.join(LIB, m + '.c')
-        t.textfile(m.upper() + '.TEXT', p, 'library: ' + describe(p))
+        t.textfile(m.upper() + '.C.TEXT', p, 'library: ' + describe(p))
     p = os.path.join(LIB, 'libint.h')
     t.textfile('LIBINT.H.TEXT', p, 'library: ' + describe(p))
     t.finish()
@@ -232,7 +237,7 @@ def extras():
            ''.join(n + '\n' for n in names), 'X TINY-C:TINYC, @DEMOS: rebuilds every program here')
     for p in progs:
         name = os.path.splitext(os.path.basename(p))[0].upper()[:10]
-        e.textfile(name + '.TEXT', p, describe(p))
+        e.textfile(name + '.C.TEXT', p, describe(p))
         e.binary(name + '.CODE', compiled(p), '  (ready to run)')
     e.finish()
 

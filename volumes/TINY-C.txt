@@ -22,29 +22,29 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   STDLIB.H.TEXT        6  header: malloc, free, atoi, rand, qsort, exit, ...
   STRING.H.TEXT        4  header: strcpy, strcmp, strlen, memcpy, memset, ...
   TCRT.H.TEXT          6  header: runtime helpers the compiler calls (reference only)
-  MAIN.TEXT           20  compiler: the driver: commands, @FILE, the passes
-  UTIL.TEXT           14  compiler: messages, output helpers, memory pools
-  TYPES.TEXT           6  compiler: type predicates
-  PP.TEXT             48  compiler: pass 1: the preprocessor
-  LEX.TEXT            30  compiler: pass 2: the tokenizer
-  PSYM.TEXT           18  compiler: parser: types and symbols
-  EXPR.TEXT           46  compiler: parser: expressions
-  DECL.TEXT           22  compiler: parser: declarations and initializers
-  STMT.TEXT           38  compiler: parser: statements, functions, pragmas
-  IR.TEXT             24  compiler: the intermediate file between parser and code generator
-  GEN.TEXT            66  compiler: pass 3: P-code generation, object files
-  LINK.TEXT           42  compiler: the linker: object files -> code file
+  MAIN.C.TEXT         20  compiler: the driver: commands, @FILE, the passes
+  UTIL.C.TEXT         14  compiler: messages, output helpers, memory pools
+  TYPES.C.TEXT         6  compiler: type predicates
+  PP.C.TEXT           48  compiler: pass 1: the preprocessor
+  LEX.C.TEXT          30  compiler: pass 2: the tokenizer
+  PSYM.C.TEXT         18  compiler: parser: types and symbols
+  EXPR.C.TEXT         46  compiler: parser: expressions
+  DECL.C.TEXT         22  compiler: parser: declarations and initializers
+  STMT.C.TEXT         38  compiler: parser: statements, functions, pragmas
+  IR.C.TEXT           24  compiler: the intermediate file between parser and code generator
+  GEN.C.TEXT          66  compiler: pass 3: P-code generation, object files
+  LINK.C.TEXT         42  compiler: the linker: object files -> code file
   TC.H.TEXT           26  compiler: shared declarations (every module)
   PARSE.H.TEXT        12  compiler: the parser modules' shared declarations
-  ASSERT.TEXT          4  library: <assert.h>
-  CONIO.TEXT           4  library: <conio.h>
-  CTYPE.TEXT           4  library: <ctype.h>
-  FLTFMT.TEXT          8  library: printf's %f %e %g (linked only when floats are used)
-  IO.TEXT              6  library: <io.h>
-  MATH.TEXT            6  library: <math.h>
-  STDIO.TEXT          42  library: <stdio.h>
-  STDLIB.TEXT         14  library: <stdlib.h>
-  STRING.TEXT          8  library: <string.h>
-  TCRT.TEXT           18  library: runtime helpers: C division, shifts, unsigned, longs
+  ASSERT.C.TEXT        4  library: <assert.h>
+  CONIO.C.TEXT         4  library: <conio.h>
+  CTYPE.C.TEXT         4  library: <ctype.h>
+  FLTFMT.C.TEXT        8  library: printf's %f %e %g (linked only when floats are used)
+  IO.C.TEXT            6  library: <io.h>
+  MATH.C.TEXT          6  library: <math.h>
+  STDIO.C.TEXT        42  library: <stdio.h>
+  STDLIB.C.TEXT       14  library: <stdlib.h>
+  STRING.C.TEXT        8  library: <string.h>
+  TCRT.C.TEXT         18  library: runtime helpers: C division, shifts, unsigned, longs
   LIBINT.H.TEXT        6  library: the library modules' shared declarations
   FILES.TEXT          10  this list

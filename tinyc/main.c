@@ -5,7 +5,7 @@
  *            without -c everything is linked with the library (-L, or
  *            tclib.obj in the include directory) into a .code file.
  * P-System:  X(ecute TINYC, then answer "Compile what file?" with
- *              NAME             compile NAME.TEXT, link with TCLIB.OBJ -> NAME.CODE
+ *              NAME             compile NAME.C.TEXT (or NAME.TEXT), link with TCLIB.OBJ -> NAME.CODE
  *              /C NAME          compile only -> NAME.OBJ
  *              /L OUT=A,B,...   link A.OBJ, B.OBJ ... and TCLIB.OBJ -> OUT.CODE
  *              /J OUT=A,B,...   join A.OBJ, B.OBJ ... into the library OUT.OBJ
@@ -177,11 +177,19 @@ static int command(char *s, char *lib)
             while (*s == ' ')
                 s++;
         }
+        /* NAME, NAME.C or NAME.C.TEXT: the source is NAME.C.TEXT, or
+           NAME.TEXT when there is no NAME.C.TEXT */
         n = strlen(s);
         if (n > 5 && strcmp(s + n - 5, ".TEXT") == 0)
-            s[n - 5] = 0;
+            s[n = n - 5] = 0;
+        if (n > 2 && strcmp(s + n - 2, ".C") == 0)
+            s[n - 2] = 0;
         strcpy(src, s);
-        strcat(src, ".TEXT");
+        strcat(src, ".C.TEXT");
+        if (!exists(src)) {
+            strcpy(src, s);
+            strcat(src, ".TEXT");
+        }
         strcpy(obj, s);
         strcat(obj, ".OBJ");
         strcpy(out, s);
@@ -249,7 +257,9 @@ int main(int argc, char **argv)
     char *objs[MAXFILES];
     int nobjs;
 #ifdef __TINYC__
-    char out[25]; char src[25]; char tmpi[25]; char tmpr[25]; char obj[25]; char lib[25]; char line[25];      // File names can't be 200 long in the UCSD system --- save 1KB
+    /* UCSD file names are short: small buffers save 1 KB of stack; the
+       command line (e.g. /L TINYC2=MAIN,UTIL,...) needs more */
+    char out[25]; char src[25]; char tmpi[25]; char tmpr[25]; char obj[25]; char lib[25]; char line[80];
 #else
     char out[200]; char src[200]; char tmpi[200]; char tmpr[200]; char obj[200]; char lib[200]; char line[200];
 #endif
@@ -265,7 +275,7 @@ int main(int argc, char **argv)
     lib[0] = 0;
 #ifdef __TINYC__
     say("Compile what file? ");
-    if (!fgets(line, 180, stdin))
+    if (!fgets(line, 80, stdin))
         return 1;
     n = strlen(line);
     while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == ' '))
