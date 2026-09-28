@@ -248,13 +248,11 @@ int main(int argc, char **argv)
 {
     char *objs[MAXFILES];
     int nobjs;
-    char out[25];
-    char src[25];
-    char tmpi[25];
-    char tmpr[25];
-    char obj[25];
-    char lib[25];
-    char line[25];
+#ifdef __TINYC__
+    char out[25]; char src[25]; char tmpi[25]; char tmpr[25]; char obj[25]; char lib[25]; char line[25];      // File names can't be 200 long in the UCSD system --- save 1KB
+#else
+    char out[200]; char src[200]; char tmpi[200]; char tmpr[200]; char obj[200]; char lib[200]; char line[200];
+#endif
     char *s;
     char *t;
     int i;
