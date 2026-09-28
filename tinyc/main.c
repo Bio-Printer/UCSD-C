@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 #ifdef __TINYC__
     /* UCSD file names are short: small buffers save 1 KB of stack; the
        command line (e.g. /L TINYC2=MAIN,UTIL,...) needs more */
-    char out[25]; char src[25]; char tmpi[25]; char tmpr[25]; char obj[25]; char lib[25]; char line[80];
+    char out[30]; char src[30]; char tmpi[30]; char tmpr[30]; char obj[30]; char lib[30]; char line[150];
 #else
     char out[200]; char src[200]; char tmpi[200]; char tmpr[200]; char obj[200]; char lib[200]; char line[200];
 #endif
