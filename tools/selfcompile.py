@@ -21,7 +21,7 @@ def main(mods):
     ps.put('TC.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'tc.h')).read())
     ps.put('PARSE.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'parse.h')).read())
     for m in MODULES:
-        ps.put(m.upper() + '.C.TEXT', open(os.path.join(ROOT, 'tinyc', m + '.c')).read())
+        ps.put(m.upper() + '.C', open(os.path.join(ROOT, 'tinyc', m + '.c')).read())
     todo = mods or MODULES
     script = ['WAIT "Command:"', 'TYPE "F"', 'WAIT "Filer:"', 'TYPE "P"', 'WAIT "Prefix"',
               'TYPE "#5:\\r"', 'WAIT "Filer:"', 'TYPE "Q"', 'WAIT "Command:"']

@@ -96,14 +96,14 @@ def volume(path):
     v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
-            v.write(f.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
+            v.write(f.upper(), ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
     for t in tests():
-        v.write(t.upper()[:8] + '.C.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(TESTS, t + '.c')).read()), 3)
+        v.write(t.upper()[:8] + '.C', ucsdvol.text_to_ucsd(open(os.path.join(TESTS, t + '.c')).read()), 3)
     src = os.path.join(ROOT, 'tinyc')
     for m in MODULES:
-        v.write(m.upper() + '.C.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, m + '.c')).read()), 3)
+        v.write(m.upper() + '.C', ucsdvol.text_to_ucsd(open(os.path.join(src, m + '.c')).read()), 3)
     for h in ('tc.h', 'parse.h'):
-        v.write(h.upper() + '.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(src, h)).read()), 3)
+        v.write(h.upper(), ucsdvol.text_to_ucsd(open(os.path.join(src, h)).read()), 3)
     tmp = os.path.join(ROOT, 'build', 'verify_tmp')
     os.makedirs(tmp, exist_ok=True)
     for prog in ('cmpcode', 'rmfiles'):

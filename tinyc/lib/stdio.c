@@ -80,11 +80,18 @@ void __ptitle(char *name, char *p)
     p[0] = n;
 }
 
+/* a UCSD text file (2-block header, 1K pages, DLE blank compression):
+   NAME.TEXT, and C sources NAME.C and headers NAME.H */
 int __istext(char *name)
 {
     int n;
     char *s;
     n = strlen(name);
+    if (n >= 2) {
+        s = name + n - 2;
+        if (s[0] == '.' && ((s[1] | 32) == 'c' || (s[1] | 32) == 'h'))
+            return 1;
+    }
     if (n < 5)
         return 0;
     s = name + n - 5;

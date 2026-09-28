@@ -5,7 +5,7 @@
  *            without -c everything is linked with the library (-L, or
  *            tclib.obj in the include directory) into a .code file.
  * P-System:  X(ecute TINYC, then answer "Compile what file?" with
- *              NAME             compile NAME.C.TEXT (or NAME.TEXT), link with TCLIB.OBJ -> NAME.CODE
+ *              NAME             compile NAME.C (or NAME.TEXT), link with TCLIB.OBJ -> NAME.CODE
  *              /C NAME          compile only -> NAME.OBJ
  *              /L OUT=A,B,...   link A.OBJ, B.OBJ ... and TCLIB.OBJ -> OUT.CODE
  *              /J OUT=A,B,...   join A.OBJ, B.OBJ ... into the library OUT.OBJ
@@ -121,9 +121,9 @@ static void upper(char *s)
 static int command(char *s, char *lib)
 {
     char *objs[MAXFILES];
-    char src[40];
-    char obj[40];
-    char out[40];
+    char src[25];                       /* UCSD file names are short */
+    char obj[25];
+    char out[25];
     char *t;
     int nobjs;
     int n;
@@ -177,15 +177,15 @@ static int command(char *s, char *lib)
             while (*s == ' ')
                 s++;
         }
-        /* NAME, NAME.C or NAME.C.TEXT: the source is NAME.C.TEXT, or
-           NAME.TEXT when there is no NAME.C.TEXT */
+        /* NAME or NAME.C: the source is NAME.C, or NAME.TEXT when there
+           is no NAME.C */
         n = strlen(s);
         if (n > 5 && strcmp(s + n - 5, ".TEXT") == 0)
             s[n = n - 5] = 0;
         if (n > 2 && strcmp(s + n - 2, ".C") == 0)
             s[n - 2] = 0;
         strcpy(src, s);
-        strcat(src, ".C.TEXT");
+        strcat(src, ".C");
         if (!exists(src)) {
             strcpy(src, s);
             strcat(src, ".TEXT");
@@ -212,7 +212,7 @@ static int command(char *s, char *lib)
 static int batch(char *name, char *lib)
 {
     FILE *f;
-    char path[40];
+    char path[25];
     char line[200];
     int done;
     int k;

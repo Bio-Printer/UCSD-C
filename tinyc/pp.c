@@ -134,27 +134,25 @@ static FILE *openinc(char *name, int sys)
     char path[200];
     char *p;
 #ifdef __TINYC__
-    /* P-System: file names are upper case and text files end in .TEXT;
-       <file> is searched on the default volume, then on the boot volume,
+    /* P-System: file names are upper case; "x.h" is X.H (or X.H.TEXT);
+       <x.h> is searched on the default volume, then on the boot volume,
        then on TINY-C: */
     int i;
+    int v;
+    char u[MAXNAME + 1];
     for (i = 0; name[i] && i < MAXNAME; i++) {
-        path[i] = name[i];
-        if (path[i] >= 'a' && path[i] <= 'z')
-            path[i] = path[i] - 32;
+        u[i] = name[i];
+        if (u[i] >= 'a' && u[i] <= 'z')
+            u[i] = u[i] - 32;
     }
-    path[i] = 0;
-    strcat(path, ".TEXT");
-    fp = fopen(path, "r");
-    if (!fp && sys) {
-        for (i = strlen(path); i >= 0; i--)
-            path[i + 1] = path[i];
-        path[0] = '*';
+    u[i] = 0;
+    fp = 0;
+    for (v = 0; !fp && v < (sys ? 3 : 1); v++) {
+        strcpy(path, v == 0 ? "" : (v == 1 ? "*" : "TINY-C:"));
+        strcat(path, u);
         fp = fopen(path, "r");
         if (!fp) {
-            for (i = strlen(path); i >= 1; i--)
-                path[i + 6] = path[i];
-            memcpy(path, "TINY-C:", 7);
+            strcat(path, ".TEXT");
             fp = fopen(path, "r");
         }
     }
