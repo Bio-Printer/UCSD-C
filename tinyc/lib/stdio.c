@@ -918,6 +918,14 @@ void __iunc(int c)
         __is--;
 }
 
+/* scanf's %f: keep the character c (up to 40) and read the next */
+static int __nc(int c, char *nb, int *nn)
+{
+    if (*nn < 40)
+        nb[(*nn)++] = c;
+    return __ic();
+}
+
 int __vscan(char *fmt, va_list ap)
 {
     int count;
@@ -934,6 +942,8 @@ int __vscan(char *fmt, va_list ap)
     float dv;
     float sc;
     char *s;
+    char nb[41];
+    int nn;
     count = 0;
     __in = 0;
     while ((f = *fmt++) != 0) {
@@ -1049,40 +1059,41 @@ int __vscan(char *fmt, va_list ap)
         }
         if (f == 'f' || f == 'e' || f == 'g') {
             neg = 0;
+            nn = 0;
             if (c == '-' || c == '+') {
                 neg = c == '-';
-                c = __ic();
+                c = __nc(c, nb, &nn);
             }
             dv = 0.0;
             any = 0;
             while (c >= '0' && c <= '9') {
                 dv = dv * 10.0 + (c - '0');
                 any = 1;
-                c = __ic();
+                c = __nc(c, nb, &nn);
             }
             if (c == '.') {
-                c = __ic();
+                c = __nc(c, nb, &nn);
                 sc = 0.1;
                 while (c >= '0' && c <= '9') {
                     dv = dv + (c - '0') * sc;
                     sc = sc / 10.0;
                     any = 1;
-                    c = __ic();
+                    c = __nc(c, nb, &nn);
                 }
             }
             if (any && (c == 'e' || c == 'E')) {
                 int e;
                 int en;
-                c = __ic();
+                c = __nc(c, nb, &nn);
                 en = 0;
                 if (c == '-' || c == '+') {
                     en = c == '-';
-                    c = __ic();
+                    c = __nc(c, nb, &nn);
                 }
                 e = 0;
                 while (c >= '0' && c <= '9') {
                     e = e * 10 + c - '0';
-                    c = __ic();
+                    c = __nc(c, nb, &nn);
                 }
                 while (e-- > 0)
                     dv = en ? dv / 10.0 : dv * 10.0;
@@ -1093,7 +1104,11 @@ int __vscan(char *fmt, va_list ap)
             if (neg)
                 dv = -dv;
             if (!skip) {
-                *va_arg(ap, float *) = dv;
+                if (lng) {
+                    nb[nn] = 0;         /* %lf %Lf: the text read -> double */
+                    __cspi(135, nb, va_arg(ap, double *));
+                } else
+                    *va_arg(ap, float *) = dv;
                 count++;
             }
             continue;

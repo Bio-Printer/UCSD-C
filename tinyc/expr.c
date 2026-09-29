@@ -163,6 +163,50 @@ struct Node *call1(char *name, struct Node *a, struct Node *b)
     return n;
 }
 
+/* an integer constant (int, unsigned, long, unsigned long) as decimal text
+   in buf[12]: 32-bit division by 10 done a byte at a time */
+static char *numtext(struct Node *n, char *buf)
+{
+    unsigned char b[4];
+    unsigned hi;
+    unsigned lo;
+    int neg;
+    int i;
+    int k;
+    int r;
+    int nz;
+    lo = n->val;
+    if (islongty(n->type))
+        hi = n->val2;
+    else
+        hi = !isunsignedty(n->type) && n->val < 0 ? -1 : 0;
+    neg = !isunsignedty(n->type) && (int)hi < 0;
+    if (neg) {
+        lo = -lo;
+        hi = ~hi + (lo == 0);
+    }
+    b[0] = hi >> 8;
+    b[1] = hi & 255;
+    b[2] = lo >> 8;
+    b[3] = lo & 255;
+    i = 11;
+    buf[i] = 0;
+    do {
+        r = 0;
+        nz = 0;
+        for (k = 0; k < 4; k++) {
+            r = r * 256 + b[k];
+            b[k] = r / 10;
+            r = r % 10;
+            nz = nz | b[k];
+        }
+        buf[--i] = '0' + r;
+    } while (nz);
+    if (neg)
+        buf[--i] = '-';
+    return buf + i;
+}
+
 struct Node *cast(struct Node *n, struct Type *t);
 
 struct Node *helpercall(char *name, struct Node *a, struct Node *b)
@@ -206,26 +250,15 @@ struct Node *cast(struct Node *n, struct Type *t)
     if (isdblty(t) || isdblty(f)) {
         if (isdblty(t) && (n->op == N_FNUM || isconst(n))) {
             struct Node *c;
-            char num[8];
+            char num[12];
             c = mknode(N_FNUM, t, 0, 0);
             c->fimg = (unsigned char *)xalloc(12);
             if (n->op == N_FNUM && n->str)
                 dblimage(n->str, c->fimg);
             else if (n->op == N_FNUM)
                 real2dbl(n->fimg, c->fimg);
-            else if (isunsignedty(f) && n->val < 0) {
-                unsigned u;
-                int i;
-                u = n->val;
-                i = 6;
-                num[i] = 0;
-                do {
-                    num[--i] = '0' + u % 10;
-                    u = u / 10;
-                } while (u);
-                dblimage(num + i, c->fimg);
-            } else
-                dblimage(itoa10(n->val, num), c->fimg);
+            else
+                dblimage(numtext(n, num), c->fimg);
             return c;
         }
         return mknode(N_CAST, t, n, 0);

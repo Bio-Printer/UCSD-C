@@ -48,7 +48,7 @@ which is identical to TINYC.CODE apart from its name (check it with
 CMPCODE on TCEXTRA:).  To use it, rename it with the Filer.
 
 REBUILDING THE LIBRARY:  X(ecute TINYC, answer  @LIBS
-LIBS.TEXT compiles the 10 library modules and joins them (/J) into
+LIBS.TEXT compiles the 11 library modules and joins them (/J) into
 TCLIB2.OBJ, identical to TCLIB.OBJ (check it with CMPCODE).  To use it,
 remove TCLIB.OBJ and rename TCLIB2.OBJ to TCLIB.OBJ with the Filer.
 

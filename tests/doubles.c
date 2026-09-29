@@ -1,8 +1,13 @@
 /* doubles (12 bytes: IEEE binary64, CSP 100..; P-Code mode only) */
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 char buf[48];
+double ad[3];
+unsigned long ul;
+unsigned uu;
+long ll;
 
 void show(double d)
 {
@@ -19,6 +24,56 @@ struct P {
     int k;
     double v;
 };
+
+void more(void)
+{
+    double d;
+    double e;
+    double f;
+    struct P q;
+    char *end;
+    int n;
+    float g;
+    d = 1.5L;                           /* ++ and -- */
+    e = d++;
+    f = ++d;
+    printf("%lg %lg %lg\n", d, e, f);
+    e = d--;
+    f = --d;
+    printf("%lg %lg %lg\n", d, e, f);
+    ad[1] = 2.25L;
+    ad[1]++;
+    ++ad[1];
+    q.v = 0.5L;
+    q.v--;
+    --q.v;
+    printf("%lg %lg\n", ad[1], q.v);
+    d += 2;
+    d -= 0.5;
+    d *= 3;
+    d /= 4;
+    printf("%lg\n", d);
+    ul = 4000000000UL;                  /* unsigned long and long */
+    d = ul;
+    printf("%.1lf\n", d);
+    d = 3000000000.0L;
+    ul = d;
+    printf("%lu\n", ul);
+    d = -2147483647L - 1;
+    printf("%.1lf %lg %.1lf\n", d, (double)-100000L, (double)4000000000UL);
+    uu = 50000;
+    d = uu;
+    d = d + 10000.7L;
+    uu = d;
+    ll = -123456L;
+    d = ll;
+    ll = d * 2;
+    printf("%u %ld\n", uu, ll);
+    n = sscanf("0.1 -2.5e-3 7.25", "%lf %Lf %f", &d, &e, &g);      /* text */
+    printf("%d %.17lg %.17lg %g\n", n, d, e, g);
+    d = strtold("  3.14159265358979323846xyz", &end);
+    printf("%.17lg [%s] %lg\n", d, end, atold("1e300") * 10.0L);
+}
 
 int main(void)
 {
@@ -94,5 +149,6 @@ int main(void)
     show(ldexp(a, 3));
     show(fmod(a * 3.5, 2.0));
     printf("%.3f\n", sqrt(2.0));
+    more();
     return 0;
 }

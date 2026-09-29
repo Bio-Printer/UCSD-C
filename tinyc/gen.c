@@ -922,7 +922,7 @@ static int dblrel(int op)
     return 5;
 }
 
-/* conversions to and from double: CSP 106..111 */
+/* conversions to and from double: CSP 106..111, 136, 137 */
 static void gen_dcast(struct Node *n)
 {
     struct Type *t;
@@ -941,6 +941,8 @@ static void gen_dcast(struct Node *n)
         gen_value(n->a);
         if (isfloatty(f))
             csp(106);                   /* FTOD */
+        else if (islongty(f) && isunsignedty(f))
+            csp(136);                   /* ULTOD */
         else if (islongty(f) || isunsignedty(f))
             csp(110);                   /* LTOD */
         else
@@ -953,7 +955,7 @@ static void gen_dcast(struct Node *n)
         return;
     }
     if (islongty(t)) {
-        csp(111);                       /* DTOL */
+        csp(isunsignedty(t) ? 137 : 111);   /* DTOUL, DTOL */
         return;
     }
     if (isunsignedty(t) && t->kind != TY_UCHAR) {

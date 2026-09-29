@@ -1,6 +1,6 @@
 # 12-byte floating point ("double" / "triple")
 
-## The engine side (done): CSP 100..134
+## The engine side (done): CSP 100..137
 
 `NativeFloat12.inc` in the emulator (inside `UCSD-Pascal---P-Machine_work-v1.88.zip`,
 included by `PSystemEngine.cpp`'s CSP case). Native P-Code mode only; the Z80
@@ -46,10 +46,11 @@ F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 | 133 | DTOA | D x, I fmt ('e' 'f' 'g'), I prec (0..17), A buf → (none); buf := text, ≤ 40 chars |
 | 134 | ATOD | A buf → D x, I chars used (C's strtod; 0 = no number) |
 | 135 | ATODM | A buf, A dst → I chars used; the value is stored at dst (12 bytes) |
+| 136 / 137 | ULTOD / DTOUL | L (unsigned) → D / D → L (unsigned; truncates, saturates at 0 and 4294967295) |
 
 No traps: 1/0 is an infinity, sqrt(-1) a NaN, as in C.
 
-Test: `tools/f12test.py` (36 of 36 pass). `repro/float12/gen.py` writes `f12test.c` + `.expect` (36 checks,
+Test: `tools/f12test.py` (51 of 51 pass). `repro/float12/gen.py` writes `f12test.c` + `.expect` (51 checks,
 expected values from IEEE doubles); run it with the host compiler on the
 P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 
@@ -69,15 +70,18 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 * **Code**: loads, stores, arguments, results, arrays and struct members are
   6-word values (LDM/STM 6); constants are LDC 6; `+ - * /` and negation
   are CSP 100..104; comparisons and zero tests CSP 105 with the relation;
-  conversions CSP 106..111 (unsigned int goes through LTOD/DTOL).
+  conversions CSP 106..111, 136, 137 (unsigned long: ULTOD/DTOUL; unsigned
+  int goes through LTOD/DTOL). `++`, `--` and `+= -= *= /=` work on doubles.
   `__cspd(n, ...)` is an intrinsic for a CSP that leaves a double.
 * **Library**: `printf` prints a double with `%lf %le %lg %LE ...` (l or L;
   plain `%f` is a float, as float arguments stay 4 bytes). The math.h
   functions are declared for float; called with a double first argument
   they become the CSPs directly (sqrt sin cos tan asin acos atan atan2 exp
   log log10 pow floor ceil fabs fmod sinh cosh tanh ldexp frexp).
-* **Not yet**: scanf/strtod/atof for doubles (they read floats); `++`/`--`
-  on a double; unsigned long <-> double beyond 2^31.
+* **Reading doubles**: `scanf("%lf", &d)` (or `%Lf`, `%le` ...) stores a
+  double (the characters read go through CSP 135); `strtold` and `atold`
+  (C99 names, in `<stdlib.h>`) return a double. `strtod` and `atof` stay
+  float, so programs using them still run in Z80 mode.
 * **Tests**: `tests/doubles.c` (P-Code mode only), `tools/f12test.py` (the
   CSPs themselves). The double-capable compiler still rebuilds itself in
   Z80 mode (`@BUILD`), identical to the host build.

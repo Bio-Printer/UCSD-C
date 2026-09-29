@@ -46,6 +46,10 @@ float strtod(char *s, char **end);
 
 float atof(char *s);
 
+double strtold(char *s, char **end);   /* doubles: P-Code mode only */
+
+double atold(char *s);
+
 char *getenv(char *name);
 
 

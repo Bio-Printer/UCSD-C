@@ -15,7 +15,7 @@ Start here when picking the project up in a new session.
 | `tinyc/lib/*.c`, `libint.h` | the C library (joined into `TCLIB.OBJ`) |
 | `tinyc/include/*.h` | headers; `tcmsgs.txt` = the compiler's messages (TCMSGS.TEXT) |
 | `tests/NAME.c` + `.expect` (+ `.keys`, `.wait`) | test/demo programs and their expected output |
-| `volumes/` | **TINY-C.zip** (compiler, library, headers, all sources, BUILD/LIBS scripts) **TCEXTRA.zip** (tests/demos, CMPCODE) and **BIGGY.zip** (boot disk `Big_Disk.BLK` with Tiny-C ready to use; doubles need the v1.88 emulator's CSP 100..135); `*.txt` = file listings |
+| `volumes/` | **TINY-C.zip** (compiler, library, headers, all sources, BUILD/LIBS scripts) **TCEXTRA.zip** (tests/demos, CMPCODE) and **BIGGY.zip** (boot disk `Big_Disk.BLK` with Tiny-C ready to use; doubles need the v1.88 emulator's CSP 100..137); `*.txt` = file listings |
 | `verify/` | Tiny-C Verify pack: `TCVERIFY.SCRIPT` + `TCVERIFY.zip`, `cmpcode.c`, `rmfiles.c`, README |
 | `repro/` | engine bug repros (REAL compare, DEEPCXP: both fixed in the engine) |
 | `tools/` | host tools (below) |
@@ -36,7 +36,7 @@ Start here when picking the project up in a new session.
 | `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |
 | `pdis.py FILE.CODE` | P-code disassembler |
-| `f12test.py` | test the 12-byte floating point CSPs 100..134 (P-Code mode; see `docs/FLOAT12.md`) |
+| `f12test.py` | test the 12-byte floating point CSPs 100..137 (P-Code mode; see `docs/FLOAT12.md`) |
 | `ucsdvol.py` | read/write UCSD volume images (`ls`, `get`, `put`, `rm`, `new`) |
 | `psys.py`, `tcrun.py`, `selfhost.py` | library code used by the above |
 
@@ -72,12 +72,10 @@ Sources are `NAME.C`, headers `NAME.H` (UCSD text format, text kind).
   so calls within a segment are 2-byte CGPs (linker checks: message 116).
 * Limits: 10 segments per program (1 + 7..15), 77 files per UCSD directory.
 * **12-byte doubles** (`double`, `triple`, `long double`; P-Code mode only):
-  IEEE binary64 via the engine's CSP 100..135 — see `docs/FLOAT12.md`.
+  IEEE binary64 via the engine's CSP 100..137 — see `docs/FLOAT12.md`.
   `float` stays the 4-byte REAL; unsuffixed constants are float, `1.5L` double.
 
 ## Ideas not done yet
 
 * More code-size work in the code generator (e.g. 1-byte global operands).
 * A "Verify Tiny-C" item in the emulator's menu (sketch in `verify/README.md`).
-* Doubles: scanf/strtod/atof for doubles, `++`/`--` on a double (see
-  `docs/FLOAT12.md`).

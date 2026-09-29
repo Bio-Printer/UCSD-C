@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""f12test.py -- run repro/float12/f12test.c (CSP 100..134, 12-byte floating
+"""f12test.py -- run repro/float12/f12test.c (CSP 100..137, 12-byte floating
 point) on the P-System in P-Code mode and compare with f12test.expect."""
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
