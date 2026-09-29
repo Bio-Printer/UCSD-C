@@ -53,43 +53,31 @@ Test: `tools/f12test.py` (36 of 36 pass). `repro/float12/gen.py` writes `f12test
 expected values from IEEE doubles); run it with the host compiler on the
 P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 
-## The Tiny-C side (to do)
+## The Tiny-C side (done)
 
-**Types.** Today `float`, `double` and `long double` are all the 4-byte real
-(`TY_FLOAT`, `TY_DOUBLE`, `TY_LDOUBLE`, size 4). Proposal:
-
-* `float` stays 4 bytes (the P-machine's REAL: works in Z80 mode too).
-* `double` and a new keyword `triple` are the 12-byte type (size 12, 6 words);
-  `long double` the same.
-* Unsuffixed floating constants stay `float` unless a `#pragma double` (or
-  the `L` suffix / a `double` context) says otherwise — so existing programs
-  keep running in Z80 mode. (Strict C would make `1.0` a double; that would
-  put every float program on the CSPs.)
-
-**Compiler work** (roughly in order):
-
-1. lex.c: `triple` keyword; floating literals keep their text so a 12-byte
-   image can be made. The compiler runs on the P-System, where it has only
-   4-byte reals: the image for a `double` constant comes from CSP 134 (ATOD)
-   at compile time (host build: `strtod`), so building double constants
-   needs P-Code mode — fine, running them needs it anyway.
-2. types / psym: TY_DOUBLE size 12, `isfloatty` split into "real" (4) and
-   "double" (12); usual arithmetic conversions: int/long/float → double
-   when the other operand is double.
-3. expr.c: casts and conversions call ITOD/LTOD/FTOD/DTOI/DTOL/DTOF;
-   comparisons use DCMP + a compare of its word with 0.
-4. gen.c: a double value is 6 words: loads/stores with LDM 6 / STM 6 (as
-   structs of 12 bytes are moved today); + - * / neg are CSP 100..104;
-   constants via LDC 6 words (or a 12-byte literal in the code + LDM);
-   parameters and results of 6 words (the frame layout already handles
-   multi-word values: longs and structs).
-5. lib: math.h `double` functions → CSP 112..132 (sqrt, sin, cos, tan,
-   asin, acos, atan, atan2, exp, log, log10, pow, floor, ceil, fabs, fmod,
-   sinh, cosh, tanh, ldexp, frexp); printf `%f %e %g` for doubles → DTOA;
-   scanf/strtod/atof → ATOD. The current 4-byte versions stay for float
-   (`sqrtf` ... or chosen by argument type).
-6. Tests: a doubles test (P-Code mode only; Tiny-C Verify skips it in Z80).
-
-Memory: the new code goes mostly into GEN and PARSE; Z80 mode had ~165
-words to spare in code generation (plus the driver's 1 KB since), so the
-additions should stay compact, or the conversions can be table-driven.
+* **Types**: `float` is the 4-byte REAL (works in Z80 mode too); `double`,
+  `triple` (a keyword for double) and `long double` are the 12-byte type.
+  `sizeof(double)` is 12.
+* **Constants**: an unsuffixed constant (`1.5`, `1e10`) is a float; with `L`
+  (`1.5L`, `1e300L`) a double. A float constant that meets a double
+  (`double d = 0.1;`, `d * 2.5`, `sqrt(d)`'s other arguments) becomes a double
+  made from its text, so it is exact to double precision, not a widened
+  float. The compiler makes a double's image with CSP 135 on the P-System
+  (so compiling double constants needs P-Code mode, like running them) and
+  with `strtod` on the host: both give the same bits (the cross-check is
+  identical). Integer constants meeting a double become double constants.
+* **Code**: loads, stores, arguments, results, arrays and struct members are
+  6-word values (LDM/STM 6); constants are LDC 6; `+ - * /` and negation
+  are CSP 100..104; comparisons and zero tests CSP 105 with the relation;
+  conversions CSP 106..111 (unsigned int goes through LTOD/DTOL).
+  `__cspd(n, ...)` is an intrinsic for a CSP that leaves a double.
+* **Library**: `printf` prints a double with `%lf %le %lg %LE ...` (l or L;
+  plain `%f` is a float, as float arguments stay 4 bytes). The math.h
+  functions are declared for float; called with a double first argument
+  they become the CSPs directly (sqrt sin cos tan asin acos atan atan2 exp
+  log log10 pow floor ceil fabs fmod sinh cosh tanh ldexp frexp).
+* **Not yet**: scanf/strtod/atof for doubles (they read floats); `++`/`--`
+  on a double; unsigned long <-> double beyond 2^31.
+* **Tests**: `tests/doubles.c` (P-Code mode only), `tools/f12test.py` (the
+  CSPs themselves). The double-capable compiler still rebuilds itself in
+  Z80 mode (`@BUILD`), identical to the host build.

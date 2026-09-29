@@ -70,10 +70,13 @@ Sources are `NAME.C`, headers `NAME.H` (UCSD text format, text kind).
   used (`scanrefs` Bloom filter), prototypes declared under `#pragma segment`
   so calls within a segment are 2-byte CGPs (linker checks: message 116).
 * Limits: 10 segments per program (1 + 7..15), 77 files per UCSD directory.
+* **12-byte doubles** (`double`, `triple`, `long double`; P-Code mode only):
+  IEEE binary64 via the engine's CSP 100..135 — see `docs/FLOAT12.md`.
+  `float` stays the 4-byte REAL; unsuffixed constants are float, `1.5L` double.
 
 ## Ideas not done yet
 
 * More code-size work in the code generator (e.g. 1-byte global operands).
 * A "Verify Tiny-C" item in the emulator's menu (sketch in `verify/README.md`).
-* `double` / `triple` as the 12-byte type in Tiny-C: the engine side is done
-  (CSP 100..134, `docs/FLOAT12.md` has the interface and the compiler plan).
+* Doubles: scanf/strtod/atof for doubles, `++`/`--` on a double (see
+  `docs/FLOAT12.md`).
