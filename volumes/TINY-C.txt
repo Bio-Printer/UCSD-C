@@ -1,9 +1,9 @@
-TINY-C:  46 files  (a UCSD directory holds 77)
+TINY-C:  47 files  (a UCSD directory holds 77)
 
   FILE            BLOCKS  WHAT
 
   TINYC.CODE         106  the Tiny-C compiler: X(ecute TINYC
-  TCLIB.OBJ           49  the C library, linked into every program
+  TCLIB.OBJ           50  the C library, linked into every program
   TCMSGS.TEXT          8  the compiler's messages (line n = message n)
   README.TEXT          6  how to use and rebuild Tiny-C
   BUILD.TEXT           4  X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE
@@ -42,9 +42,10 @@ TINY-C:  46 files  (a UCSD directory holds 77)
   FLTFMT.C             8  library: printf's %f %e %g (linked only when floats are used)
   IO.C                 6  library: <io.h>
   MATH.C               6  library: <math.h>
-  STDIO.C             42  library: <stdio.h>
+  STDIO.C             44  library: <stdio.h>
   STDLIB.C            14  library: <stdlib.h>
   STRING.C             8  library: <string.h>
+  STRTOLD.C            4  library: <strtold.h>
   TCRT.C              18  library: runtime helpers: C division, shifts, unsigned, longs
   LIBINT.H             6  library: the library modules' shared declarations
   FILES.TEXT          10  this list
