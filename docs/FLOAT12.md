@@ -30,7 +30,7 @@ F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 |---|---|---|
 | 100..103 | DADD DSUB DMUL DDIV | D a, D b → D |
 | 104 | DNEG | D → D |
-| 105 | DCMP | D a, D b → I (-1 a<b, 0 equal, 1 a>b, 2 unordered) |
+| 105 | DCMP | D a, D b, I rel → I 1 if a rel b holds, else 0; rel 0 == 1 != 2 < 3 <= 4 > 5 >=, +8 negates (with a NaN only != holds) |
 | 106 / 107 | FTOD / DTOF | F → D / D → F (saturates; tiny → 0.0) |
 | 108 / 109 | ITOD / DTOI | I → D / D → I (truncates, saturates) |
 | 110 / 111 | LTOD / DTOL | L → D / D → L (truncates, saturates) |

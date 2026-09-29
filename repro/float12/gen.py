@@ -41,8 +41,11 @@ show(['l = 100000L; __cspv(110, l)'], '100000')
 show(['f = 0.1; __cspv(106, f)'], g(struct.unpack('<f', struct.pack('<f', 0.1))[0]))
 show(['__cspv(107, %s); __cspv(106)' % words(math.pi)], g(struct.unpack('<f', struct.pack('<f', math.pi))[0]))   # 24-bit mantissa, rounded
 C.append('    n = __cspi(109, %s);' % words(-7.9)); C.append('    printf("%d\\n", n);'); E.append('-7')
-C.append('    n = __cspi(105, %s, %s);' % (words(1.0), words(2.0))); C.append('    printf("%d\\n", n);'); E.append('-1')
-C.append('    n = __cspi(105, %s, %s);' % (words(2.0), words(2.0))); C.append('    printf("%d\\n", n);'); E.append('0')
+for rel, want in ((0, 0), (1, 1), (2, 1), (3, 1), (4, 0), (5, 0), (2 + 8, 0), (5 + 8, 1)):   # 1.0 vs 2.0
+    C.append('    n = __cspi(105, %s, %s, %d);' % (words(1.0), words(2.0), rel)); C.append('    printf("%d\\n", n);'); E.append(str(want))
+nan = float('nan')
+for rel, want in ((0, 0), (1, 1), (2, 0), (5, 0)):   # NaN vs 1.0: only != holds
+    C.append('    n = __cspi(105, %s, %s, %d);' % (words(nan), words(1.0), rel)); C.append('    printf("%d\\n", n);'); E.append(str(want))
 show(['__cspv(111, %s); __cspv(110)' % words(-123456.9)], '-123456')
 # formats
 show(['__cspv(0 + 100, %s, %s)' % (words(1e300), words(1e300))], '%.6e' % 2e300, 'e', 6)
