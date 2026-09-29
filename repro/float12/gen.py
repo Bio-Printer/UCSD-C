@@ -38,8 +38,8 @@ show(['__cspv(131, %s, 10)' % words(0.75)], g(math.ldexp(0.75, 10)))
 # conversions
 show(['__cspv(108, -1234)'], '-1234')
 show(['l = 100000L; __cspv(110, l)'], '100000')
-show(['f = 0.1; __cspv(106, f)'], g(struct.unpack('<f', struct.pack('<f', 0.1))[0] if False else 0.100000001490116119384765625, 17))
-show(['__cspv(107, %s); __cspv(106)' % words(math.pi)], g(3.1415925025939941))
+show(['f = 0.1; __cspv(106, f)'], g(struct.unpack('<f', struct.pack('<f', 0.1))[0]))
+show(['__cspv(107, %s); __cspv(106)' % words(math.pi)], g(struct.unpack('<f', struct.pack('<f', math.pi))[0]))   # 24-bit mantissa, rounded
 C.append('    n = __cspi(109, %s);' % words(-7.9)); C.append('    printf("%d\\n", n);'); E.append('-7')
 C.append('    n = __cspi(105, %s, %s);' % (words(1.0), words(2.0))); C.append('    printf("%d\\n", n);'); E.append('-1')
 C.append('    n = __cspi(105, %s, %s);' % (words(2.0), words(2.0))); C.append('    printf("%d\\n", n);'); E.append('0')
