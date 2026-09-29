@@ -37,6 +37,8 @@ float tanh(float x);
 
 float modf(float x, float *ip);
 
+float frexp(float x, int *e);
+
 float ldexp(float x, int e);
 
 #endif

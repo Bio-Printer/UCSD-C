@@ -1,5 +1,6 @@
 /* doubles (12 bytes: IEEE binary64, CSP 100..; P-Code mode only) */
 #include <stdio.h>
+#include <math.h>
 
 char buf[48];
 
@@ -78,5 +79,20 @@ int main(void)
     p.v = 9.5;
     show(p.v - 0.5);
     printf("%d\n", (int)sizeof(double));
+    a = 2.0;
+    printf("%lf %le %Lg %LG\n", a / 3.0, a * 1e10L, a, a * 1e-10L);
+    printf("[%10.3lf] [%-8.2lf] %+lf\n", 3.14159L, -2.5L, 1.0L);
+    show(sqrt(a));
+    show(sin(a));
+    show(cos(a));
+    show(atan2(a, -1.0));
+    show(pow(a, 0.5));
+    show(exp(a));
+    show(log(a));
+    show(fabs(-a));
+    show(floor(-2.5L));
+    show(ldexp(a, 3));
+    show(fmod(a * 3.5, 2.0));
+    printf("%.3f\n", sqrt(2.0));
     return 0;
 }

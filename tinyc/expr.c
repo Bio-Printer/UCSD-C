@@ -41,6 +41,52 @@ void real2dbl(unsigned char *f, unsigned char *img)
     img[7] = (f[1] & 128) | (e >> 4);
 }
 
+/* math.h's functions (declared for float) called with a double first
+   argument are the engine's CSP 112..132 (__cspd), in this order */
+static int dmathcsp(char *name)
+{
+    char *s;
+    int k;
+    int n;
+    s = "sqrt sin cos tan asin acos atan atan2 exp log log10 pow floor ceil fabs fmod sinh cosh tanh ldexp frexp ";
+    n = strlen(name);
+    for (k = 112; *s; k++) {
+        if (strncmp(s, name, n) == 0 && s[n] == ' ')
+            return k;
+        while (*s != ' ')
+            s++;
+        s++;
+    }
+    return 0;
+}
+
+/* the call c (its arguments already converted to float) as __cspd(k, ...)
+   with the arguments as they were */
+static struct Node *dmathcall(struct Node *c, int k)
+{
+    struct Node *first;
+    struct Node *last;
+    struct Node *a;
+    struct Node *b;
+    struct Node *nx;
+    first = mknum(k, ty_int);
+    last = first;
+    for (a = c->b; a; a = nx) {
+        nx = a->next;
+        b = a;
+        if (a->op == N_CAST && isfloatty(a->type) && !isdblty(a->type))
+            b = cast(a->a, ty_double);          /* the argument before float */
+        else if (isfloatty(a->type) && !isdblty(a->type))
+            b = cast(a, ty_double);             /* a float (e.g. a constant) */
+        b->next = 0;
+        last->next = b;
+        last = b;
+    }
+    c = mknode(N_INTRIN, ty_double, first, 0);
+    c->val = I_CSPD;
+    return c;
+}
+
 struct Node *mknode(int op, struct Type *t, struct Node *a, struct Node *b)
 {
     struct Node *n;
@@ -656,6 +702,9 @@ struct Node *postfix(void)
                 n->val = 1;             /* the callee is in this segment: CGP */
             c->b = arglist(ft, &na);
             c->val = na;
+            if (n->op == N_FUNC && c->b && c->b->op == N_CAST && isdblty(c->b->a->type) &&
+                (na = dmathcsp(n->sym->name)) != 0)
+                c = dmathcall(c, na);
             n = c;
         } else if (tok == '.') {
             next();

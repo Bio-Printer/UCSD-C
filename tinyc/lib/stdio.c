@@ -675,6 +675,10 @@ int __vformat(char *fmt, va_list ap)
     long lv;
     unsigned long uv;
     float dv;
+#ifndef NO_FLOAT_PRINTF
+    double dd;
+    char *du;
+#endif
     char *s;
     __on = 0;
     while ((c = *fmt++) != 0) {
@@ -727,8 +731,8 @@ int __vformat(char *fmt, va_list ap)
         }
         lng = 0;
         while (*fmt == 'l' || *fmt == 'h' || *fmt == 'L') {
-            if (*fmt == 'l')
-                lng = 1;
+            if (*fmt == 'l' || *fmt == 'L')
+                lng = 1;                /* %ld; %lf %Lf: a double */
             fmt++;
         }
         c = *fmt++;
@@ -790,6 +794,28 @@ int __vformat(char *fmt, va_list ap)
         case 'E':
         case 'g':
         case 'G':
+            if (lng) {
+                /* a double (12 bytes): the engine formats it (CSP 133,
+                   P-Code mode) */
+                dd = va_arg(ap, double);
+                __cspv(133, dd, c == 'E' ? 'e' : (c == 'G' ? 'g' : c), prec < 0 ? 6 : prec, buf);
+                s = buf;
+                neg = *s == '-';
+                if (neg)
+                    s++;
+                n = strlen(s);
+                if (c == 'E' || c == 'G')
+                    for (du = s; *du; du++)
+                        *du = toupper(*du);
+                if (neg)
+                    strcpy(pre, "-");
+                else if (plus)
+                    strcpy(pre, "+");
+                else if (space)
+                    strcpy(pre, " ");
+                __ofield(pre, s, n, 0, width, left, zero);
+                break;
+            }
             dv = va_arg(ap, float);
             neg = dv < 0.0;
             if (neg)
