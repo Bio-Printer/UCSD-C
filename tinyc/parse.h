@@ -17,6 +17,7 @@
 #define I_OSVAR   9
 #define I_EXITP   10
 #define I_OSVARA  11
+#define I_CSPD    12        /* __cspd(n, ...): CSP n leaving a double (12 bytes) */
 #define RBITS 4096
 struct Dcl {
     int n;
@@ -87,6 +88,8 @@ int allocglobal(struct Type *t);
 int alloclocal(struct Type *t);
 void expect(int t, char *what);
 int istypename(void);
+void dblimage(char *text, unsigned char *img);
+void real2dbl(unsigned char *f, unsigned char *img);
 struct Node *mknode(int op, struct Type *t, struct Node *a, struct Node *b);
 struct Node *mknum(int v, struct Type *t);
 int isconst(struct Node *n);

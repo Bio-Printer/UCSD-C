@@ -118,7 +118,7 @@ static void irnode(struct Node *n)
         for (i = 0; i < n->slen; i++)
             irb(n->str[i]);
     } else if (n->op == N_FNUM) {
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < n->type->size; i++)     /* 4, or 12 for a double */
             irb(n->fimg[i]);
     }
     if (mask & 1)
@@ -386,8 +386,8 @@ static struct Node *rnode(void)
         for (i = 0; i < n->slen; i++)
             n->str[i] = rb();
     } else if (n->op == N_FNUM) {
-        n->fimg = (unsigned char *)xalloc(4);
-        for (i = 0; i < 4; i++)
+        n->fimg = (unsigned char *)xalloc(n->type->size);
+        for (i = 0; i < n->type->size; i++)
             n->fimg[i] = rb();
     }
     if (mask & 1)

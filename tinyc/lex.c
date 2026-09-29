@@ -15,7 +15,8 @@ int toklong;                    /* T_NUM: 1 = long, and bit 2 = unsigned */
 char *tokname;                  /* T_ID [MAXNAME], allocated by lexinit */
 char *tokstr;                   /* T_STR (xalloc'd) */
 int toklen;                     /* T_STR length including the final NUL */
-unsigned char tokreal[4];       /* T_FNUM image */
+unsigned char tokreal[4];       /* T_FNUM image (float) */
+char *toknum;                   /* T_FNUM text "DIGITSeEXP" (for a double), allocated by lexinit */
 
 static FILE *lexin;
 static int ch;                  /* lookahead character */
@@ -52,7 +53,8 @@ void lexinit(FILE *fp)
     strbufs[1] = malloc(MAXSTR);
     tokname = malloc(MAXNAME);
     pname = malloc(MAXNAME);
-    if (!strbufs[0] || !strbufs[1] || !tokname || !pname)
+    toknum = malloc(40);
+    if (!strbufs[0] || !strbufs[1] || !tokname || !pname || !toknum)
         fatal(2 /* out of memory */, 0);
     lexin = fp;
     atbol = 1;
@@ -420,11 +422,25 @@ static void number(void)
             }
             exp10 = exp10 + esign * ev;
         }
-        if (exp10 + nd > 40)
-            error(27 /* floating constant too large */, 0);
-        while (ch == 'f' || ch == 'F' || ch == 'l' || ch == 'L')
+        toklong = 0;                    /* the L suffix: a double constant */
+        while (ch == 'f' || ch == 'F' || ch == 'l' || ch == 'L') {
+            if (ch == 'l' || ch == 'L')
+                toklong = 1;
             nextch();
-        if (exp10 + nd < -40)
+        }
+        {
+            /* the text a double's image is made from: "DIGITSeEXP" */
+            int i;
+            for (i = 0; i < nd; i++)
+                toknum[i] = '0' + digits[i];
+            if (nd == 0)
+                toknum[i++] = '0';
+            toknum[i++] = 'e';
+            itoa10(nd ? exp10 : 0, toknum + i);
+        }
+        if (exp10 + nd > 40 && !toklong)
+            error(27 /* floating constant too large */, 0);
+        if (exp10 + nd < -40 || exp10 + nd > 40)
             nd = 0;
         makereal(digits, nd, exp10, tokreal);
         tok = T_FNUM;

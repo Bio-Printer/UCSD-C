@@ -13,6 +13,12 @@ int isfloatty(struct Type *t)
     return t->kind >= TY_FLOAT && t->kind <= TY_LDOUBLE;
 }
 
+/* the 12-byte type: double, triple, long double */
+int isdblty(struct Type *t)
+{
+    return t->kind == TY_DOUBLE || t->kind == TY_LDOUBLE;
+}
+
 int islongty(struct Type *t)
 {
     return t->kind == TY_LONG || t->kind == TY_ULONG;

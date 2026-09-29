@@ -3,6 +3,44 @@
 #include "parse.h"
 #pragma segment PARSE
 
+/* ---- doubles (12 bytes: IEEE binary64 + 4 zero bytes) ---- */
+
+/* a double constant's image from its text ("123e-2") */
+void dblimage(char *text, unsigned char *img)
+{
+#ifdef __TINYC__
+    __cspi(135, text, img);             /* ATODM (P-Code mode, like doubles) */
+#else
+    double d;
+    unsigned long long u;
+    int i;
+    d = strtod(text, 0);
+    memcpy(&u, &d, 8);
+    for (i = 0; i < 8; i++) {
+        img[i] = u & 255;
+        u = u >> 8;
+    }
+    for (; i < 12; i++)
+        img[i] = 0;
+#endif
+}
+
+/* a 4-byte UCSD real's exact value as a double image: 0.1m(24) * 2^(e-128)
+   = 1.m(23) * 2^(e-129); binary64 exponent e - 129 + 1023 */
+void real2dbl(unsigned char *f, unsigned char *img)
+{
+    int e;
+    memset(img, 0, 12);
+    if (f[0] == 0)
+        return;
+    e = f[0] + 894;
+    img[3] = (f[3] & 7) << 5;
+    img[4] = (f[3] >> 3) | ((f[2] & 7) << 5);
+    img[5] = (f[2] >> 3) | ((f[1] & 7) << 5);
+    img[6] = ((f[1] & 127) >> 3) | ((e & 15) << 4);
+    img[7] = (f[1] & 128) | (e >> 4);
+}
+
 struct Node *mknode(int op, struct Type *t, struct Node *a, struct Node *b)
 {
     struct Node *n;
@@ -117,6 +155,34 @@ struct Node *cast(struct Node *n, struct Type *t)
     if (!isscalar(f)) {
         error(38 /* invalid conversion */, 0);
         return n;
+    }
+    /* double <-> others: CSP 106..111 (gen); constants become doubles here */
+    if (isdblty(t) || isdblty(f)) {
+        if (isdblty(t) && (n->op == N_FNUM || isconst(n))) {
+            struct Node *c;
+            char num[8];
+            c = mknode(N_FNUM, t, 0, 0);
+            c->fimg = (unsigned char *)xalloc(12);
+            if (n->op == N_FNUM && n->str)
+                dblimage(n->str, c->fimg);
+            else if (n->op == N_FNUM)
+                real2dbl(n->fimg, c->fimg);
+            else if (isunsignedty(f) && n->val < 0) {
+                unsigned u;
+                int i;
+                u = n->val;
+                i = 6;
+                num[i] = 0;
+                do {
+                    num[--i] = '0' + u % 10;
+                    u = u / 10;
+                } while (u);
+                dblimage(num + i, c->fimg);
+            } else
+                dblimage(itoa10(n->val, num), c->fimg);
+            return c;
+        }
+        return mknode(N_CAST, t, n, 0);
     }
     /* long <-> others go through helpers */
     if (islongty(t) && !islongty(f)) {
@@ -411,9 +477,11 @@ struct Node *intrinsic(int code)
         n->type = ty_void;
     else if (code == I_CSPF)
         n->type = ty_float;
+    else if (code == I_CSPD)
+        n->type = ty_double;
     else if (code == I_OSVARA)
         n->type = ptrto(ty_int);
-    if ((code >= I_CSPV && code <= I_CXP0I) || code == I_OSVAR || code == I_OSVARA) {
+    if ((code >= I_CSPV && code <= I_CXP0I) || code == I_OSVAR || code == I_OSVARA || code == I_CSPD) {
         if (!n->a || !isconst(n->a))
             error(47 /* constant expected */, intrnames[code]);
     }
@@ -438,9 +506,18 @@ struct Node *primary(void)
     case T_FNUM:
         if (!insys)
             usesfloat = 1;
-        n = mknode(N_FNUM, ty_float, 0, 0);     /* an unsuffixed constant is a float */
-        n->fimg = (unsigned char *)xalloc(4);
-        memcpy(n->fimg, tokreal, 4);
+        /* an unsuffixed constant is a float, with L a double; its text is
+           kept: a float constant that meets a double becomes one exactly */
+        n = mknode(N_FNUM, toklong ? ty_double : ty_float, 0, 0);
+        n->str = xalloc(strlen(toknum) + 1);
+        strcpy(n->str, toknum);
+        if (toklong) {
+            n->fimg = (unsigned char *)xalloc(12);
+            dblimage(n->str, n->fimg);
+        } else {
+            n->fimg = (unsigned char *)xalloc(4);
+            memcpy(n->fimg, tokreal, 4);
+        }
         next();
         return n;
     case T_STR:
@@ -618,10 +695,25 @@ struct Node *unary(void)
         n = decay(n);
         if (isconst(n))
             return mknum(-n->val, arith(n->type, ty_int));
+        if (n->op == N_FNUM && n->type->size == 12) {
+            n->fimg[7] = n->fimg[7] ^ 128;
+            return n;
+        }
         if (n->op == N_FNUM) {
             n->fimg[1] = n->fimg[1] ^ 128;
             if (n->fimg[0] == 0)
                 n->fimg[1] = 0;
+            if (n->str) {                   /* the text too (for a double) */
+                char *s;
+                s = xalloc(strlen(n->str) + 2);
+                if (n->str[0] == '-')
+                    strcpy(s, n->str + 1);
+                else {
+                    s[0] = '-';
+                    strcpy(s + 1, n->str);
+                }
+                n->str = s;
+            }
             return n;
         }
         if (islongty(n->type))

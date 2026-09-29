@@ -49,7 +49,7 @@ int swdef;
 
 char *intrnames[] = {
     "", "__dvi", "__mdi", "__va_start", "__cspv", "__cspi", "__cspf",
-    "__cxp0v", "__cxp0i", "__osvar", "__exitprog", "__osvaraddr", 0
+    "__cxp0v", "__cxp0i", "__osvar", "__exitprog", "__osvaraddr", "__cspd", 0
 };
 
 /* ---- types ---- */

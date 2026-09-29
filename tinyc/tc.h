@@ -272,6 +272,7 @@ extern char *tokname;           /* [MAXNAME], allocated by lexinit */
 extern char *tokstr;
 extern int toklen;
 extern unsigned char tokreal[4];
+extern char *toknum;
 #pragma segment PARSE
 void lexinit(FILE *fp);
 void next(void);
@@ -293,6 +294,7 @@ struct Type *ptrto(struct Type *t);
 #pragma segment MAIN
 int isintegral(struct Type *t);
 int isfloatty(struct Type *t);
+int isdblty(struct Type *t);
 int islongty(struct Type *t);
 int isunsignedty(struct Type *t);
 int isword(struct Type *t);

@@ -664,6 +664,8 @@ static void storeviapost(struct Type *t)
 
 /* ---- conversions ---- */
 
+static void gen_dcast(struct Node *n);
+
 static void gen_cast(struct Node *n)
 {
     struct Type *t;
@@ -672,6 +674,10 @@ static void gen_cast(struct Node *n)
     fk = n->a->type->kind;
     if (t->kind == TY_VOID) {
         gen_discard(n->a);
+        return;
+    }
+    if (isdblty(t) || isdblty(n->a->type)) {
+        gen_dcast(n);
         return;
     }
     gen_value(n->a);
@@ -854,7 +860,7 @@ static void gen_intrinsic(struct Node *n, int want)
     switch (code) {
     case 1: ob(O_DVI); break;
     case 2: ob(O_MODI); break;
-    case 4: case 5: case 6: csp(num); break;
+    case 4: case 5: case 6: case 12: csp(num); break;
     case 7: case 8:
         ob(O_CXP);
         ob(0);
@@ -882,6 +888,89 @@ static void gen_fconst(unsigned char *f)
     ob(f[3]);
     ob(f[0]);
     ob(f[1]);
+}
+
+/* a double: LDC 6, the words last first (as for a REAL) */
+static void gen_dconst(unsigned char *f)
+{
+    int w;
+    ob(O_LDC);
+    ob(6);
+    if ((E->pc & 1) == 1)
+        ob(0);
+    for (w = 5; w >= 0; w--) {
+        ob(f[2 * w]);
+        ob(f[2 * w + 1]);
+    }
+}
+
+/* doubles: CSP 100.. (the engine's NativeFloat12.inc) */
+#define CSP_DADD 100
+#define CSP_DNEG 104
+#define CSP_DCMP 105
+
+/* DCMP's relation codes: 0 == 1 != 2 < 3 <= 4 > 5 >=, + 8 negates */
+static int dblrel(int op)
+{
+    switch (op) {
+    case N_EQ: return 0;
+    case N_NE: return 1;
+    case N_LT: return 2;
+    case N_LE: return 3;
+    case N_GT: return 4;
+    }
+    return 5;
+}
+
+/* conversions to and from double: CSP 106..111 */
+static void gen_dcast(struct Node *n)
+{
+    struct Type *t;
+    struct Type *f;
+    int a;
+    int b;
+    t = n->type;
+    f = n->a->type;
+    if (isdblty(t) && isdblty(f)) {
+        gen_value(n->a);
+        return;
+    }
+    if (isdblty(t)) {
+        if (isunsignedty(f) && !islongty(f))
+            ldc(0);                     /* unsigned: as a long, high word 0 */
+        gen_value(n->a);
+        if (isfloatty(f))
+            csp(106);                   /* FTOD */
+        else if (islongty(f) || isunsignedty(f))
+            csp(110);                   /* LTOD */
+        else
+            csp(108);                   /* ITOD */
+        return;
+    }
+    gen_value(n->a);
+    if (isfloatty(t)) {
+        csp(107);                       /* DTOF */
+        return;
+    }
+    if (islongty(t)) {
+        csp(111);                       /* DTOL */
+        return;
+    }
+    if (isunsignedty(t) && t->kind != TY_UCHAR) {
+        csp(111);                       /* DTOL, keep the low word */
+        a = newtemp(1);
+        b = newtemp(1);
+        gen_stl(a);
+        gen_stl(b);
+        ldl(a);
+        return;
+    }
+    csp(109);                           /* DTOI */
+    if (t->kind == TY_UCHAR) {
+        ldc(255);
+        ob(O_LAND);
+    } else if (t->kind == TY_CHAR)
+        signext();
 }
 
 static void gen_str(struct Node *n)
@@ -961,6 +1050,11 @@ static void gen_cmpops(struct Node *n)
 static void emitrelop(int op, struct Type *t, int invert)
 {
     int o;
+    if (isdblty(t)) {
+        ldc(dblrel(op) + (invert ? 8 : 0));
+        csp(CSP_DCMP);
+        return;
+    }
     o = relop(op, isfloatty(t), invert);
     ob(o);
     if (isfloatty(t))
@@ -1030,6 +1124,14 @@ void branch(struct Node *n, int l, int jumpif)
         return;
     }
     t = n->type;
+    if (isdblty(t)) {
+        gen_value(n);
+        gen_dconst((unsigned char *)"\0\0\0\0\0\0\0\0\0\0\0\0");
+        ldc(jumpif ? 0 : 1);            /* == 0: FJP jumps when not; != 0 */
+        csp(CSP_DCMP);
+        jmpop(O_FJP, l);
+        return;
+    }
     if (isfloatty(t)) {
         gen_value(n);
         gen_fconst((unsigned char *)"\0\0\0\0");
@@ -1152,7 +1254,10 @@ void gen_value(struct Node *n)
             ldc(n->val);
         return;
     case N_FNUM:
-        gen_fconst(n->fimg);
+        if (n->type->size == 12)
+            gen_dconst(n->fimg);
+        else
+            gen_fconst(n->fimg);
         return;
     case N_STR:
         gen_str(n);
@@ -1204,7 +1309,10 @@ void gen_value(struct Node *n)
         return;
     case N_NEG:
         gen_value(n->a);
-        ob(isfloatty(t) ? O_NGR : O_NGI);
+        if (isdblty(t))
+            csp(CSP_DNEG);
+        else
+            ob(isfloatty(t) ? O_NGR : O_NGI);
         return;
     case N_BNOT:
         gen_value(n->a);
@@ -1272,7 +1380,9 @@ void gen_value(struct Node *n)
             return;
         }
         gen_value(n->b);
-        if (isfloatty(t))
+        if (isdblty(t))
+            csp(CSP_DADD + (n->op == N_ADD ? 0 : (n->op == N_SUB ? 1 : 2)));
+        else if (isfloatty(t))
             ob(n->op == N_ADD ? O_ADR : (n->op == N_SUB ? O_SBR : O_MPR));
         else
             ob(n->op == N_ADD ? O_ADI : (n->op == N_SUB ? O_SBI : O_MPI));
@@ -1280,7 +1390,10 @@ void gen_value(struct Node *n)
     case N_DIV:
         gen_value(n->a);
         gen_value(n->b);
-        ob(O_DVR);
+        if (isdblty(t))
+            csp(CSP_DADD + 3);
+        else
+            ob(O_DVR);
         return;
     case N_AND:
         gen_value(n->a);
