@@ -268,7 +268,7 @@ int main(int argc, char **argv)
     int i;
     int n;
     int conly;
-    say("Tiny-C compiler for UCSD Pascal II.0  [0.2]\n");
+    say("Tiny-C compiler for UCSD Pascal II.0  [0.3]\n");
     nobjs = 0;
     conly = 0;
     out[0] = 0;
