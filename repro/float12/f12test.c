@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 char buf[48];
+int dbuf[6];
 char num[16];
 long l;
 float f;
@@ -114,5 +115,7 @@ int main(void)
     __cspv(134, num); __cspv(131);
     __cspv(133, 'g', 17, buf);
     printf("%s\n", buf);
+    n = __cspi(135, num, dbuf);
+    printf("%d %d %d %d %d %d %d\n", n, dbuf[0], dbuf[1], dbuf[2], dbuf[3], dbuf[4], dbuf[5]);
     return 0;
 }

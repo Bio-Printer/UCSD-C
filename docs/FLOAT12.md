@@ -45,6 +45,7 @@ F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 | 132 | DFREXP | D x, A ^int → D |
 | 133 | DTOA | D x, I fmt ('e' 'f' 'g'), I prec (0..17), A buf → (none); buf := text, ≤ 40 chars |
 | 134 | ATOD | A buf → D x, I chars used (C's strtod; 0 = no number) |
+| 135 | ATODM | A buf, A dst → I chars used; the value is stored at dst (12 bytes) |
 
 No traps: 1/0 is an infinity, sqrt(-1) a NaN, as in C.
 
