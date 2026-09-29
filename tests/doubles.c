@@ -82,6 +82,9 @@ void more(void)
     printf("%f %lf %%\n", g, g);
     sscanf("1.25 7", "%f %*d", &d);
     printf("%.3f\n", d);
+    d = 3.14159265358979L;              /* %g of a double: 10 digits */
+    g = d;
+    printf("X=%lg X=%g X=%.5lg\n", d, g, d);
 }
 
 int main(void)

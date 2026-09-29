@@ -73,7 +73,8 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
   conversions CSP 106..111, 136, 137 (unsigned long: ULTOD/DTOUL; unsigned
   int goes through LTOD/DTOL). `++`, `--` and `+= -= *= /=` work on doubles.
   `__cspd(n, ...)` is an intrinsic for a CSP that leaves a double.
-* **Library**: `printf` prints a double with `%lf %le %lg %LE ...` (l or L;
+* **Library**: `printf` prints a double with `%lf %le %lg %LE ...` (l or L; with no
+  precision given `%lg` shows 10 significant digits, `%lf` / `%le` 6 decimals;
   in the library plain `%f` is a float, as float arguments stay 4 bytes).
   With a literal format the compiler matches the arguments as in standard
   C: a double meeting `%f %e %g` gets the `l` inserted (`printf("%g", d)`

@@ -796,9 +796,11 @@ int __vformat(char *fmt, va_list ap)
         case 'G':
             if (lng) {
                 /* a double (12 bytes): the engine formats it (CSP 133,
-                   P-Code mode) */
+                   P-Code mode); %g's default precision is 10, not 6 */
                 dd = va_arg(ap, double);
-                __cspv(133, dd, c == 'E' ? 'e' : (c == 'G' ? 'g' : c), prec < 0 ? 6 : prec, buf);
+                if (prec < 0)
+                    prec = c == 'g' || c == 'G' ? 10 : 6;
+                __cspv(133, dd, c == 'E' ? 'e' : (c == 'G' ? 'g' : c), prec, buf);
                 s = buf;
                 neg = *s == '-';
                 if (neg)
