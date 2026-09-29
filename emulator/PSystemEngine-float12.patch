@@ -1,0 +1,20 @@
+--- a/UCSDPascal/PSystemEngine.cpp
++++ b/UCSDPascal/PSystemEngine.cpp
+@@ -25,6 +25,8 @@
+ #include <cstdio>
+ #include <cstring>
+ #include <cmath>
++#include <climits>
++#include <cstdlib>
+ #include <ctime>
+ #include <chrono>
+ 
+@@ -2854,6 +2856,8 @@
+                 // bomb-the-program behavior -- these are rare, and the
+                 // real Z80 CSPTRAP path (for a selector this build's own
+                 // CSPTBL leaves at zero) is a reasonable fallback.
++                // 12-byte floating point: CSP 100..137 (NativeFloat12.inc)
++#include "NativeFloat12.inc"
+                 if (procNum >= 25 && procNum <= 31) {
+                     uint16_t lowWord  = PeekStackWord(0);
+                     uint16_t highWord = PeekStackWord(2);

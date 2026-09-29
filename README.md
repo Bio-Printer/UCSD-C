@@ -19,7 +19,8 @@ Start here when picking the project up in a new session.
 | `verify/` | Tiny-C Verify pack: `TCVERIFY.SCRIPT` + `TCVERIFY.zip`, `cmpcode.c`, `rmfiles.c`, README |
 | `repro/` | engine bug repros (REAL compare, DEEPCXP: both fixed in the engine) |
 | `tools/` | host tools (below) |
-| `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`) |
+| `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`), with the 12-byte float CSPs |
+| `emulator/` | **the 12-byte float CSPs on their own**: `NativeFloat12.inc` + the 4-line `PSystemEngine.cpp` patch, and how to add them to a Windows build (README) |
 | `Usefull_System_Disk_Images.zip`, `pascal.bin` | boot disk images, the Z80 loader |
 
 ## Tools (Linux; `tools/setup.sh` unpacks the zips into `build/` and builds `build/run_verify`)
