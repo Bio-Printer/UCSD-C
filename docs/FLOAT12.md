@@ -48,7 +48,7 @@ F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 
 No traps: 1/0 is an infinity, sqrt(-1) a NaN, as in C.
 
-Test: `repro/float12/gen.py` writes `f12test.c` + `.expect` (36 checks,
+Test: `tools/f12test.py` (36 of 36 pass). `repro/float12/gen.py` writes `f12test.c` + `.expect` (36 checks,
 expected values from IEEE doubles); run it with the host compiler on the
 P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 

@@ -35,6 +35,7 @@ Start here when picking the project up in a new session.
 | `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |
 | `pdis.py FILE.CODE` | P-code disassembler |
+| `f12test.py` | test the 12-byte floating point CSPs 100..134 (P-Code mode; see `docs/FLOAT12.md`) |
 | `ucsdvol.py` | read/write UCSD volume images (`ls`, `get`, `put`, `rm`, `new`) |
 | `psys.py`, `tcrun.py`, `selfhost.py` | library code used by the above |
 
@@ -74,4 +75,5 @@ Sources are `NAME.C`, headers `NAME.H` (UCSD text format, text kind).
 
 * More code-size work in the code generator (e.g. 1-byte global operands).
 * A "Verify Tiny-C" item in the emulator's menu (sketch in `verify/README.md`).
-* Double / long double wider than 32 bits (needs new P-codes).
+* `double` / `triple` as the 12-byte type in Tiny-C: the engine side is done
+  (CSP 100..134, `docs/FLOAT12.md` has the interface and the compiler plan).
