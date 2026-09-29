@@ -4,7 +4,7 @@
 # from the emulator's own verify/run_verify.cpp.
 set -e
 cd "$(dirname "$0")/.."
-ZIP=UCSD-Pascal---P-Machine_work-v1.84.zip
+ZIP=UCSD-Pascal---P-Machine_work-v1.88.zip
 PM=build/pm/UCSD-Pascal---P-Machine_work
 mkdir -p build
 if [ ! -f $PM/UCSDPascal/PSystemEngine.cpp ] || [ $ZIP -nt $PM/UCSDPascal/PSystemEngine.cpp ]; then
