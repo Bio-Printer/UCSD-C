@@ -3,14 +3,14 @@
    installs the formatter for stdio.c. */
 #include "libint.h"
 
-int __fdigits(double v, int prec, int style, int alt, char *out)
+int __fdigits(float v, int prec, int style, int alt, char *out)
 {
     int e;
     int n;
     int i;
     int d;
     int ndig;
-    double r;
+    float r;
     long ip;
     char digs[40];
     n = 0;

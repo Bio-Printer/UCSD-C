@@ -159,10 +159,10 @@ long atol(char *s)
     return strtol(s, NULL, 10);
 }
 
-double strtod(char *s, char **end)
+float strtod(char *s, char **end)
 {
-    double v;
-    double scale;
+    float v;
+    float scale;
     int neg;
     int e;
     int eneg;
@@ -204,7 +204,7 @@ double strtod(char *s, char **end)
     return neg ? -v : v;
 }
 
-double atof(char *s)
+float atof(char *s)
 {
     return strtod(s, NULL);
 }

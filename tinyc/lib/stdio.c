@@ -655,7 +655,7 @@ void __ofield(char *pre, char *body, int n, int reversed, int width, int left, i
 
 /* float formatting lives in fltfmt.c: it is linked (and installs itself
    here) only in programs that use floating point */
-int (*__fltfmt)(double v, int prec, int style, int alt, char *out);
+int (*__fltfmt)(float v, int prec, int style, int alt, char *out);
 
 int __vformat(char *fmt, va_list ap)
 {
@@ -674,7 +674,7 @@ int __vformat(char *fmt, va_list ap)
     int neg;
     long lv;
     unsigned long uv;
-    double dv;
+    float dv;
     char *s;
     __on = 0;
     while ((c = *fmt++) != 0) {
@@ -790,7 +790,7 @@ int __vformat(char *fmt, va_list ap)
         case 'E':
         case 'g':
         case 'G':
-            dv = va_arg(ap, double);
+            dv = va_arg(ap, float);
             neg = dv < 0.0;
             if (neg)
                 dv = -dv;
@@ -905,8 +905,8 @@ int __vscan(char *fmt, va_list ap)
     int d;
     int any;
     long v;
-    double dv;
-    double sc;
+    float dv;
+    float sc;
     char *s;
     count = 0;
     __in = 0;

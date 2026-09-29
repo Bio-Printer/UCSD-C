@@ -28,9 +28,9 @@ int __xor(int a, int b);
 
 int __sx(int c);
 
-double __utof(unsigned u);
+float __utof(unsigned u);
 
-unsigned __ftou(double f);
+unsigned __ftou(float f);
 
 /* ---- 32-bit long: word 0 is the low half ---- */
 
@@ -80,12 +80,12 @@ long __utol(unsigned u);
 
 int __ltoi(long a);
 
-double __ltof(long a);
+float __ltof(long a);
 
-double __ultof(unsigned long a);
+float __ultof(unsigned long a);
 
-unsigned long __ftoul(double f);
+unsigned long __ftoul(float f);
 
-long __ftol(double f);
+long __ftol(float f);
 
 #endif

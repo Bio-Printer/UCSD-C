@@ -42,9 +42,9 @@ int atoi(char *s);
 
 long atol(char *s);
 
-double strtod(char *s, char **end);
+float strtod(char *s, char **end);
 
-double atof(char *s);
+float atof(char *s);
 
 char *getenv(char *name);
 

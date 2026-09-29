@@ -333,7 +333,7 @@ struct Node *binop(int op, struct Node *a, struct Node *b)
 struct Node *fzero(void)
 {
     struct Node *n;
-    n = mknode(N_FNUM, ty_double, 0, 0);
+    n = mknode(N_FNUM, ty_float, 0, 0);
     n->fimg = (unsigned char *)xalloc(4);
     return n;
 }
@@ -373,8 +373,6 @@ struct Node *arglist(struct Type *ft, int *nargs)
                 a = decay(a);
                 if (a->type->kind == TY_CHAR || a->type->kind == TY_UCHAR)
                     a = cast(a, ty_int);
-                else if (a->type->kind == TY_FLOAT)
-                    a = cast(a, ty_double);
             }
         }
         a->next = 0;
@@ -440,7 +438,7 @@ struct Node *primary(void)
     case T_FNUM:
         if (!insys)
             usesfloat = 1;
-        n = mknode(N_FNUM, ty_double, 0, 0);
+        n = mknode(N_FNUM, ty_float, 0, 0);     /* an unsuffixed constant is a float */
         n->fimg = (unsigned char *)xalloc(4);
         memcpy(n->fimg, tokreal, 4);
         next();

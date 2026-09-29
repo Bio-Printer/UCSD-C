@@ -520,6 +520,10 @@ static void rawnext(void)
             else
                 lo = mid + 1;
         }
+        if (strcmp(tokname, "triple") == 0) {
+            tok = K_DOUBLE;             /* triple = double: the 12-byte type */
+            return;
+        }
         tok = T_ID;
         return;
     }

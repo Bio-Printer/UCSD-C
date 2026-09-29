@@ -693,8 +693,8 @@ void helpers(void)
     declhelper("__ushr", ty_uint, ty_uint, ty_int);
     declhelper("__xor", ty_int, ty_int, ty_int);
     declhelper("__sx", ty_int, ty_int, 0);
-    declhelper("__utof", ty_double, ty_uint, 0);
-    declhelper("__ftou", ty_uint, ty_double, 0);
+    declhelper("__utof", ty_float, ty_uint, 0);
+    declhelper("__ftou", ty_uint, ty_float, 0);
     declhelper("__ladd", ty_long, ty_long, ty_long);
     declhelper("__lsub", ty_long, ty_long, ty_long);
     declhelper("__lmul", ty_long, ty_long, ty_long);
@@ -715,10 +715,10 @@ void helpers(void)
     declhelper("__itol", ty_long, ty_int, 0);
     declhelper("__utol", ty_long, ty_uint, 0);
     declhelper("__ltoi", ty_int, ty_long, 0);
-    declhelper("__ltof", ty_double, ty_long, 0);
-    declhelper("__ultof", ty_double, ty_ulong, 0);
-    declhelper("__ftol", ty_long, ty_double, 0);
-    declhelper("__ftoul", ty_ulong, ty_double, 0);
+    declhelper("__ltof", ty_float, ty_long, 0);
+    declhelper("__ultof", ty_float, ty_ulong, 0);
+    declhelper("__ftol", ty_long, ty_float, 0);
+    declhelper("__ftoul", ty_ulong, ty_float, 0);
 }
 
 #pragma segment PARSE

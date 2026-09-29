@@ -6,7 +6,7 @@
 int main(void)
 {
     float x;
-    double y;
+    float y;
     int i;
     x = 1.0;
     for (i = 0; i < 10; i++)

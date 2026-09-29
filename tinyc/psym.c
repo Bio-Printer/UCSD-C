@@ -90,8 +90,8 @@ void typeinit(void)
     ty_long = mktype(TY_LONG, 4, 2);
     ty_ulong = mktype(TY_ULONG, 4, 2);
     ty_float = mktype(TY_FLOAT, 4, 2);
-    ty_double = mktype(TY_DOUBLE, 4, 2);
-    ty_ldouble = mktype(TY_LDOUBLE, 4, 2);
+    ty_double = mktype(TY_DOUBLE, 12, 2);    /* 12 bytes: CSP 100.. (P-Code mode) */
+    ty_ldouble = mktype(TY_LDOUBLE, 12, 2);
     ty_charp = ptrto(ty_char);
     globoff = 0;
 }

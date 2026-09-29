@@ -1,7 +1,8 @@
 /* stdarg.h -- Tiny-C
  * A variadic function receives its extra arguments in a block built by
- * the caller (each argument word-aligned, char/short promoted to int,
- * float to double); __va_start() returns the block's address. */
+ * the caller (each argument word-aligned, char/short promoted to int; a
+ * float stays 4 bytes, a double is 12); __va_start() returns the block's
+ * address. */
 #ifndef __STDARG_H
 #define __STDARG_H
 typedef char *va_list;

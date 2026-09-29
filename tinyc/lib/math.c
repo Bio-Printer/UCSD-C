@@ -1,17 +1,17 @@
 /* math.c -- Tiny-C library: the code behind <math.h> */
 #include "libint.h"
-double sqrt(double x) { return x <= 0.0 ? 0.0 : __cspf(31, x); }
-double sin(double x) { return __cspf(25, x); }
-double cos(double x) { return __cspf(26, x); }
-double atan(double x) { return __cspf(28, x); }
-double log(double x) { return __cspf(29, x); }
-double exp(double x) { return __cspf(30, x); }
-double log10(double x) { return __cspf(27, x); }
-double fabs(double x) { return x < 0.0 ? -x : x; }
-double tan(double x) { return sin(x) / cos(x); }
-double atan2(double y, double x)
+float sqrt(float x) { return x <= 0.0 ? 0.0 : __cspf(31, x); }
+float sin(float x) { return __cspf(25, x); }
+float cos(float x) { return __cspf(26, x); }
+float atan(float x) { return __cspf(28, x); }
+float log(float x) { return __cspf(29, x); }
+float exp(float x) { return __cspf(30, x); }
+float log10(float x) { return __cspf(27, x); }
+float fabs(float x) { return x < 0.0 ? -x : x; }
+float tan(float x) { return sin(x) / cos(x); }
+float atan2(float y, float x)
 {
-    double a;
+    float a;
     if (x == 0.0)
         return y > 0.0 ? M_PI / 2.0 : (y < 0.0 ? -M_PI / 2.0 : 0.0);
     a = atan(y / x);
@@ -20,9 +20,9 @@ double atan2(double y, double x)
     return a;
 }
 
-double asin(double x) { return atan2(x, sqrt(1.0 - x * x)); }
-double acos(double x) { return atan2(sqrt(1.0 - x * x), x); }
-double floor(double x)
+float asin(float x) { return atan2(x, sqrt(1.0 - x * x)); }
+float acos(float x) { return atan2(sqrt(1.0 - x * x), x); }
+float floor(float x)
 {
     long l;
     if (x >= 8388608.0 || x <= -8388608.0)
@@ -30,17 +30,17 @@ double floor(double x)
     l = (long)x;
     if (l > x)
         l--;
-    return (double)l;
+    return (float)l;
 }
 
-double ceil(double x)
+float ceil(float x)
 {
     return -floor(-x);
 }
 
-double fmod(double x, double y)
+float fmod(float x, float y)
 {
-    double q;
+    float q;
     if (y == 0.0)
         return 0.0;
     q = x / y;
@@ -48,10 +48,10 @@ double fmod(double x, double y)
     return x - q * y;
 }
 
-double pow(double x, double y)
+float pow(float x, float y)
 {
     long n;
-    double r;
+    float r;
     int neg;
     if (y == floor(y) && y > -32768.0 && y < 32768.0) {
         n = (long)y;
@@ -72,16 +72,16 @@ double pow(double x, double y)
     return exp(y * log(x));
 }
 
-double sinh(double x) { return (exp(x) - exp(-x)) / 2.0; }
-double cosh(double x) { return (exp(x) + exp(-x)) / 2.0; }
-double tanh(double x) { double e; e = exp(x + x); return (e - 1.0) / (e + 1.0); }
-double modf(double x, double *ip)
+float sinh(float x) { return (exp(x) - exp(-x)) / 2.0; }
+float cosh(float x) { return (exp(x) + exp(-x)) / 2.0; }
+float tanh(float x) { float e; e = exp(x + x); return (e - 1.0) / (e + 1.0); }
+float modf(float x, float *ip)
 {
     *ip = x < 0.0 ? ceil(x) : floor(x);
     return x - *ip;
 }
 
-double ldexp(double x, int e)
+float ldexp(float x, int e)
 {
     while (e > 0) { x = x * 2.0; e--; }
     while (e < 0) { x = x / 2.0; e++; }

@@ -103,14 +103,14 @@ int __sx(int c)
     return c;
 }
 
-double __utof(unsigned u)
+float __utof(unsigned u)
 {
     if ((int)u >= 0)
         return (int)u;
     return (int)(u & 32767) + 32768.0;
 }
 
-unsigned __ftou(double f)
+unsigned __ftou(float f)
 {
     if (f < 32768.0)
         return (int)f;
@@ -425,7 +425,7 @@ int __ltoi(long a)
     return x[0];
 }
 
-double __ltof(long a)
+float __ltof(long a)
 {
     int *x;
     unsigned *xu;
@@ -434,14 +434,14 @@ double __ltof(long a)
     return x[1] * 65536.0 + __utof(xu[0]);
 }
 
-double __ultof(unsigned long a)
+float __ultof(unsigned long a)
 {
     unsigned *x;
     x = (unsigned *)&a;
     return __utof(x[1]) * 65536.0 + __utof(x[0]);
 }
 
-unsigned long __ftoul(double f)
+unsigned long __ftoul(float f)
 {
     unsigned long r;
     unsigned *x;
@@ -455,7 +455,7 @@ unsigned long __ftoul(double f)
     return r;
 }
 
-long __ftol(double f)
+long __ftol(float f)
 {
     if (f < 0.0)
         return __lneg(__ftoul(0.0 - f));

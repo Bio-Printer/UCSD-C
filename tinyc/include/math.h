@@ -1,6 +1,6 @@
 /* math.h -- Tiny-C: the P-machine's own real routines (CSP SQT, SIN,
    COS, ATAN, LN, EXP, LOG) plus the rest built from them.  All of float,
-   double and long double are the 32-bit II.0 real. */
+   float and long float are the 32-bit II.0 real. */
 #ifndef __MATH_H
 #define __MATH_H
 
@@ -8,35 +8,35 @@
 #define M_E 2.71828183
 #define HUGE_VAL 1.7e38
 
-double sqrt(double x);
-double sin(double x);
-double cos(double x);
-double atan(double x);
-double log(double x);
-double exp(double x);
-double log10(double x);
-double fabs(double x);
-double tan(double x);
+float sqrt(float x);
+float sin(float x);
+float cos(float x);
+float atan(float x);
+float log(float x);
+float exp(float x);
+float log10(float x);
+float fabs(float x);
+float tan(float x);
 
-double atan2(double y, double x);
+float atan2(float y, float x);
 
-double asin(double x);
-double acos(double x);
+float asin(float x);
+float acos(float x);
 
-double floor(double x);
+float floor(float x);
 
-double ceil(double x);
+float ceil(float x);
 
-double fmod(double x, double y);
+float fmod(float x, float y);
 
-double pow(double x, double y);
+float pow(float x, float y);
 
-double sinh(double x);
-double cosh(double x);
-double tanh(double x);
+float sinh(float x);
+float cosh(float x);
+float tanh(float x);
 
-double modf(double x, double *ip);
+float modf(float x, float *ip);
 
-double ldexp(double x, int e);
+float ldexp(float x, int e);
 
 #endif
