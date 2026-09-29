@@ -74,7 +74,12 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
   int goes through LTOD/DTOL). `++`, `--` and `+= -= *= /=` work on doubles.
   `__cspd(n, ...)` is an intrinsic for a CSP that leaves a double.
 * **Library**: `printf` prints a double with `%lf %le %lg %LE ...` (l or L;
-  plain `%f` is a float, as float arguments stay 4 bytes). The math.h
+  in the library plain `%f` is a float, as float arguments stay 4 bytes).
+  With a literal format the compiler matches the arguments as in standard
+  C: a double meeting `%f %e %g` gets the `l` inserted (`printf("%g", d)`
+  works), a float meeting `%lf` is widened, and `scanf("%f", &d)` of a
+  double becomes `%lf` (printf, fprintf, sprintf, scanf, fscanf, sscanf).
+  A format that is not a literal needs the `l` written. The math.h
   functions are declared for float; called with a double first argument
   they become the CSPs directly (sqrt sin cos tan asin acos atan atan2 exp
   log log10 pow floor ceil fabs fmod sinh cosh tanh ldexp frexp).

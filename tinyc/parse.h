@@ -139,6 +139,8 @@ struct Node *condparen(void);
 void statement(int brk, int cont);
 void funcdef(struct Sym *fs, int isstatic);
 void external(void);
+#pragma segment REALLIT
+void fmtfix(char *name, struct Node *args);
 #pragma segment REFSCAN
 void addref(char *name);
 void scanrefs(char *src);

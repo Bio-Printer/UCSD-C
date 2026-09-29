@@ -735,6 +735,8 @@ struct Node *postfix(void)
                 n->val = 1;             /* the callee is in this segment: CGP */
             c->b = arglist(ft, &na);
             c->val = na;
+            if (n->op == N_FUNC && ft && ft->variadic)
+                fmtfix(n->sym->name, c->b);
             if (n->op == N_FUNC && c->b && c->b->op == N_CAST && isdblty(c->b->a->type) &&
                 (na = dmathcsp(n->sym->name)) != 0)
                 c = dmathcall(c, na);
@@ -1061,3 +1063,97 @@ int constexpr(void)
 }
 
 /* ---- declarations ---- */
+
+#pragma segment REALLIT
+
+/* printf/scanf families with a literal format: a double argument meeting
+   %f %e %g (no l or L) gets the l inserted, as C prints a double with %g
+   (here %g is a float: floats are not widened); printf's %lf with a float
+   argument widens the argument */
+void fmtfix(char *name, struct Node *args)
+{
+    struct Node *f;
+    struct Node *a;
+    struct Node **pa;
+    char *s;
+    char *t;
+    int i;
+    int k;
+    int scan;
+    int lng;
+    int c;
+    k = 0;
+    scan = 0;
+    if (strcmp(name, "printf") == 0)
+        k = 1;
+    else if (strcmp(name, "fprintf") == 0 || strcmp(name, "sprintf") == 0)
+        k = 2;
+    else if (strcmp(name, "scanf") == 0)
+        k = scan = 1;
+    else if (strcmp(name, "fscanf") == 0 || strcmp(name, "sscanf") == 0) {
+        k = 2;
+        scan = 1;
+    }
+    pa = &args;
+    while (k > 1 && *pa) {
+        pa = &(*pa)->next;
+        k--;
+    }
+    if (!k || !*pa)
+        return;
+    f = *pa;
+    pa = &f->next;
+    while (f->op == N_CAST || f->op == N_ADDR)
+        f = f->a;
+    if (f->op != N_STR)
+        return;
+    s = f->str;
+    for (i = 0; i < f->slen && s[i]; i++) {
+        if (s[i] != '%')
+            continue;
+        i++;
+        if (s[i] == '%')
+            continue;
+        lng = 0;
+        while (s[i] && (strchr("-+ #0123456789.*", s[i]) || s[i] == 'h' || s[i] == 'l' || s[i] == 'L')) {
+            if (s[i] == '*' && !scan && *pa)
+                pa = &(*pa)->next;
+            if (s[i] == '*' && scan)
+                lng = -1;               /* %*f: no argument */
+            else if ((s[i] == 'l' || s[i] == 'L') && lng >= 0)
+                lng = 1;
+            i++;
+        }
+        c = s[i];
+        if (scan && c == '[')
+            while (s[i] && s[i] != ']')
+                i++;
+        if (lng < 0 || !c)
+            continue;
+        a = *pa;
+        if (!a)
+            return;
+        if (c == 'f' || c == 'e' || c == 'g' || c == 'E' || c == 'G') {
+            if (scan ? a->type->kind == TY_PTR && isdblty(a->type->base) : isdblty(a->type)) {
+                if (!lng) {             /* insert the l */
+                    t = xalloc(f->slen + 1);
+                    memcpy(t, s, i);
+                    t[i] = 'l';
+                    memcpy(t + i + 1, s + i, f->slen - i);
+                    f->str = s = t;
+                    f->slen++;
+                    f->type->size++;
+                    f->type->len++;
+                    i++;
+                }
+            } else if (!scan && lng && isfloatty(a->type)) {
+                a = cast(a, ty_double);
+                a->next = (*pa)->next;
+                *pa = a;
+            }
+        }
+        pa = &a->next;
+    }
+}
+
+#pragma segment PARSE

@@ -73,6 +73,15 @@ void more(void)
     printf("%d %.17lg %.17lg %g\n", n, d, e, g);
     d = strtold("  3.14159265358979323846xyz", &end);
     printf("%.17lg [%s] %lg\n", d, end, atold("1e300") * 10.0L);
+    d = 37.34;                          /* %f %e %g of a double: l inserted */
+    e = 987.32345;
+    f = 13432.8888888888888;
+    printf("result = %g\n", d + (e / f));
+    printf("%f %e %10.3f|%-8.2G|%*.*f %d\n", d, e, f, d, 9, 2, e, 42);
+    g = 2.5;
+    printf("%f %lf %%\n", g, g);
+    sscanf("1.25 7", "%f %*d", &d);
+    printf("%.3f\n", d);
 }
 
 int main(void)

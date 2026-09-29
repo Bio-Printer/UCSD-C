@@ -28,7 +28,7 @@ BIGGY:  46 files  (the boot volume, with Tiny-C added)
   MYGOTOXY.TEXT        4
   SYSTEM.PASCAL       34
   132X45.PASCAL       34
-  TINYC.CODE         106
+  TINYC.CODE         108
   TCLIB.OBJ           50
   TCMSGS.TEXT          8
   ASSERT.H             4
