@@ -3,13 +3,30 @@
 on TCVERIFY.BLK as unit #5) exactly as Verify P-System would, and report.
 Build the pack first with mkverify.py.  Native mode runs with the Z80
 interpreter's memory reclaimed (Tiny-C needs that memory); VERIFY_RECLAIM=0
-turns it off."""
+turns it off.  Z80 mode leaves out the P-Code-only tests (PCODE_ONLY: the
+12-byte doubles need the engine's CSP 100+; the boot disk's Z80 interpreter
+has no SQT/SIN/COS/..., which FLOATS uses)."""
 import os, sys, subprocess, tempfile, shutil, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import ucsdvol
 from psys import ensure_setup, BUILD
+
+PCODE_ONLY = ('DOUBLES', 'FLOATS')
+
+
+def z80script(path, out):
+    """the script without the '# ---- test NAME' sections of PCODE_ONLY"""
+    keep = []
+    skip = False
+    for l in open(path).read().split('\n'):
+        if l.startswith('# ---- '):
+            skip = any(l == '# ---- test ' + n for n in PCODE_ONLY)
+        if not skip:
+            keep.append(l)
+    open(out, 'w').write('\n'.join(keep))
+    return out
 
 
 def main(a):
@@ -21,13 +38,16 @@ def main(a):
     spare = os.path.join(d, 'SPARE.BLK')
     ucsdvol.main(['new', spare, 'SPARE', '400'])
     out = os.path.join(d, 'out')
+    script = os.path.join(ROOT, 'verify', 'TCVERIFY.SCRIPT')
+    if mode == 'z80':
+        script = z80script(script, os.path.join(d, 'TCVERIFY.SCRIPT'))
     env = dict(os.environ)
     if mode == 'native' and env.get('VERIFY_RECLAIM', '1') == '1':
         env['VERIFY_RECLAIM'] = '1'
     else:
         env.pop('VERIFY_RECLAIM', None)
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
-                        os.path.join(d, 'TCVERIFY.BLK'), spare, os.path.join(ROOT, 'verify', 'TCVERIFY.SCRIPT'),
+                        os.path.join(d, 'TCVERIFY.BLK'), spare, script,
                         mode, out, '', os.environ.get('TCV_MAX', '7200')], capture_output=True, text=True, env=env)
     ok = 'VERIFY SCRIPT COMPLETED' in r.stdout
     tail = [l for l in r.stderr.split('\n') if l.strip()][-3:]
