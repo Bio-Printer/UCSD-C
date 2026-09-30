@@ -59,3 +59,28 @@ Test: `tools/f12test.py` (51 checks).
 Quick check after rebuilding: boot BIGGY, prefix TCEXTRA:, `X` `*TINYC`
 (banner `[0.4]`), compile `DOUBLES`, then `X` `DOUBLES`: it prints `8` for
 `sizeof(double)` and ends with `X=3.141592654 X=3.14159 X=3.1416`.
+
+## Importing .C and .H files (Options > Import File)
+
+`ImportFileToVolume` converts a file to UCSD text format (editor header,
+CR line ends, DLE indentation, 1K pages -- `UcsdText.h`) only when its
+kind is TEXT, and it chose TEXT only for `.TEXT`, `.TXT` and `.BACK`. A
+`PI.C` was therefore copied byte for byte as a DATA file: the Filer shows
+it as a staircase (LF without CR) and Tiny-C cannot read it. Line ends do
+not matter (CR LF, LF and CR are all accepted); the kind does.
+
+In `UCSDPascal\PSystemEngine.cpp`, `ImportFileToVolume`, change
+
+```cpp
+        if      (ext == L"TEXT" || ext == L"TXT"  || ext == L"BACK") fileKind = 3;
+```
+to
+```cpp
+        if      (ext == L"TEXT" || ext == L"TXT"  || ext == L"BACK" ||
+                 ext == L"C"    || ext == L"H") fileKind = 3;          // Tiny-C sources are text
+```
+
+(Already made in `UCSD-Pascal---P-Machine_work-v1.88.zip`.) Without the
+change, import the file as `NAME.TEXT` and rename it to `NAME.C` in the
+Filer (the kind stays TEXT) -- or just compile `NAME`: Tiny-C looks for
+`NAME.C`, then `NAME.TEXT`.
