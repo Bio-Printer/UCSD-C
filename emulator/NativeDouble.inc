@@ -1,18 +1,17 @@
-// NativeFloat12.inc -- 12-byte floating point ("double" / "triple") as
-// standard procedures CSP 100..137. Native P-Code mode only: the Z80
-// interpreter has no such routines (its CSPTBL has 41 entries).
+// NativeDouble.inc -- 8-byte floating point ("double") as standard
+// procedures CSP 100..137. Native P-Code mode only: the Z80 interpreter has
+// no such routines (its CSPTBL has 41 entries).
 // Included in PSystemEngine.cpp's CSP case, before the 25..31 block.
 //
-// FORMAT (12 bytes = 6 words, lowest address first, exactly as LDM 6 /
-// STM 6 move it and as it lies on the stack from SP up):
-//   bytes 0..7   IEEE-754 binary64, little-endian (byte 0 = low mantissa
-//                byte, byte 7 = sign | high exponent)
-//   bytes 8..11  0 (reserved: a wider format could use them later)
+// FORMAT: IEEE-754 binary64, 8 bytes = 4 words, little-endian, lowest
+// address first, exactly as LDM 4 / STM 4 move it and as it lies on the
+// stack from SP up (byte 0 = low mantissa byte, byte 7 = sign | high
+// exponent).
 // The arithmetic and the functions are the host's IEEE hardware and C
 // runtime (<cmath>): about 16 significant digits, exponent 1e-308..1e308.
 // No traps: division by zero gives an infinity, a domain error a NaN, as in C.
 //
-// ARGUMENTS are pushed in order (the first deepest); "D" is a 12-byte
+// ARGUMENTS are pushed in order (the first deepest); "D" is an 8-byte
 // value, "F" a 4-byte UCSD real, "I" a word, "L" a long (2 words, low word
 // on top, as Tiny-C stores it), "A" an address. Results replace them.
 //   100 DADD  D a, D b -> D a+b        101 DSUB  D a, D b -> D a-b
@@ -41,34 +40,34 @@
 //              NUL-terminated text buf (C's strtod), n := characters used
 //              (0: no number, x = 0)
 //   135 ATODM  A buf, A dst -> I n: like ATOD, but the value is stored at
-//              dst (12 bytes) -- for code that cannot take 6 words off the
-//              stack (the compiler's constants, the library's strtod)
+//              dst (8 bytes) -- for code that cannot take 4 words off the
+//              stack (the compiler's constants, the library's strtold)
 //   136 ULTOD  L l (unsigned) -> D     137 DTOUL D x -> L (unsigned;
 //              truncated, saturates at 0 and 4294967295)
 {
-    auto f12Get = [&](uint16_t a) -> double {           // 12 bytes at a -> double
+    const int D = 8;                                    // bytes in a double
+    auto dblGet = [&](uint16_t a) -> double {           // 8 bytes at a -> double
         uint64_t u = 0;
         for (int k = 7; k >= 0; k--) u = (u << 8) | m_mem[(uint16_t)(a + k)];
         double d;
         std::memcpy(&d, &u, 8);
         return d;
     };
-    auto f12Put = [&](uint16_t a, double d) {           // double -> 12 bytes at a
+    auto dblPut = [&](uint16_t a, double d) {           // double -> 8 bytes at a
         uint64_t u;
         std::memcpy(&u, &d, 8);
         for (int k = 0; k < 8; k++) { m_mem[(uint16_t)(a + k)] = (uint8_t)(u & 0xFF); u >>= 8; }
-        for (int k = 8; k < 12; k++) m_mem[(uint16_t)(a + k)] = 0;
     };
-    auto f12Word = [&](uint16_t a) -> uint16_t { return (uint16_t)(m_mem[a] | (m_mem[(uint16_t)(a + 1)] << 8)); };
-    bool f12Done = false;
+    auto dblWord = [&](uint16_t a) -> uint16_t { return (uint16_t)(m_mem[a] | (m_mem[(uint16_t)(a + 1)] << 8)); };
+    bool dblDone = false;
     if (procNum >= 100 && procNum <= 137) {
         const uint16_t sp = m_cpu.r.SP;
         double r = 0.0;
-        f12Done = true;
+        dblDone = true;
         switch (procNum) {
         case 105: {                                   // DCMP: D a, D b, I rel -> I 0/1
-            const int rel = f12Word(sp);
-            const double b = f12Get((uint16_t)(sp + 2)), a = f12Get((uint16_t)(sp + 14));
+            const int rel = dblWord(sp);
+            const double b = dblGet((uint16_t)(sp + 2)), a = dblGet((uint16_t)(sp + 2 + D));
             bool v;
             switch (rel & 7) {
             case 0: v = a == b; break;
@@ -79,12 +78,12 @@
             default: v = a >= b; break;
             }
             if (rel & 8) v = !v;
-            m_cpu.r.SP = (uint16_t)(sp + 26);
+            m_cpu.r.SP = (uint16_t)(sp + 2 + 2 * D);
             PushStackWord(v ? 1 : 0);
             break;
         }
         case 100: case 101: case 102: case 103: case 119: case 123: case 127: {
-            const double b = f12Get(sp), a = f12Get((uint16_t)(sp + 12));
+            const double b = dblGet(sp), a = dblGet((uint16_t)(sp + D));
             switch (procNum) {
             case 100: r = a + b; break;
             case 101: r = a - b; break;
@@ -94,13 +93,13 @@
             case 123: r = std::pow(a, b); break;
             default:  r = std::fmod(a, b); break;
             }
-            m_cpu.r.SP = (uint16_t)(sp + 12);
-            f12Put(m_cpu.r.SP, r);
+            m_cpu.r.SP = (uint16_t)(sp + D);
+            dblPut(m_cpu.r.SP, r);
             break;
         }
         case 104: case 112: case 113: case 114: case 115: case 116: case 117: case 118:
         case 120: case 121: case 122: case 124: case 125: case 126: case 128: case 129: case 130: {
-            const double x = f12Get(sp);
+            const double x = dblGet(sp);
             switch (procNum) {
             case 104: r = -x; break;
             case 112: r = std::sqrt(x); break;
@@ -120,90 +119,90 @@
             case 129: r = std::cosh(x); break;
             default:  r = std::tanh(x); break;
             }
-            f12Put(sp, r);
+            dblPut(sp, r);
             break;
         }
         case 106: {                                   // FTOD: 4-byte real -> D
             const double x = DecodeUcsdReal(m_mem[sp], m_mem[(uint16_t)(sp + 1)], m_mem[(uint16_t)(sp + 2)], m_mem[(uint16_t)(sp + 3)]);
-            m_cpu.r.SP = (uint16_t)(sp - 8);
-            f12Put(m_cpu.r.SP, x);
+            m_cpu.r.SP = (uint16_t)(sp + 4 - D);
+            dblPut(m_cpu.r.SP, x);
             break;
         }
         case 107: {                                   // DTOF: D -> 4-byte real
-            double x = f12Get(sp);
+            double x = dblGet(sp);
             uint8_t b0, b1, b2, b3;
             if (std::isnan(x)) x = 0.0;
             if (!EncodeUcsdReal(x, b0, b1, b2, b3)) {
                 if (std::fabs(x) < 1.0) { b0 = b1 = b2 = b3 = 0; }        // underflow: 0.0
                 else { b0 = 0xFF; b1 = (uint8_t)(x < 0 ? 0xFF : 0x7F); b2 = b3 = 0xFF; }  // overflow: the largest
             }
-            m_cpu.r.SP = (uint16_t)(sp + 8);
+            m_cpu.r.SP = (uint16_t)(sp + D - 4);
             m_mem[m_cpu.r.SP] = b0; m_mem[(uint16_t)(m_cpu.r.SP + 1)] = b1;
             m_mem[(uint16_t)(m_cpu.r.SP + 2)] = b2; m_mem[(uint16_t)(m_cpu.r.SP + 3)] = b3;
             break;
         }
         case 108: {                                   // ITOD
-            const double x = (double)(int16_t)f12Word(sp);
-            m_cpu.r.SP = (uint16_t)(sp - 10);
-            f12Put(m_cpu.r.SP, x);
+            const double x = (double)(int16_t)dblWord(sp);
+            m_cpu.r.SP = (uint16_t)(sp + 2 - D);
+            dblPut(m_cpu.r.SP, x);
             break;
         }
         case 109: {                                   // DTOI
-            double x = std::trunc(f12Get(sp));
+            double x = std::trunc(dblGet(sp));
             const int16_t v = std::isnan(x) ? 0 : (x >= 32767.0 ? 32767 : (x <= -32768.0 ? -32768 : (int16_t)x));
-            m_cpu.r.SP = (uint16_t)(sp + 12);
+            m_cpu.r.SP = (uint16_t)(sp + D);
             PushStackWord((uint16_t)v);
             break;
         }
         case 110: {                                   // LTOD: low word on top
-            const int32_t l = (int32_t)((uint32_t)f12Word(sp) | ((uint32_t)f12Word((uint16_t)(sp + 2)) << 16));
-            m_cpu.r.SP = (uint16_t)(sp - 8);
-            f12Put(m_cpu.r.SP, (double)l);
+            const int32_t l = (int32_t)((uint32_t)dblWord(sp) | ((uint32_t)dblWord((uint16_t)(sp + 2)) << 16));
+            m_cpu.r.SP = (uint16_t)(sp + 4 - D);
+            dblPut(m_cpu.r.SP, (double)l);
             break;
         }
         case 111: {                                   // DTOL
-            double x = std::trunc(f12Get(sp));
+            double x = std::trunc(dblGet(sp));
             const int32_t l = std::isnan(x) ? 0 : (x >= 2147483647.0 ? 2147483647 : (x <= -2147483648.0 ? INT32_MIN : (int32_t)x));
-            m_cpu.r.SP = (uint16_t)(sp + 12);
+            m_cpu.r.SP = (uint16_t)(sp + D);
             PushStackWord((uint16_t)((uint32_t)l >> 16));
             PushStackWord((uint16_t)((uint32_t)l & 0xFFFF));
             break;
         }
         case 136: {                                   // ULTOD: low word on top
-            const uint32_t l = (uint32_t)f12Word(sp) | ((uint32_t)f12Word((uint16_t)(sp + 2)) << 16);
-            m_cpu.r.SP = (uint16_t)(sp - 8);
-            f12Put(m_cpu.r.SP, (double)l);
+            const uint32_t l = (uint32_t)dblWord(sp) | ((uint32_t)dblWord((uint16_t)(sp + 2)) << 16);
+            m_cpu.r.SP = (uint16_t)(sp + 4 - D);
+            dblPut(m_cpu.r.SP, (double)l);
             break;
         }
         case 137: {                                   // DTOUL
-            double x = std::trunc(f12Get(sp));
+            double x = std::trunc(dblGet(sp));
             const uint32_t l = std::isnan(x) || x <= 0.0 ? 0u : (x >= 4294967295.0 ? 0xFFFFFFFFu : (uint32_t)x);
-            m_cpu.r.SP = (uint16_t)(sp + 12);
+            m_cpu.r.SP = (uint16_t)(sp + D);
             PushStackWord((uint16_t)(l >> 16));
             PushStackWord((uint16_t)(l & 0xFFFF));
             break;
         }
         case 131: {                                   // DLDEXP: D x, I n
-            const int n = (int16_t)f12Word(sp);
-            const double x = f12Get((uint16_t)(sp + 2));
+            const int n = (int16_t)dblWord(sp);
+            const double x = dblGet((uint16_t)(sp + 2));
             m_cpu.r.SP = (uint16_t)(sp + 2);
-            f12Put(m_cpu.r.SP, std::ldexp(x, n));
+            dblPut(m_cpu.r.SP, std::ldexp(x, n));
             break;
         }
         case 132: {                                   // DFREXP: D x, A ^int
-            const uint16_t ea = f12Word(sp);
+            const uint16_t ea = dblWord(sp);
             int e = 0;
-            const double m = std::frexp(f12Get((uint16_t)(sp + 2)), &e);
+            const double m = std::frexp(dblGet((uint16_t)(sp + 2)), &e);
             m_mem[ea] = (uint8_t)(e & 0xFF); m_mem[(uint16_t)(ea + 1)] = (uint8_t)((e >> 8) & 0xFF);
             m_cpu.r.SP = (uint16_t)(sp + 2);
-            f12Put(m_cpu.r.SP, m);
+            dblPut(m_cpu.r.SP, m);
             break;
         }
         case 133: {                                   // DTOA: D x, I fmt, I prec, A buf
-            const uint16_t buf = f12Word(sp);
-            int prec = (int16_t)f12Word((uint16_t)(sp + 2));
-            int fmt = f12Word((uint16_t)(sp + 4)) & 0xFF;
-            const double x = f12Get((uint16_t)(sp + 6));
+            const uint16_t buf = dblWord(sp);
+            int prec = (int16_t)dblWord((uint16_t)(sp + 2));
+            int fmt = dblWord((uint16_t)(sp + 4)) & 0xFF;
+            const double x = dblGet((uint16_t)(sp + 6));
             if (prec < 0) prec = 0;
             if (prec > 17) prec = 17;
             if (fmt != 'e' && fmt != 'f' && fmt != 'g') fmt = 'g';
@@ -213,41 +212,41 @@
             std::snprintf(text, sizeof text, f, prec, x);
             text[40] = 0;
             for (int k = 0; ; k++) { m_mem[(uint16_t)(buf + k)] = (uint8_t)text[k]; if (!text[k]) break; }
-            m_cpu.r.SP = (uint16_t)(sp + 18);
+            m_cpu.r.SP = (uint16_t)(sp + 6 + D);
             break;
         }
         case 134: {                                   // ATOD: A buf -> D x, I n
-            const uint16_t buf = f12Word(sp);
+            const uint16_t buf = dblWord(sp);
             char text[80];
             int k = 0;
             for (; k < 79 && m_mem[(uint16_t)(buf + k)]; k++) text[k] = (char)m_mem[(uint16_t)(buf + k)];
             text[k] = 0;
             char* end = text;
             const double x = std::strtod(text, &end);
-            m_cpu.r.SP = (uint16_t)(sp + 2 - 12);
-            f12Put(m_cpu.r.SP, end == text ? 0.0 : x);
+            m_cpu.r.SP = (uint16_t)(sp + 2 - D);
+            dblPut(m_cpu.r.SP, end == text ? 0.0 : x);
             PushStackWord((uint16_t)(end - text));
             break;
         }
         case 135: {                                   // ATODM: A buf, A dst -> I n
-            const uint16_t dst = f12Word(sp), buf = f12Word((uint16_t)(sp + 2));
+            const uint16_t dst = dblWord(sp), buf = dblWord((uint16_t)(sp + 2));
             char text[80];
             int k = 0;
             for (; k < 79 && m_mem[(uint16_t)(buf + k)]; k++) text[k] = (char)m_mem[(uint16_t)(buf + k)];
             text[k] = 0;
             char* end = text;
             const double x = std::strtod(text, &end);
-            f12Put(dst, end == text ? 0.0 : x);
+            dblPut(dst, end == text ? 0.0 : x);
             m_cpu.r.SP = (uint16_t)(sp + 4);
             PushStackWord((uint16_t)(end - text));
             break;
         }
         default:
-            f12Done = false;                          // not assigned: falls through
+            dblDone = false;                          // not assigned: falls through
             break;
         }
     }
-    if (f12Done) {
+    if (dblDone) {
         m_cpu.r.setBC((uint16_t)(m_cpu.r.BC() + 1));
         m_mem[PM_V(0x0246)] = m_cpu.r.BC() & 0xFF;
         m_mem[PM_V(0x0247)] = m_cpu.r.BC() >> 8;

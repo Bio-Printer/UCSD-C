@@ -1,6 +1,6 @@
 /* float.h -- Tiny-C: float is the 32-bit UCSD II.0 real (24-bit mantissa,
-   exponent -127..127 binary); double, triple and long double are the
-   12-byte type (IEEE binary64 + 4 reserved bytes; P-Code mode only) */
+   exponent -127..127 binary); double and long double are the
+   8-byte type (IEEE binary64; P-Code mode only) */
 #ifndef __FLOAT_H
 #define __FLOAT_H
 #define FLT_RADIX 2

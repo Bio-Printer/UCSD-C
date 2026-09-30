@@ -17,7 +17,7 @@
 #define I_OSVAR   9
 #define I_EXITP   10
 #define I_OSVARA  11
-#define I_CSPD    12        /* __cspd(n, ...): CSP n leaving a double (12 bytes) */
+#define I_CSPD    12        /* __cspd(n, ...): CSP n leaving a double (8 bytes) */
 #define RBITS 4096
 struct Dcl {
     int n;

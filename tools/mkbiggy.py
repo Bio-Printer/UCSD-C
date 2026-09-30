@@ -4,7 +4,7 @@
 TCLIB.OBJ, TCMSGS.TEXT and the headers (NAME.H).  Tiny-C looks for headers,
 TCLIB.OBJ and TCMSGS.TEXT on the boot volume (*) when they are not on the
 prefix volume, so programs on any volume compile with X *TINYC.
-The 12-byte doubles (CSP 100..137) are in the emulator itself (build it
+The 8-byte doubles (CSP 100..137) are in the emulator itself (build it
 from UCSD-Pascal---P-Machine_work-v1.88.zip); nothing on the disk is needed
 for them."""
 import os, sys, zipfile, shutil

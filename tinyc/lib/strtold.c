@@ -1,4 +1,4 @@
-/* strtold.c -- strtold, atold: text to a 12-byte double (CSP 135;
+/* strtold.c -- strtold, atold: text to an 8-byte double (CSP 135;
    P-Code mode only) */
 #include <stdlib.h>
 

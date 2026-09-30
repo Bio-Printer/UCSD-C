@@ -1,4 +1,4 @@
-/* doubles (12 bytes: IEEE binary64, CSP 100..; P-Code mode only) */
+/* doubles (8 bytes: IEEE binary64, CSP 100..; P-Code mode only) */
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -91,7 +91,7 @@ int main(void)
 {
     double a;
     double b;
-    triple t;
+    long double t;
     float f;
     int i;
     long l;

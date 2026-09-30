@@ -890,21 +890,21 @@ static void gen_fconst(unsigned char *f)
     ob(f[1]);
 }
 
-/* a double: LDC 6, the words last first (as for a REAL) */
+/* a double: LDC 4, the words last first (as for a REAL) */
 static void gen_dconst(unsigned char *f)
 {
     int w;
     ob(O_LDC);
-    ob(6);
+    ob(4);
     if ((E->pc & 1) == 1)
         ob(0);
-    for (w = 5; w >= 0; w--) {
+    for (w = 3; w >= 0; w--) {
         ob(f[2 * w]);
         ob(f[2 * w + 1]);
     }
 }
 
-/* doubles: CSP 100.. (the engine's NativeFloat12.inc) */
+/* doubles: CSP 100.. (the engine's NativeDouble.inc) */
 #define CSP_DADD 100
 #define CSP_DNEG 104
 #define CSP_DCMP 105
@@ -1128,7 +1128,7 @@ void branch(struct Node *n, int l, int jumpif)
     t = n->type;
     if (isdblty(t)) {
         gen_value(n);
-        gen_dconst((unsigned char *)"\0\0\0\0\0\0\0\0\0\0\0\0");
+        gen_dconst((unsigned char *)"\0\0\0\0\0\0\0\0");
         ldc(jumpif ? 0 : 1);            /* == 0: FJP jumps when not; != 0 */
         csp(CSP_DCMP);
         jmpop(O_FJP, l);
@@ -1256,7 +1256,7 @@ void gen_value(struct Node *n)
             ldc(n->val);
         return;
     case N_FNUM:
-        if (n->type->size == 12)
+        if (isdblty(n->type))
             gen_dconst(n->fimg);
         else
             gen_fconst(n->fimg);

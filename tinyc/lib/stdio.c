@@ -795,7 +795,7 @@ int __vformat(char *fmt, va_list ap)
         case 'g':
         case 'G':
             if (lng) {
-                /* a double (12 bytes): the engine formats it (CSP 133,
+                /* a double (8 bytes): the engine formats it (CSP 133,
                    P-Code mode); %g's default precision is 10, not 6 */
                 dd = va_arg(ap, double);
                 if (prec < 0)

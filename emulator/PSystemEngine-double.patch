@@ -13,8 +13,8 @@
                  // bomb-the-program behavior -- these are rare, and the
                  // real Z80 CSPTRAP path (for a selector this build's own
                  // CSPTBL leaves at zero) is a reasonable fallback.
-+                // 12-byte floating point: CSP 100..137 (NativeFloat12.inc)
-+#include "NativeFloat12.inc"
++                // 8-byte floating point (double): CSP 100..137 (NativeDouble.inc)
++#include "NativeDouble.inc"
                  if (procNum >= 25 && procNum <= 31) {
                      uint16_t lowWord  = PeekStackWord(0);
                      uint16_t highWord = PeekStackWord(2);

@@ -19,8 +19,8 @@ Start here when picking the project up in a new session.
 | `verify/` | Tiny-C Verify pack: `TCVERIFY.SCRIPT` + `TCVERIFY.zip`, `cmpcode.c`, `rmfiles.c`, README |
 | `repro/` | engine bug repros (REAL compare, DEEPCXP: both fixed in the engine) |
 | `tools/` | host tools (below) |
-| `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`), with the 12-byte float CSPs |
-| `emulator/` | **the 12-byte float CSPs on their own**: `NativeFloat12.inc` + the 4-line `PSystemEngine.cpp` patch, and how to add them to a Windows build (README) |
+| `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`), with the double CSPs (NativeDouble.inc) |
+| `emulator/` | **the double CSPs on their own**: `NativeDouble.inc` + the 4-line `PSystemEngine.cpp` patch, and how to add them to a Windows build (README) |
 | `Usefull_System_Disk_Images.zip`, `pascal.bin` | boot disk images, the Z80 loader |
 
 ## Tools (Linux; `tools/setup.sh` unpacks the zips into `build/` and builds `build/run_verify`)
@@ -37,7 +37,7 @@ Start here when picking the project up in a new session.
 | `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |
 | `pdis.py FILE.CODE` | P-code disassembler |
-| `f12test.py` | test the 12-byte floating point CSPs 100..137 (P-Code mode; see `docs/FLOAT12.md`) |
+| `f12test.py` | test the double (8-byte floating point) CSPs 100..137 (P-Code mode; see `docs/DOUBLES.md`) |
 | `ucsdvol.py` | read/write UCSD volume images (`ls`, `get`, `put`, `rm`, `new`) |
 | `psys.py`, `tcrun.py`, `selfhost.py` | library code used by the above |
 
@@ -72,8 +72,8 @@ Sources are `NAME.C`, headers `NAME.H` (UCSD text format, text kind).
   used (`scanrefs` Bloom filter), prototypes declared under `#pragma segment`
   so calls within a segment are 2-byte CGPs (linker checks: message 116).
 * Limits: 10 segments per program (1 + 7..15), 77 files per UCSD directory.
-* **12-byte doubles** (`double`, `triple`, `long double`; P-Code mode only):
-  IEEE binary64 via the engine's CSP 100..137 — see `docs/FLOAT12.md`.
+* **8-byte doubles** (`double`, `long double`; P-Code mode only):
+  IEEE binary64 via the engine's CSP 100..137 — see `docs/DOUBLES.md`.
   `float` stays the 4-byte REAL; unsuffixed constants are float, `1.5L` double.
 
 ## Ideas not done yet

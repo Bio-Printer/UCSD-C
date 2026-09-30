@@ -4,7 +4,7 @@ on TCVERIFY.BLK as unit #5) exactly as Verify P-System would, and report.
 Build the pack first with mkverify.py.  Native mode runs with the Z80
 interpreter's memory reclaimed (Tiny-C needs that memory); VERIFY_RECLAIM=0
 turns it off.  Z80 mode leaves out the P-Code-only tests (PCODE_ONLY: the
-12-byte doubles need the engine's CSP 100+; the boot disk's Z80 interpreter
+8-byte doubles need the engine's CSP 100+; the boot disk's Z80 interpreter
 has no SQT/SIN/COS/..., which FLOATS uses)."""
 import os, sys, subprocess, tempfile, shutil, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))

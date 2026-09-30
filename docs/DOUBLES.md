@@ -1,29 +1,25 @@
-# 12-byte floating point ("double" / "triple")
+# 8-byte floating point (`double`)
 
 ## The engine side (done): CSP 100..137
 
-`NativeFloat12.inc` in the emulator (inside `UCSD-Pascal---P-Machine_work-v1.88.zip`,
-included by `PSystemEngine.cpp`'s CSP case). Native P-Code mode only; the Z80
-interpreter will never have it (a CSP 100+ there jumps through a table it
-does not have).
+`NativeDouble.inc` in the emulator (inside `UCSD-Pascal---P-Machine_work-v1.88.zip`,
+included by `PSystemEngine.cpp`'s CSP case; on its own in `emulator/`).
+Native P-Code mode only; the Z80 interpreter will never have it (a CSP 100+
+there jumps through a table it does not have).
 
-**Format**: 12 bytes = 6 words, lowest address first, exactly as `LDM 6` /
-`STM 6` move a value and as it lies on the stack from SP up:
+**Format**: IEEE-754 binary64, 8 bytes = 4 words, little-endian, lowest
+address first, exactly as `LDM 4` / `STM 4` move a value and as it lies on
+the stack from SP up. (Until Tiny-C [0.4] a double was 12 bytes: these 8
+plus 4 reserved zero bytes. They were never used and were removed; programs
+compiled for the 12-byte engine must be recompiled, and the 12-byte and
+8-byte engines and compilers do not mix. `triple` went with them.)
 
-| bytes | |
-|---|---|
-| 0..7 | IEEE-754 binary64, little-endian |
-| 8..11 | 0 (reserved) |
+Why binary64: the arithmetic and every function then come from the host's
+IEEE hardware and C runtime -- the most tested floating point there is, the
+same under MSVC and gcc. 16 significant digits instead of a float's 7,
+exponent range 1e±308 instead of 1e±38.
 
-Why binary64 rather than a true 12-byte format: the arithmetic and every
-function then come from the host's IEEE hardware and C runtime — the most
-tested floating point there is, the same under MSVC and gcc. (MSVC has no
-80-bit `long double`; x87 extended in 12 bytes would need a software library
-such as Berkeley SoftFloat, which has no sin/cos/exp/log.) 16 significant
-digits instead of 7, exponent range 1e±308 instead of 1e±38. The reserved 4
-bytes let a wider format replace it later (programs would be recompiled).
-
-Arguments are pushed first to last; results replace them. D = 12-byte value,
+Arguments are pushed first to last; results replace them. D = 8-byte value,
 F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 
 | CSP | name | stack in → out |
@@ -45,7 +41,7 @@ F = 4-byte UCSD real, I = word, L = long (low word on top), A = address.
 | 132 | DFREXP | D x, A ^int → D |
 | 133 | DTOA | D x, I fmt ('e' 'f' 'g'), I prec (0..17), A buf → (none); buf := text, ≤ 40 chars |
 | 134 | ATOD | A buf → D x, I chars used (C's strtod; 0 = no number) |
-| 135 | ATODM | A buf, A dst → I chars used; the value is stored at dst (12 bytes) |
+| 135 | ATODM | A buf, A dst → I chars used; the value is stored at dst (8 bytes) |
 | 136 / 137 | ULTOD / DTOUL | L (unsigned) → D / D → L (unsigned; truncates, saturates at 0 and 4294967295) |
 
 No traps: 1/0 is an infinity, sqrt(-1) a NaN, as in C.
@@ -56,9 +52,8 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 
 ## The Tiny-C side (done)
 
-* **Types**: `float` is the 4-byte REAL (works in Z80 mode too); `double`,
-  `triple` (a keyword for double) and `long double` are the 12-byte type.
-  `sizeof(double)` is 12.
+* **Types**: `float` is the 4-byte REAL (works in Z80 mode too); `double`
+  and `long double` are the 8-byte type. `sizeof(double)` is 8.
 * **Constants**: an unsuffixed constant (`1.5`, `1e10`) is a float; with `L`
   (`1.5L`, `1e300L`) a double. A float constant that meets a double
   (`double d = 0.1;`, `d * 2.5`, `sqrt(d)`'s other arguments) becomes a double
@@ -68,7 +63,7 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
   with `strtod` on the host: both give the same bits (the cross-check is
   identical). Integer constants meeting a double become double constants.
 * **Code**: loads, stores, arguments, results, arrays and struct members are
-  6-word values (LDM/STM 6); constants are LDC 6; `+ - * /` and negation
+  4-word values (LDM/STM 4); constants are LDC 4; `+ - * /` and negation
   are CSP 100..104; comparisons and zero tests CSP 105 with the relation;
   conversions CSP 106..111, 136, 137 (unsigned long: ULTOD/DTOUL; unsigned
   int goes through LTOD/DTOL). `++`, `--` and `+= -= *= /=` work on doubles.

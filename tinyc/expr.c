@@ -3,7 +3,7 @@
 #include "parse.h"
 #pragma segment PARSE
 
-/* ---- doubles (12 bytes: IEEE binary64 + 4 zero bytes) ---- */
+/* ---- doubles (8 bytes: IEEE binary64) ---- */
 
 /* a double constant's image from its text ("123e-2") */
 void dblimage(char *text, unsigned char *img)
@@ -20,8 +20,6 @@ void dblimage(char *text, unsigned char *img)
         img[i] = u & 255;
         u = u >> 8;
     }
-    for (; i < 12; i++)
-        img[i] = 0;
 #endif
 }
 
@@ -30,7 +28,7 @@ void dblimage(char *text, unsigned char *img)
 void real2dbl(unsigned char *f, unsigned char *img)
 {
     int e;
-    memset(img, 0, 12);
+    memset(img, 0, 8);
     if (f[0] == 0)
         return;
     e = f[0] + 894;
@@ -252,7 +250,7 @@ struct Node *cast(struct Node *n, struct Type *t)
             struct Node *c;
             char num[12];
             c = mknode(N_FNUM, t, 0, 0);
-            c->fimg = (unsigned char *)xalloc(12);
+            c->fimg = (unsigned char *)xalloc(8);
             if (n->op == N_FNUM && n->str)
                 dblimage(n->str, c->fimg);
             else if (n->op == N_FNUM)
@@ -591,7 +589,7 @@ struct Node *primary(void)
         n->str = xalloc(strlen(toknum) + 1);
         strcpy(n->str, toknum);
         if (toklong) {
-            n->fimg = (unsigned char *)xalloc(12);
+            n->fimg = (unsigned char *)xalloc(8);
             dblimage(n->str, n->fimg);
         } else {
             n->fimg = (unsigned char *)xalloc(4);
@@ -779,7 +777,7 @@ struct Node *unary(void)
         n = decay(n);
         if (isconst(n))
             return mknum(-n->val, arith(n->type, ty_int));
-        if (n->op == N_FNUM && n->type->size == 12) {
+        if (n->op == N_FNUM && isdblty(n->type)) {
             n->fimg[7] = n->fimg[7] ^ 128;
             return n;
         }
