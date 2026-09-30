@@ -13,7 +13,7 @@ sys.path.insert(0, HERE)
 import ucsdvol
 from psys import ensure_setup, BUILD
 
-PCODE_ONLY = ('DOUBLES', 'FLOATS')
+PCODE_ONLY = ('DOUBLES', 'FLOATS', 'PI')
 
 
 def z80script(path, out):
