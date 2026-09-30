@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """mkbiggy.py -- volumes/BIGGY.zip: the emulator's boot volume BIGGY:
 (data/Big_Disk.BLK in the P-Machine zip) with Tiny-C installed: TINYC.CODE,
-TCLIB.OBJ, TCMSGS.TEXT and the headers (NAME.H).  Tiny-C looks for headers,
+TCLIB.OBJ, TCMSGS.TEXT and the headers (NAME.H).  The base disk is the
+reference Big_Disk.BLK of UCSD-Pascal-Volumes (Filer and Editor that take
+NAME.C / NAME.H workfiles); only files that differ are written, so with a
+current base the result is byte-identical to it.  Tiny-C looks for headers,
 TCLIB.OBJ and TCMSGS.TEXT on the boot volume (*) when they are not on the
 prefix volume, so programs on any volume compile with X *TINYC.
 The 8-byte doubles (CSP 100..137) are in the emulator itself (build it
@@ -22,14 +25,24 @@ def main():
     out = os.path.join(ROOT, 'build', 'BIGGY.BLK')
     shutil.copy(src, out)
     v = ucsdvol.Volume(out)
+    changed = []
+
+    def put(name, data, kind):
+        """write NAME only when it differs: an up-to-date base disk (the
+        reference Big_Disk.BLK in UCSD-Pascal-Volumes) stays byte-identical"""
+        if not v.find(name) or v.read(name)[0] != data:
+            v.write(name, data, kind)
+            changed.append(name)
     code, log = build()
-    v.write('TINYC.CODE', open(code, 'rb').read(), 2)
-    v.write('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
-    v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
+    put('TINYC.CODE', open(code, 'rb').read(), 2)
+    put('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
+    put('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
-            v.write(f.upper(), ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
-    v.save()
+            put(f.upper(), ucsdvol.text_to_ucsd(open(os.path.join(INC, f)).read()), 3)
+    if changed:
+        v.save()
+        print('updated on BIGGY:', ', '.join(changed))
     v = ucsdvol.Volume(out)
     lines = ['BIGGY:  %d files  (the boot volume, with Tiny-C added)' % len(v.entries), '']
     for first, last, kind, name, lastbyte, date in v.entries:

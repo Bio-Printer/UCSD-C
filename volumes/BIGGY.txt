@@ -1,7 +1,6 @@
-BIGGY:  46 files  (the boot volume, with Tiny-C added)
+BIGGY:  48 files  (the boot volume, with Tiny-C added)
 
   Z80T.MICRO          19
-  SYSTEM.FILER        28
   SYSORIG.EDITOR      45
   SYSTEM.LINKER       22
   SYSTEM.COMPILER     68
@@ -45,4 +44,7 @@ BIGGY:  46 files  (the boot volume, with Tiny-C added)
   STDLIB.H             6
   STRING.H             4
   TCRT.H               6
+  SYSORIG.FILER       28
+  SYSTEM.FILER        30
+  SYSL2.EDITOR        59
   SYSTEM.LIST       4535

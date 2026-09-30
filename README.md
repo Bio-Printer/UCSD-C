@@ -32,7 +32,7 @@ Start here when picking the project up in a new session.
 | `selfcompile.py [module]` | compile the compiler's modules on the P-System, link TINYC2.CODE, compare with the host build |
 | `buildtc.py` | host build of TINYC.CODE from the modules (`build/tcmod/`) |
 | `mkvolume.py` | build `volumes/` (TINY-C, TCEXTRA) with FILES.TEXT listings |
-| `mkbiggy.py` | build `volumes/BIGGY.zip`: the emulator's `Big_Disk.BLK` (boot volume BIGGY:) with TINYC.CODE, TCLIB.OBJ, TCMSGS.TEXT and the headers added |
+| `mkbiggy.py` | build `volumes/BIGGY.zip`: the boot volume BIGGY: with TINYC.CODE, TCLIB.OBJ, TCMSGS.TEXT and the headers; only files that differ are written, so it is byte-identical to the reference `Big_Disk.BLK` of [UCSD-Pascal-Volumes](https://github.com/Bio-Printer/UCSD-Pascal-Volumes) (Filer and Editor that take NAME.C / NAME.H workfiles) |
 | `voltest.py` | on the volumes: `@LIBS`, `@BUILD`, `@DEMOS`, CMPCODE checks; reports least free memory |
 | `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |

@@ -18,8 +18,10 @@ fi
 mkdir -p build/data
 if [ ! -f build/data/Big_Disk.BLK ]; then
     cp build/img/Big_Disk.BLK build/data/Big_Disk.BLK
-    # the image still holds a scratch file M that fills the volume
-    python3 tools/ucsdvol.py rm build/data/Big_Disk.BLK M
+    # an old image holds a scratch file M that fills the volume
+    if python3 tools/ucsdvol.py ls build/data/Big_Disk.BLK | grep -q "^  M  "; then
+        python3 tools/ucsdvol.py rm build/data/Big_Disk.BLK M
+    fi
 fi
 # P-Code mode boots natively and never executes pascal.bin (the Z80 loader);
 # LoadFiles only needs the file to exist.
