@@ -24,35 +24,49 @@ def build_tc():
 
 LIBSRC = os.path.join(ROOT, 'tinyc', 'lib')
 LIB = os.path.join(INC, 'tclib.obj')
+LIBZ = os.path.join(INC, 'tclibz.obj')
 
 
-def build_lib():
-    """compile tinyc/lib/*.c and concatenate the modules into tclib.obj"""
+def z80calls(z80=None):
+    """Calls through function pointers for the Z80 interpreter (tc -z; no CSP 138)?
+    Default: yes when running in Z80 mode (PSYS_MODE=z80) or TINYC_Z80CALLS=1.
+    Volumes and packs that must work in both modes pass z80=True."""
+    if z80 is None:
+        z80 = os.environ.get('PSYS_MODE') == 'z80' or os.environ.get('TINYC_Z80CALLS') == '1'
+    return bool(z80)
+
+
+def build_lib(z80=None):
+    """compile tinyc/lib/*.c and concatenate the modules into tclib.obj
+    (tclibz.obj, built with -z, for the Z80 interpreter)"""
+    z = z80calls(z80)
+    lib = LIBZ if z else LIB
     build_tc()
     srcs = sorted(f for f in os.listdir(LIBSRC) if f.endswith('.c'))
     newest = max([os.path.getmtime(os.path.join(LIBSRC, f)) for f in srcs] +
                  [os.path.getmtime(os.path.join(INC, f)) for f in os.listdir(INC) if f.endswith('.h')] +
                  [os.path.getmtime(TC)])
-    if os.path.exists(LIB) and os.path.getmtime(LIB) >= newest:
-        return LIB
-    objdir = os.path.join(ROOT, 'build', 'lib')
+    if os.path.exists(lib) and os.path.getmtime(lib) >= newest:
+        return lib
+    objdir = os.path.join(ROOT, 'build', 'libz' if z else 'lib')
     os.makedirs(objdir, exist_ok=True)
     data = b''
     for f in srcs:
         obj = os.path.join(objdir, f[:-2] + '.obj')
-        r = subprocess.run([TC, '-c', '-I', INC, os.path.join(LIBSRC, f), '-o', obj], capture_output=True, text=True)
+        r = subprocess.run([TC, '-c'] + (['-z'] if z else []) + ['-I', INC, os.path.join(LIBSRC, f), '-o', obj], capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit('library build failed (%s):\n%s' % (f, r.stdout + r.stderr))
         data += open(obj, 'rb').read()
-    open(LIB, 'wb').write(data)
-    return LIB
+    open(lib, 'wb').write(data)
+    return lib
 
 
-def compile_c(src, outdir):
-    build_lib()
+def compile_c(src, outdir, z80=None):
+    z = z80calls(z80)
+    lib = build_lib(z)
     base = os.path.splitext(os.path.basename(src))[0].upper()[:10]
     out = os.path.join(outdir, base + '.CODE')
-    r = subprocess.run([TC, '-I', INC, '-L', LIB, src, '-o', out], capture_output=True, text=True)
+    r = subprocess.run([TC] + (['-z'] if z else []) + ['-I', INC, '-L', lib, src, '-o', out], capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit('compile failed:\n' + r.stdout + r.stderr)
     return base, out

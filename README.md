@@ -25,6 +25,13 @@ Start here when picking the project up in a new session.
 
 ## Tools (Linux; `tools/setup.sh` unpacks the zips into `build/` and builds `build/run_verify`)
 
+**Emulator version:** calls through function pointers compile to `CSP 138` (CALLI) by
+default (see below), which the emulator implements from **version 1.91**
+([UCSD-Pascal_Windows_Emulator](https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator)).
+The zip in this directory is v1.88 and has no CALLI: build the runner from a checkout of the
+emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/setup.sh`
+(keep `ENGINE_DIR` set for the tools), or use `TINYC_Z80CALLS=1` with the zip.
+
 | Tool | Does |
 |---|---|
 | `runtests.py [name]` | compile each test with the host compiler, run it on the P-System, compare with `.expect` |
@@ -37,11 +44,12 @@ Start here when picking the project up in a new session.
 | `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |
 | `pdis.py FILE.CODE` | P-code disassembler |
+| `pcensus.py FILE.CODE\|VOL.BLK` | static P-code census: instructions, and the inline constants/tables (`LSA LPA LDC XJP`), `--check` validates every jump target, `--selfpatch` lists the old self-modifying indirect calls |
 | `f12test.py` | test the double (8-byte floating point) CSPs 100..137 (P-Code mode; see `docs/DOUBLES.md`) |
 | `ucsdvol.py` | read/write UCSD volume images (`ls`, `get`, `put`, `rm`, `new`) |
 | `psys.py`, `tcrun.py`, `selfhost.py` | library code used by the above |
 
-Host compiler: `build/tc [-c] [-I dir] [-L lib.obj] [-o out] files` (built from
+Host compiler: `build/tc [-c] [-z] [-I dir] [-L lib.obj] [-o out] files` (built from
 `tinyc/tc.c` by `tcrun.build_tc()`). Environment: `PSYS_MODE=z80|native`,
 `VERIFY_RECLAIM=1` (P-Code mode with the Z80 interpreter's memory reclaimed),
 `TINYC_MAP=1` (linker prints procedure addresses).
@@ -53,10 +61,29 @@ Before committing a compiler change, run: `runtests.py`, `crosscheck.py`,
 
 `X(ecute TINYC`, then at "Compile what file?":
 `NAME` (compile NAME.C, or NAME.TEXT, and link), `/C NAME`, `/L OUT=A,B`,
-`/J LIB=A,B` (join objects into a library), `@FILE` (commands from FILE.TEXT).
+`/J LIB=A,B` (join objects into a library), `@FILE` (commands from FILE.TEXT);
+`/Z NAME` and `/Z /C NAME` are `NAME` and `/C NAME` with `-z` (below).
 Sources are `NAME.C`, headers `NAME.H` (UCSD text format, text kind).
 `@BUILD` rebuilds the compiler (TINYC2.CODE), `@LIBS` the library (TCLIB2.OBJ),
 `@DEMOS` (on TCEXTRA:) every program there.
+
+## Calls through function pointers (`-z` / `/Z`)
+
+A call through a function pointer (`f(x)` with `f` a variable; `qsort`, `bsearch` and
+`printf`'s floating-point formatting do it) is compiled to `<arguments>; <function value>;
+CSP 138` (CALLI): the engine pops the function value (`seg | proc << 8`) and does what
+`CXP seg,proc` would. Nothing is written into the instruction stream, so the code can live in
+a separate instruction space. CALLI exists only in the native P-Code engine (version 1.91 or
+later), not in the Z80 interpreter.
+
+`-z` (host) or `/Z` (P-System) generates the earlier sequence instead, which stores the
+function value into the operands of a following `CXP` at run time. That works everywhere,
+Z80 mode included. Everything linked into a program must be built the same way, the library
+too: the tools build it twice (`tclib.obj`, and `tclibz.obj` with `-z`), `tcrun.py` picks
+`-z` and `tclibz.obj` when `PSYS_MODE=z80` or `TINYC_Z80CALLS=1`, and the shipped volumes
+(TINY-C:TCLIB.OBJ, the TCEXTRA: programs) are built with `-z` so that they work in both
+modes. A program built without `-z` that calls through a function pointer and runs in Z80 mode
+does not stop: it gives wrong results.
 
 ## Status (September 2026)
 

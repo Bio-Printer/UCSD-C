@@ -2,6 +2,7 @@ build/
 __pycache__/
 *.pyc
 tinyc/include/tclib.obj
+tinyc/include/tclibz.obj
 tests/*.i
 tests/*.ir
 tests/*.obj

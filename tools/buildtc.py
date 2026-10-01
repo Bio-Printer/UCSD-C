@@ -11,7 +11,7 @@ MODULES = ['main', 'util', 'types', 'pp', 'lex', 'psym', 'expr', 'decl', 'stmt',
 
 
 def build(outdir=None):
-    lib = build_lib()
+    lib = build_lib(True)               # the library of the shipped volumes (-z): TINYC.CODE is the same either way
     outdir = outdir or os.path.join(ROOT, 'build', 'tcmod')
     os.makedirs(outdir, exist_ok=True)
     objs = []
