@@ -42,10 +42,11 @@ compiler (disassembled with `tools/pdis.py`).
   engine pops the value and performs `CXP seg,proc`, returning to the
   instruction after the CSP. Earlier builds stored the value into the
   operands of a following `CXP` at run time (self-modifying code).
-  Like the double CSPs 100..137, CALLI exists only in the native P-Code
-  engine (version 1.91 or later), not in the Z80 interpreter; `-z` (`/Z`)
-  generates the earlier self-patching sequence for programs that must run
-  there (the library must be built with it too: `tclibz.obj`).
+  Like the double CSPs 100..137, CALLI is in the native P-Code engine
+  (version 1.91 or later), not in the Z80 interpreter; from engine 1.93 the
+  Z80-mode coprocessor does it there. `-z` (`/Z`) generates the earlier
+  self-patching sequence for older engines (the library must be built with
+  it too: `tclibz.obj`).
 * Jumps: one signed byte. 0..127 forward is short; a negative byte indexes
   the procedure's jump table below `JTAB` (entries at -10..-128, 60 max,
   self-relative). Backward jumps always use the table.

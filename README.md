@@ -73,8 +73,8 @@ A call through a function pointer (`f(x)` with `f` a variable; `qsort`, `bsearch
 `printf`'s floating-point formatting do it) is compiled to `<arguments>; <function value>;
 CSP 138` (CALLI): the engine pops the function value (`seg | proc << 8`) and does what
 `CXP seg,proc` would. Nothing is written into the instruction stream, so the code can live in
-a separate instruction space. CALLI exists only in the native P-Code engine (version 1.91 or
-later), not in the Z80 interpreter.
+a separate instruction space. CALLI is in the native P-Code engine from version 1.91; in Z80
+mode the engine's coprocessor (version 1.93) does it too.
 
 `-z` (host) or `/Z` (P-System) generates the earlier sequence instead, which stores the
 function value into the operands of a following `CXP` at run time. That works everywhere,
@@ -83,7 +83,8 @@ too: the tools build it twice (`tclib.obj`, and `tclibz.obj` with `-z`), `tcrun.
 `-z` and `tclibz.obj` when `PSYS_MODE=z80` or `TINYC_Z80CALLS=1`, and the shipped volumes
 (TINY-C:TCLIB.OBJ, the TCEXTRA: programs) are built with `-z` so that they work in both
 modes. A program built without `-z` that calls through a function pointer and runs in Z80 mode
-does not stop: it gives wrong results.
+on an engine before 1.93 does not stop: it gives wrong results. From 1.93 it runs correctly
+(`TINYC_Z80CALLS=0` makes `tcrun.py` test exactly that in Z80 mode).
 
 ## Status (September 2026)
 
@@ -91,15 +92,17 @@ does not stop: it gives wrong results.
   has 3,915 words less memory; tightest: code generation of STMT/GEN, ~165
   words to spare — the driver's 1 KB stack saving since then adds to that).
 * The Z80 interpreter on the boot disk has no SIN/COS/EXP/ATAN/SQT/LOG/LN
-  (assembled with NOFPT): `math.h` functions stop there with "Unimplemented
-  instruction"; P-Code mode has them.
+  (assembled with NOFPT): before engine 1.93 `math.h` functions stopped there
+  with "Unimplemented instruction"; from 1.93 the engine's Z80-mode
+  coprocessor does them (and the doubles and CALLI), as in P-Code mode.
 * Memory techniques in use: per-pass heap (MARK/RELEASE, free list set aside
   across a pass), pass-only tables allocated per pass, shared function types,
   parameter names kept apart (`pnames`), header declarations kept only when
   used (`scanrefs` Bloom filter), prototypes declared under `#pragma segment`
   so calls within a segment are 2-byte CGPs (linker checks: message 116).
 * Limits: 10 segments per program (1 + 7..15), 77 files per UCSD directory.
-* **8-byte doubles** (`double`, `long double`; P-Code mode only):
+* **8-byte doubles** (`double`, `long double`; P-Code mode, and Z80 mode
+  from engine 1.93):
   IEEE binary64 via the engine's CSP 100..137 — see `docs/DOUBLES.md`.
   `float` stays the 4-byte REAL; unsuffixed constants are float, `1.5L` double.
 

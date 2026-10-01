@@ -4,8 +4,9 @@
 
 `NativeDouble.inc` in the emulator (inside `UCSD-Pascal---P-Machine_work-v1.88.zip`,
 included by `PSystemEngine.cpp`'s CSP case; on its own in `emulator/`).
-Native P-Code mode only; the Z80 interpreter will never have it (a CSP 100+
-there jumps through a table it does not have).
+Native P-Code mode; the Z80 interpreter does not have it (a CSP 100+ there
+jumps through a table it does not have), so from engine 1.93 the engine's
+Z80-mode coprocessor runs the same code for those CSPs in Z80 mode.
 
 **Format**: IEEE-754 binary64, 8 bytes = 4 words, little-endian, lowest
 address first, exactly as `LDM 4` / `STM 4` move a value and as it lies on
@@ -83,6 +84,6 @@ P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
   double (the characters read go through CSP 135); `strtold` and `atold`
   (C99 names, in `<stdlib.h>`) return a double. `strtod` and `atof` stay
   float, so programs using them still run in Z80 mode.
-* **Tests**: `tests/doubles.c` (P-Code mode only), `tools/f12test.py` (the
+* **Tests**: `tests/doubles.c` (both modes from engine 1.93), `tools/f12test.py` (the
   CSPs themselves). The double-capable compiler still rebuilds itself in
   Z80 mode (`@BUILD`), identical to the host build.

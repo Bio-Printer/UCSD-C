@@ -29,10 +29,13 @@ LIBZ = os.path.join(INC, 'tclibz.obj')
 
 def z80calls(z80=None):
     """Calls through function pointers for the Z80 interpreter (tc -z; no CSP 138)?
-    Default: yes when running in Z80 mode (PSYS_MODE=z80) or TINYC_Z80CALLS=1.
-    Volumes and packs that must work in both modes pass z80=True."""
+    Default: yes when running in Z80 mode (PSYS_MODE=z80) or TINYC_Z80CALLS=1;
+    TINYC_Z80CALLS=0: no, also in Z80 mode (the emulator's Z80-mode coprocessor,
+    engine 1.93, does CSP 138). Volumes and packs that must work in both
+    modes pass z80=True."""
     if z80 is None:
-        z80 = os.environ.get('PSYS_MODE') == 'z80' or os.environ.get('TINYC_Z80CALLS') == '1'
+        zc = os.environ.get('TINYC_Z80CALLS')
+        z80 = zc == '1' or (zc != '0' and os.environ.get('PSYS_MODE') == 'z80')
     return bool(z80)
 
 
