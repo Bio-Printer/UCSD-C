@@ -21,7 +21,10 @@ from buildtc import build
 
 def main():
     ensure_setup()
-    src = os.path.join(ROOT, 'build', 'pm', 'UCSD-Pascal---P-Machine_work', 'data', 'Big_Disk.BLK')
+    # the base disk: the reference Big_Disk.BLK of UCSD-Pascal-Volumes, as unpacked from
+    # Usefull_System_Disk_Images.zip by setup.sh (build/data/Big_Disk.BLK is the copy the
+    # tests boot, with TINYC.CODE etc. of the checkout NOT yet installed)
+    src = os.path.join(ROOT, 'build', 'img', 'Big_Disk.BLK')
     out = os.path.join(ROOT, 'build', 'BIGGY.BLK')
     shutil.copy(src, out)
     v = ucsdvol.Volume(out)
