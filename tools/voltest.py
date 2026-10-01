@@ -2,7 +2,7 @@
 """voltest.py -- test the two volumes (build/TINY-C.BLK, build/TCEXTRA.BLK,
 made by mkvolume.py) on the P-System: TINY-C: on unit #5, TCEXTRA: on #9.
 
-  @LIBS    on TINY-C:  -> TCLIB2.OBJ, CMPCODE: IDENTICAL to TCLIB.OBJ
+  @LIBS    on TINY-C:  -> TCLIB2.OBJ (/Z /C), CMPCODE: IDENTICAL to TCLIB.OBJ
   @BUILD   on TINY-C:  -> TINYC2.CODE, CMPCODE: IDENTICAL to TINYC.CODE
   @DEMOS   on TCEXTRA: (compiler and headers from TINY-C:), then QUEENS runs
 
@@ -34,12 +34,12 @@ def cmpcode(a, b):
 
 def script():
     L = ['WAIT "Command:"'] + prefix('TINY-C:')
-    L += tinyc('TINYC', '@LIBS', ['> /C ASSERT', '> /C TCRT', 'Joining TCLIB2.OBJ'])
+    L += tinyc('TINYC', '@LIBS', ['> /Z /C ASSERT', '> /Z /C TCRT', 'Joining TCLIB2.OBJ'])
     L += cmpcode('TCLIB.OBJ', 'TCLIB2.OBJ')
     L += tinyc('TINYC', '@BUILD', ['> /C MAIN', '> /L TINYC2='])
     L += cmpcode('TINYC.CODE', 'TINYC2.CODE')
     L += prefix('TCEXTRA:')
-    L += tinyc('TINY-C:TINYC', '@DEMOS', ['> BOXES', '> STRUCTS', '> CMPCODE'])
+    L += tinyc('TINY-C:TINYC', '@DEMOS', ['> /Z BOXES', '> /Z STRUCTS', '> /Z CMPCODE'])
     L += ['TYPE "X"', 'WAIT "Execute what file?"', 'TYPE "QUEENS\\r"', 'WAIT "92"', 'WAIT "Command:"']
     return '\n'.join(L) + '\n'
 

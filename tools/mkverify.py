@@ -67,7 +67,7 @@ def script():
         keys_path = os.path.join(TESTS, t + '.keys')
         keys = open(keys_path, newline='').read() if os.path.exists(keys_path) else ''
         L.append('# ---- test %s' % name)
-        compile_step(L, 'TINYC', name)
+        compile_step(L, 'TINYC', '/Z ' + name)      # /Z: the pack runs in Z80 mode too
         # NAME.wait: the texts to wait for instead of NAME.expect (for output
         # with cursor addressing, whose raw bytes the transcript shows differently)
         wait = os.path.join(TESTS, t + '.wait')
@@ -82,7 +82,7 @@ def script():
           'WAIT "First file?"', 'TYPE "TINYC.CODE\\r"', 'WAIT "Second file?"', 'TYPE "TINYC2.CODE\\r"',
           'WAIT "IDENTICAL"', 'WAIT "Command:"']
     L.append('# ---- and the compiler it built works')
-    compile_step(L, 'TINYC2', 'HANOI')
+    compile_step(L, 'TINYC2', '/Z HANOI')
     run_program(L, 'HANOI', open(os.path.join(TESTS, 'hanoi.expect')).read())
     return '\n'.join(L) + '\n'
 
@@ -92,7 +92,7 @@ def volume(path):
     v = ucsdvol.Volume(path)
     code, log = build()
     v.write('TINYC.CODE', open(code, 'rb').read(), 2)
-    v.write('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
+    v.write('TCLIB.OBJ', open(build_lib(True), 'rb').read(), 5)   # -z: works in Z80 mode too
     v.write('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
@@ -107,7 +107,7 @@ def volume(path):
     tmp = os.path.join(ROOT, 'build', 'verify_tmp')
     os.makedirs(tmp, exist_ok=True)
     for prog in ('cmpcode', 'rmfiles'):
-        base, cmp = compile_c(os.path.join(VDIR, prog + '.c'), tmp)
+        base, cmp = compile_c(os.path.join(VDIR, prog + '.c'), tmp, z80=True)
         v.write(base + '.CODE', open(cmp, 'rb').read(), 2)
         for ext in ('.i', '.ir', '.obj'):              # compile_c's temporaries
             p = os.path.join(VDIR, prog + ext)

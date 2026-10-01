@@ -33,6 +33,8 @@ answer "Compile what file?" with
     NAME                 compile NAME.C (or NAME.TEXT), link with
                          TCLIB.OBJ -> NAME.CODE  (NAME.C works too)
     /C NAME              compile only -> NAME.OBJ
+    /Z NAME, /Z /C NAME  the same, with calls through function pointers made
+                         for the Z80 interpreter (see FUNCTION POINTERS)
     /L OUT=A,B,...       link A.OBJ, B.OBJ, ... and TCLIB.OBJ -> OUT.CODE
     /J LIB=A,B,...       join A.OBJ, B.OBJ, ... into the library LIB.OBJ
     @FILE                run the commands in FILE.TEXT, one per line
@@ -53,6 +55,15 @@ TCLIB2.OBJ, identical to TCLIB.OBJ (check it with CMPCODE).  To use it,
 remove TCLIB.OBJ and rename TCLIB2.OBJ to TCLIB.OBJ with the Filer.
 
 THE DEMO PROGRAMS: see DEMOS.TEXT on TCEXTRA: (@DEMOS).
+
+FUNCTION POINTERS: a call through a function pointer (qsort, bsearch and
+printf's floating-point formatting use them) is by default compiled to
+CSP 138 (CALLI), which the native P-Code engine implements and the Z80
+interpreter does not.  /Z compiles the older sequence that works in both,
+so TCLIB.OBJ and the programs on TCEXTRA: are built with /Z (LIBS.TEXT and
+DEMOS.TEXT say so).  Build with /Z anything that must run in Z80 mode,
+the library included; without /Z a program that calls through a function
+pointer runs in Z80 mode but gives wrong results.
 
 MEMORY: Tiny-C runs in Z80 mode as well as P-Code mode, and @BUILD
 works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
@@ -89,7 +100,7 @@ FILES.TEXT lists every file on this volume.
 LIBMODS_ = sorted(f[:-2] for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c'))
 LIBS = """; LIBS -- rebuild the C library: X(ecute TINYC, answer @LIBS
 ; Compiles every library module, then joins them into TCLIB2.OBJ.
-""" + ''.join('/C %s\n' % m.upper() for m in LIBMODS_) + \
+""" + ''.join('/Z /C %s\n' % m.upper() for m in LIBMODS_) + \
     '/J TCLIB2=%s\n' % ','.join(m.upper() for m in LIBMODS_)
 
 BUILD = """; BUILD -- rebuild the Tiny-C compiler: X(ecute TINYC, answer @BUILD
@@ -193,7 +204,7 @@ class Vol:
 def compiled(path):
     """compile a program with the host Tiny-C; its .CODE bytes"""
     os.makedirs(TMP, exist_ok=True)
-    base, code = compile_c(path, TMP)
+    base, code = compile_c(path, TMP, z80=True)      # -z: the volumes work in Z80 mode too
     d, n = os.path.split(os.path.splitext(path)[0])
     for ext in ('.i', '.ir', '.obj'):                  # compile_c's temporaries
         if os.path.exists(os.path.join(d, n + ext)):
@@ -205,7 +216,7 @@ def tiny_c():
     t = Vol('TINY-C', 4000)
     code, log = build()
     t.binary('TINYC.CODE', open(code, 'rb').read(), 'the Tiny-C compiler: X(ecute TINYC')
-    t.binary('TCLIB.OBJ', open(build_lib(), 'rb').read(), 'the C library, linked into every program')
+    t.binary('TCLIB.OBJ', open(build_lib(True), 'rb').read(), 'the C library (built with /Z), linked into every program')
     t.textfile('TCMSGS.TEXT', os.path.join(INC, 'tcmsgs.txt'), "the compiler's messages (line n = message n)")
     t.text('README.TEXT', README_TC, 'how to use and rebuild Tiny-C')
     t.text('BUILD.TEXT', BUILD, 'X TINYC, @BUILD: rebuilds the compiler -> TINYC2.CODE')
@@ -235,7 +246,7 @@ def extras():
     names = [os.path.splitext(os.path.basename(p))[0].upper()[:10] for p in progs]
     e.text('DEMOS.TEXT', '; DEMOS -- compile and link every program on TCEXTRA:\n'
            '; prefix TCEXTRA:, X(ecute TINY-C:TINYC, answer @DEMOS\n' +
-           ''.join(n + '\n' for n in names), 'X TINY-C:TINYC, @DEMOS: rebuilds every program here')
+           ''.join('/Z %s\n' % n for n in names), 'X TINY-C:TINYC, @DEMOS: rebuilds every program here')
     for p in progs:
         name = os.path.splitext(os.path.basename(p))[0].upper()[:10]
         e.textfile(name + '.C', p, describe(p))

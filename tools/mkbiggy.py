@@ -35,7 +35,7 @@ def main():
             changed.append(name)
     code, log = build()
     put('TINYC.CODE', open(code, 'rb').read(), 2)
-    put('TCLIB.OBJ', open(build_lib(), 'rb').read(), 5)
+    put('TCLIB.OBJ', open(build_lib(True), 'rb').read(), 5)   # -z: works in Z80 mode too
     put('TCMSGS.TEXT', ucsdvol.text_to_ucsd(open(os.path.join(INC, 'tcmsgs.txt')).read()), 3)
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):

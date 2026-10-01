@@ -39,6 +39,7 @@ CSP = ["IOC", "NEW", "MVL", "MVR", "EXIT", "UREAD", "UWRITE", "IDS", "TRS", "TIM
        None, None, None, None, None, None, None, None, None,
        "GSEG", "RSEG", "TNC", "RND", "SIN", "COS", "LOG", "ATAN", "LN", "EXP", "SQT",
        "MRK", "RLS", "IOR", "UBUSY", "POT", "UWAIT", "UCLEAR", "HLT", "MEMA"]
+CSP_EXT = {138: 'CALLI'}       # engine extensions: 100..137 doubles (docs/DOUBLES.md), 138 call through function pointer
 CMPT = {2: 'REAL', 4: 'STR', 6: 'BOOL', 8: 'SET', 10: 'BYTE', 12: 'WORD'}
 
 
@@ -125,7 +126,7 @@ def disasm(seg, start, end, jtab, out):
                 continue
         if name == 'CSP':
             n = int(args[0])
-            args[0] += ' (%s)' % (CSP[n] if n < len(CSP) and CSP[n] else '?')
+            args[0] += ' (%s)' % (CSP_EXT.get(n) or (CSP[n] if n < len(CSP) and CSP[n] else '?'))
         out.append((a, name + (' ' + ', '.join(args) if args else '')))
     return out
 
