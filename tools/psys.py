@@ -14,7 +14,7 @@ Command line:
 Disks: #4 = boot disk (Big_Disk.BLK copy), #5 = WORK: (scratch, receives
 output), #9 = spare empty volume.
 """
-import os, sys, subprocess, shutil, tempfile
+import os, sys, subprocess, shutil, tempfile, atexit
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -32,6 +32,9 @@ class PSystem:
     def __init__(self, workdir=None, blocks=4000):
         ensure_setup()
         self.dir = workdir or tempfile.mkdtemp(prefix='psys_')
+        if not workdir and not os.environ.get('PSYS_KEEP'):
+            # 17 MB per run; the suites make thousands (PSYS_KEEP=1 keeps them to look at)
+            atexit.register(shutil.rmtree, self.dir, True)
         os.makedirs(self.dir, exist_ok=True)
         self.src = os.path.join(self.dir, 'WORK.BLK')
         ucsdvol.main(['new', self.src, 'WORK', str(blocks)])

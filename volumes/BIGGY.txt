@@ -1,11 +1,10 @@
-BIGGY:  51 files  (the boot volume, with Tiny-C added)
+BIGGY:  52 files  (the boot volume, with Tiny-C added)
 
   Z80T.MICRO          19
   MYGOTOXY.CODE        2
   VERSION.TEXT         4
   SYSORIG.EDITOR      45
   SYSTEM.LINKER       22
-  SYSTEM.COMPILER     68
   SYSTEM.LIBRARY       8
   SYSTEM.SYNTAX       14
   SETUP.CODE          25
@@ -50,4 +49,6 @@ BIGGY:  51 files  (the boot volume, with Tiny-C added)
   SYSL2.EDITOR        59
   SYSOLD.PASCAL       34
   SYSOLD.FILER        30
+  SYSOLD.COMPILER     68
+  SYSTEM.COMPILER     69
   SYSTEM.LIST       4535
