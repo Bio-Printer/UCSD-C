@@ -303,6 +303,14 @@ TOOLS = [
     ('PATCH', ['ports/patch/patch.c'], [], 'patch: PATCH [-RsbClN] [-F N] [-pN] [-o OUT] [-i PATCHFILE] [FILE]'),
     ('MAN', ['ports/man/man.c'], [], 'man: MAN [-k WORD] [NAME ...] the manual pages (MAN.TEXT)'),
     ('BINDERC', ['ports/binder/binderc.c'], [], 'BINDERC [FILE]: the Binder (puts your GOTOXY into SYSTEM.PASCAL)'),
+    ('ECHO', ['ports/echo/echo.c'], [], 'echo: ECHO [-neE] [ARG ...] its arguments'),
+    ('HEAD', ['ports/head/head.c'], [], 'head: HEAD [-n [-]N] [-c [-]N] [-qv] [FILE ...] the first lines'),
+    ('TAIL', ['ports/tail/tail.c'], [], 'tail: TAIL [-n [+]N] [-c [+]N] [-qv] [FILE ...] the last lines'),
+    ('SORT', ['ports/sort/sort.c'], [], 'sort: SORT [-bdfinrsuc] [-t C] [-k KEY] [-o F] [FILE ...] lines sorted'),
+    ('UNIQ', ['ports/uniq/uniq.c'], [], 'uniq: UNIQ [-cdDiu] [-f N] [-s N] [-w N] [IN [OUT]] repeated lines once'),
+    ('TR', ['ports/tr/tr.c'], [], 'tr: TR [-cdst] SET1 [SET2] characters changed or deleted'),
+    ('CUT', ['ports/cut/cut.c'], [], 'cut: CUT -b|-c|-f LIST [-d C] [-s] [FILE ...] parts of lines'),
+    ('TEE', ['ports/tee/tee.c'], [], 'tee: TEE [-ai] [FILE ...] the standard input to files as well'),
 ]
 
 README_TOOLS = """TOOLS                                               volume TOOLS:
@@ -413,6 +421,38 @@ LC      LC [-1xFsrSC] [VOL: | #n: | PATH][PATTERN ...]  from the shell: the
         across), -F marks CODE files, -s shows the sizes; one name to a line
         when the output goes to a file or a pipe.
 
+ECHO    ECHO [-neE] [ARG ...]  its arguments and a new line (-n: none; -e:
+        \\t \\n \\040 ... are characters).  ECHO hello >A.TEXT.
+
+HEAD    HEAD [-n [-]N] [-c [-]N] [-qv] [FILE ...], TAIL [-n [+]N] [-c [+]N]
+TAIL    [-qv] [FILE ...]  the first or last 10 (N) lines or N bytes of each
+        file, headers ==> NAME <== for several; wild cards (HEAD -3 *.C);
+        DIR | TAIL -2.  All but the last N, and the last N, read the input
+        twice (a file or a pipe, not the console); TAIL -f is not possible.
+
+SORT    SORT [-bdfinrsuc] [-t C] [-k KEY ...] [-o FILE] [-S N] [-T VOL]
+        [FILE ...]  the lines sorted, as sort(1) in the C locale: keys
+        (-k2,2n -k1), -t fields, -u, -o (may be an input).  What does not
+        fit in memory goes through temporary files (SORTTMPn.TEXT on the
+        prefix volume or -T VOL), merged four at a time.
+
+UNIQ    UNIQ [-cdDiu] [-f N] [-s N] [-w N] [INPUT [OUTPUT]]  a run of the
+        same line once (-c with counts): SORT A.TEXT | UNIQ -c.
+
+TR      TR [-cdst] SET1 [SET2]  the standard input with characters changed
+        (TR a-z A-Z) or deleted (-d), runs squeezed (-s); ranges, classes
+        ([:alpha:] ...), \\NNN (\\040 a blank), [c*N].
+
+CUT     CUT -b LIST | -c LIST | -f LIST [-d C] [-s] [--complement]
+        [--output-delimiter=S] [FILE ...]  bytes, characters or fields of
+        each line: CUT -c1-8, CUT -d: -f1,3, CUT -d\\040 -f2.
+
+TEE     TEE [-ai] [FILE ...]  the standard input to the output and to each
+        FILE: DIR | TEE #5:DIR.TEXT | GREP .C.  A new file takes the largest
+        free area of its disk until it is closed: a FILE cannot be made on
+        the disk of a >FILE or pipe file being written (#4 for pipes), nor
+        SORT's temporary files or -o FILE.
+
 KRUNCH  KRUNCH [-y] [-r] [VOL: | #n | PATH]  from the shell: moves the files
         of a disk (or of a sub-volume: KRUNCH #5:/A) down so that its unused
         blocks become one area at its end (the Filer's K(runch); asks first
@@ -485,6 +525,9 @@ DIFF.C  diff (two files compared, three output forms).
 WC.C    wc (lines, words, bytes).
 
 LC.C    lc (the file names of a disk in columns).
+
+ECHO.C, HEAD.C, TAIL.C, SORT.C, UNIQ.C, TR.C, CUT.C, TEE.C  the text tools
+        (as coreutils' echo, head, tail, sort, uniq, tr, cut, tee).
 
 KRUNCH.C  krunch (the files of a disk moved down, the free blocks in one area).
 
@@ -566,6 +609,7 @@ WHAT = {
     'redirect.c': 'freopen; >NAME and <NAME on the command line',
     'strtold.c': 'strtold, atold (<stdlib.h>, P-Code mode)',
     'dirs.c': 'volunit, pathdir, wildmatch, opens by a place ...: disks, directories, sub-volumes (<dirs.h>)',
+    'fileargs.c': "forfiles: a program's FILE arguments with wild cards (<dirs.h>)",
     'subvol.c': 'svcanon, dirfree, dirkrunch, svresize: KRUNCH, GROW, SHRINK (<dirs.h>)',
     'tcrt.c': 'runtime helpers: C division, shifts, unsigned, longs',
     'vi.h': "vi's modules share this: configuration, globals",
@@ -764,7 +808,7 @@ def tool_batch(name, mods):
 
 def tools():
     """TOOLS: the tools ready to run, their manual pages, and their sources (a sub-volume each)"""
-    t = Dir('TOOLS', 4000)
+    t = Dir('TOOLS', 5000)
     t.text('README.TEXT', README_TOOLS, 'what is on this volume')
     os.makedirs(TMP, exist_ok=True)
     for name, mods, hdrs, desc in TOOLS:

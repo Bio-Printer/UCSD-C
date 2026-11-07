@@ -126,6 +126,12 @@ def main():
         assert shell in text
         text = text.replace(shell, shell + '                 1.32: @FILE runs a batch file (FILE.TEXT: its lines\n'
                             '                 as commands); MOVE replaces a file of the new name\n')
+    if 'revision 1.32 ' in text:
+        text = text.replace('BIGGY boot volume, revision 1.32  (27-Oct-26)', 'BIGGY boot volume, revision 1.33  (07-Nov-26)')
+        shell = ('                 as commands); MOVE replaces a file of the new name\n')
+        assert shell in text
+        text = text.replace(shell, shell + '                 1.33: built with the library that takes NAME.TEXT[*]\n'
+                            '                 (a size asked of the OS) for a text file (>FILE[*])\n')
     put('VERSION.TEXT', ucsdvol.text_to_ucsd(text), 3)
     if changed:
         v.save()

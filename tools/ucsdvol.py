@@ -110,9 +110,9 @@ class Volume:
         for pos, e in enumerate(self.entries + [[self.eov]]):
             if e[0] - start >= nblocks:
                 break
+            if len(e) < 2:
+                raise SystemExit('no room on volume %s for %s (%d blocks)' % (self.volname, name, nblocks))
             start = e[1]
-        else:
-            raise SystemExit('no room on volume')
         lastbyte = len(raw) - (nblocks - 1) * BLK if raw else BLK
         padded = raw + bytes(nblocks * BLK - len(raw))
         self.data[start * BLK: (start + nblocks) * BLK] = padded
