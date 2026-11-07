@@ -150,6 +150,12 @@ def main():
         text = text.replace(shell, shell + '                 1.34: DIR shows files\' times of day; a batch line\n'
                             '                 that starts with - does not stop it when it fails\n'
                             '                 (MAKE\'s recipes); built with the library\'s ftime.c\n')
+    if 'revision 1.34 ' in text:
+        text = text.replace('BIGGY boot volume, revision 1.34  (07-Nov-26)', 'BIGGY boot volume, revision 1.35  (07-Nov-26)')
+        shell = '                 (MAKE\'s recipes); built with the library\'s ftime.c\n'
+        assert shell in text
+        text = text.replace(shell, shell + '                 1.35: a batch line whose program cannot be run (no\n'
+                            '                 such program, a line too long) stops the batch file\n')
     put('VERSION.TEXT', ucsdvol.text_to_ucsd(text), 3)
     if changed:
         v.save()

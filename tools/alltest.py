@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""alltest.py -- TINY-C:ALL.TEXT on the P-System: one batch file that runs
-others.  With the prefix on SPARE: (an empty volume), X(ecute TINY-C:CC,
-@TINY-C:ALL:
+"""alltest.py -- TINY-C:MAKEFILE.TEXT on the P-System: one makefile whose recipes run
+the others' MAKE.  From the shell, with the prefix on SPARE: (an empty volume),
+make -f tiny-c:makefile:
 
-  @TINY-C:/SRC/CC/BUILD   the compiler -> TINY-C:CC2.CODE: CMPCODE IDENTICAL
-                          to CC.CODE
-  @TINY-C:/SRC/LIB/LIBS   the library  -> TINY-C:/LIB/TCLIB2.OBJ: IDENTICAL
-                          to TCLIB.OBJ
-  @TOOLS:/SRC/TOOLS       every tool linked onto TOOLS: (its tools removed
-                          first): the same bytes as mkvolume's
-  @SYS-C:BUILD            the operating system in C -> SYS-C:SYSTEM.C (removed
-                          first): the same bytes as UCSD-SYSTEM-C's SYSTEM.C
-  @PASCALC:/SRC/BUILD     the Pascal compiler in C -> PASCALC:PC.CODE (removed
-                          first): the same bytes as the host's build/psys/PC.CODE
-                          of UCSD-Pascal-compiler-written-in-C
-and every object is in TINY-C:/OBJ or TOOLS:/OBJ (the batch files' -O),
-none among the sources (TINY-C:/SRC/CC, TOOLS:/SRC/VI ...: the names in a
-batch file are looked for beside it) or on the prefix volume.
+  MAKE -f TINY-C:/SRC/CC/MAKEFILE   the compiler -> TINY-C:CC2.CODE: CMPCODE IDENTICAL
+                                    to CC.CODE
+  MAKE -f TINY-C:/SRC/LIB/MAKEFILE  the library  -> TINY-C:/LIB/TCLIB2.OBJ: IDENTICAL
+                                    to TCLIB.OBJ
+  MAKE -f TOOLS:/SRC/MAKEFILE       every tool linked onto TOOLS: (its tools removed
+                                    first, MAKE's aside): the same bytes as mkvolume's
+  MAKE -f SYS-C:MAKEFILE            the operating system in C -> SYS-C:SYSTEM.C (removed
+                                    first): the same bytes as UCSD-SYSTEM-C's SYSTEM.C
+  MAKE -f PASCALC:/SRC/MAKEFILE     the Pascal compiler in C -> PASCALC:PC.CODE (removed
+                                    first): the same bytes as the host's build/psys/PC.CODE
+                                    of UCSD-Pascal-compiler-written-in-C
+and every object is in TINY-C:/OBJ or TOOLS:/OBJ (the makefiles' -O), none among
+the sources (TINY-C:/SRC/CC, TOOLS:/SRC/VI ...) or on the prefix volume; then
+make -f tiny-c:makefile again: every makefile's target is up to date.
 
 Disks: #5 TINY-C:, #9 SPARE:, #10 PASCALC: (UCSD-Pascal-compiler-written-in-C's
 build/PASCAL-C.BLK, from its tools/mkvolume.py: ../ucsd-pascal-compiler-written-in-c,
 or $PASCALC), #11 TOOLS:, #12 TCEXTRA: (CMPCODE), #13 SYS-C: (UCSD-SYSTEM-C's
-build/SYS-C.BLK: ../UCSD-SYSTEM-C, or $SYSTEMC).  Uses the
+build/SYS-C.BLK: ../UCSD-SYSTEM-C, or $SYSTEMC); BIGGY (mkbiggy.py) boots.  Uses the
 mode of PSYS_MODE (native or z80); about 70 minutes in Z80 mode.
 """
 import os, sys, re, shutil, subprocess, tempfile
@@ -29,28 +29,53 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import ucsdvol
-from psys import ensure_setup, BUILD
-from voltest import prefix, cmpcode
+from psys import ensure_setup, BUILD, shell_script, shell_transcript
+from voltest import cmpcode
 from mkvolume import TOOLS, MODULES, LIBMODS_
 SYSTEMC = os.environ.get('SYSTEMC', os.path.join(os.path.dirname(ROOT), 'UCSD-SYSTEM-C'))
 PASCALC = os.environ.get('PASCALC', os.path.join(os.path.dirname(ROOT), 'ucsd-pascal-compiler-written-in-c'))
 
 # what the run prints, in turn
-WAITS = ['> @TINY-C:/SRC/CC/BUILD', '> -L TINY-C:CC2=', '> @TINY-C:/SRC/LIB/LIBS',
-         'Joining TINY-C:/LIB/TCLIB2.OBJ', '> @TOOLS:/SRC/TOOLS', '> -L TOOLS:GREP=', '> @SYS-C:BUILD',
-         '> -L SYS-C:SYSTEM.C.=', '> @PASCALC:/SRC/BUILD', '> -L PASCALC:PC=']
+WAITS = ['> MAKE -f TINY-C:/SRC/CC/MAKEFILE', '> -L TINY-C:CC2=', '> MAKE -f TINY-C:/SRC/LIB/MAKEFILE',
+         'Joining TINY-C:/LIB/TCLIB2.OBJ', '> MAKE -f TOOLS:/SRC/MAKEFILE', ' -L TOOLS:GREP=', '> MAKE -f SYS-C:MAKEFILE',
+         ' -L SYS-C:SYSTEM.C.=', '> MAKE -f PASCALC:/SRC/MAKEFILE', '> -L PASCALC:PC=']
+# the second run: each makefile up to date
+AGAIN = ["'TINY-C:CC2.CODE' is up to date", "'TINY-C:/LIB/TCLIB2.OBJ' is up to date", "Nothing to be done for 'all'",
+         "'SYS-C:SYSTEM.C' is up to date", "'PASCALC:PC.CODE' is up to date"]
+
+
+def biggy(d):
+    """build/data with BIGGY (mkbiggy.py) as its boot disk: its shell runs MAKE's batch files"""
+    data = os.path.join(d, 'data')
+    os.makedirs(data)
+    for f in os.listdir(os.path.join(BUILD, 'data')):
+        shutil.copy(os.path.join(BUILD, 'data', f), data)
+    shutil.copy(os.path.join(BUILD, 'BIGGY.BLK'), os.path.join(data, 'Big_Disk.BLK'))
+    return data
+
+
+def script():
+    """make -f tiny-c:makefile from the shell, twice; then CMPCODE"""
+    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "cd spare:\\r"', 'WAIT "shell> "',
+         'TYPE "make -f tiny-c:makefile\\r"'] + ['WAIT "%s"' % w for w in WAITS] + \
+        ['WAIT "Done."', 'WAIT "shell> "', 'TYPE "make -f tiny-c:makefile\\r"'] + ['WAIT "%s"' % w for w in AGAIN] + \
+        ['WAIT "shell> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
+    L += cmpcode('TINY-C:CC.CODE', 'TINY-C:CC2.CODE')
+    L += cmpcode('TINY-C:/LIB/TCLIB.OBJ', 'TINY-C:/LIB/TCLIB2.OBJ')
+    return shell_script('\n'.join(L) + '\n')
 
 
 def prepare(d):
-    """the disks in d: TINY-C, TOOLS (without its tools: @TOOLS makes them), TCEXTRA, an empty
-    SPARE; the names of the tools' code files"""
+    """the disks in d: TINY-C, TOOLS (without its tools but MAKE: its makefile makes them), TCEXTRA,
+    an empty SPARE; the names of the tools' code files"""
     for v in ('TINY-C', 'TOOLS', 'TCEXTRA'):
         shutil.copy(os.path.join(BUILD, v + '.BLK'), d)
     ucsdvol.main(['new', os.path.join(d, 'SPARE.BLK'), 'SPARE', '1000'])
     names = [name + '.CODE' for name, mods, hdrs, desc in TOOLS]
     tv = ucsdvol.Volume(os.path.join(d, 'TOOLS.BLK'))
     for n in names:
-        tv.remove(n)
+        if n != 'MAKE.CODE':
+            tv.remove(n)
     tv.save()
     shutil.copy(os.path.join(SYSTEMC, 'build', 'SYS-C.BLK'), d)
     sv = ucsdvol.Volume(os.path.join(d, 'SYS-C.BLK'))
@@ -101,7 +126,9 @@ def results(d, r, tr, names):
     pos = [tr.find(w) for w in WAITS]
     checks = [
         ('the script completed', 'VERIFY SCRIPT COMPLETED' in r.stdout),
-        ('@TINY-C:ALL ran BUILD, LIBS, TOOLS, SYS-C:BUILD and PASCALC:/SRC/BUILD in turn', -1 not in pos and pos == sorted(pos) and 'Stopped' not in tr),
+        ('make -f tiny-c:makefile: the MAKE of CC, LIB, TOOLS, SYS-C and PASCALC in turn', -1 not in pos and pos == sorted(pos)
+         and 'Stopped' not in tr and 'make: ***' not in tr),
+        ('make again: each of them up to date', all(w in tr[tr.rfind('make -f tiny-c:makefile'):] for w in AGAIN)),
         ('TINY-C:CC2.CODE and TINY-C:/LIB/TCLIB2.OBJ IDENTICAL (CMPCODE)', tr.count('IDENTICAL') >= 2),
         ('every tool linked onto TOOLS:, as mkvolume made it', tools is not None
          and all(tools.find(n) and tools.read(n)[0] == shipped.read(n)[0] for n in names)),
@@ -128,21 +155,16 @@ def main():
     ensure_setup()
     d = tempfile.mkdtemp(prefix='alltest_')
     names = prepare(d)
-    L = ['WAIT "Command:"'] + prefix('SPARE:')
-    L += ['TYPE "X"', 'WAIT "Execute what file?"', 'TYPE "TINY-C:CC\\r"', 'WAIT "Compile what file?"',
-          'TYPE "@TINY-C:ALL\\r"'] + ['WAIT "%s"' % w for w in WAITS] + ['WAIT "Done."', 'WAIT "Command:"']
-    L += cmpcode('TINY-C:CC.CODE', 'TINY-C:CC2.CODE')
-    L += cmpcode('TINY-C:/LIB/TCLIB.OBJ', 'TINY-C:/LIB/TCLIB2.OBJ')
     sp = os.path.join(d, 'alltest.script')
-    open(sp, 'w').write('\n'.join(L) + '\n')
+    open(sp, 'w').write(script())
     mode = os.environ.get('PSYS_MODE', 'native')
     env = dict(os.environ, VERIFY_LOWWATER='1', **units(d))
     if mode == 'native':
         env['VERIFY_RECLAIM'] = '1'
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), biggy(d),
                         os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
                         os.path.join(d, 'out'), '', '7200'], capture_output=True, text=True, env=env)
-    tr = open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read()
+    tr = shell_transcript(open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read()).replace('\r', '\n')
     checks = results(d, r, tr, names)
     lw = [l for l in r.stdout.split('\n') if l.startswith('least free memory')]
     print([l for l in r.stdout.split('\n') if 'VERIFY' in l][-1:])

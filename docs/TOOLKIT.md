@@ -54,6 +54,7 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
 | find | next | `-name`, `-type`, `-newer`, `-size` into sub-volumes, the names into a pipe; WHEREIS finds names only |
 | xargs | next | cannot start the programs itself: writes a batch file for the shell (`@FILE`) and runs it |
 | cmp | next | any two files byte by byte (CMPCODE compares code files only) |
+| mount | **done** | `MOUNT [#n IMAGE \| -u #n]`: a unit gets another disk image by name (emulator 2.14, CSP 140/141), so a makefile brings each volume on line in turn (MASTER:) |
 | touch, date | **done** | `TOUCH [-c] [-d DATE\|-t STAMP\|-r FILE]`, `DATE [-r FILE] [+FORMAT]`: dates and times of day (below) |
 | cksum, sum | next | CRC-32 with longs: cheap; checks copies and transfers |
 
@@ -135,7 +136,10 @@ MAKE, TOUCH and DATE use it (`<dirs.h>`: entstamp, filetime, setfiletime, pcnow)
   shell's batch files (`#4:SYSTEM.BATCH`, the innermost); the shell runs it after MAKE
   ends and stops at the first recipe that fails (the shell now takes `-COMMAND` in a
   batch file: its status does not stop it).  So `$(shell ...)` is not possible, and a
-  recipe's CD stays for the lines after it.
+  recipe's CD stays for the lines after it.  A recipe longer than the shell's 79
+  characters is run as `PROG @#4:MAKEnRk` (its arguments in that file, a command a line:
+  CC's, BC's and B2's batch files); every volume is rebuilt with makefiles now
+  (`MAKE -f TINY-C:MAKEFILE`: everything).
 
 * **The first batch** (head, tail, sort, uniq, tr, cut, echo, tee) share the
   library's `forfiles()` (tinyc/lib/fileargs.c, `<dirs.h>`): a FILE argument as it

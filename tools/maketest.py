@@ -39,8 +39,10 @@ ALL.OUT : $(OBJS)
 %.OUT : %.TEXT
 	CAT $< >$@
 
+LIST = X \
+	Y
 show :
-	@ECHO srcs $(SRCS) objs $(patsubst %.OUT,%,$(OBJS)) n $(words $(OBJS))
+	@ECHO srcs $(SRCS) objs $(patsubst %.OUT,%,$(OBJS)) n $(words $(OBJS)) list $(subst $(space),$(comma),$(LIST))
 
 fail :
 	-CAT NOSUCH.TEXT
@@ -60,6 +62,10 @@ def secs(t):
 CCMAKE = r"""# a program of two modules: the built-in %.OBJ rule (CC -C), then the link
 HELLO.CODE : MAIN.OBJ UTIL.OBJ
 	CC -L $(basename $@)=$(subst $(space),$(comma),$(basename $^))
+
+# a recipe line longer than the shell's 79 characters: CC @#4:MAKE1R1, a command a line
+HELLO2.CODE : MAIN.C UTIL.C
+	$(CC) -O WORK: -Z -C WORK:MAIN.C -Z -C WORK:UTIL.C -L WORK:HELLO2=WORK:MAIN,WORK:UTIL
 """
 MAIN_C = ['#include <stdio.h>', 'int twice(int x);', '', 'int main(void)', '{', '    printf("hello %d\\n", twice(21));', '    return 0;', '}']
 UTIL_C = ['int twice(int x)', '{', '    return 2 * x;', '}']
@@ -83,7 +89,9 @@ def cc_part(data, mode, d):
     L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "> "', 'TYPE "cd #5\\r"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "',
          'WAIT "> CC -L HELLO=MAIN,UTIL"', 'WAIT "> "', 'TYPE "hello\\r"', 'WAIT "> "',
          'CLOCK "2026-11-07T11:00:00"', 'TYPE "touch UTIL.C\\r"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "',
-         'WAIT "> CC -L HELLO=MAIN,UTIL"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
+         'WAIT "> CC -L HELLO=MAIN,UTIL"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "',
+         'TYPE "make HELLO2.CODE\\r"', 'WAIT "> "', 'WAIT "> -L WORK:HELLO2=WORK:MAIN,WORK:UTIL"', 'WAIT "> "',
+         'TYPE "hello2\\r"', 'WAIT "> "', 'TYPE "type #4:MAKE1R1.TEXT\\r"', 'WAIT "> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
     sp = os.path.join(d, 'cc.script')
     open(sp, 'w').write('\n'.join(L) + '\n')
     env = dict(os.environ, VERIFY_HOSTCLOCK='2026-11-07T10:30:00')
@@ -96,6 +104,7 @@ def cc_part(data, mode, d):
     first = runs[1] if len(runs) > 1 else ''
     second = runs[2] if len(runs) > 2 else ''
     third = runs[3] if len(runs) > 3 else ''
+    third, fourth = (third.split('> make HELLO2.CODE\n') + [''])[:2]
     if 'VERIFY SCRIPT COMPLETED' not in r.stdout:
         print(tr[-3000:])
     return [
@@ -106,6 +115,9 @@ def cc_part(data, mode, d):
         ('cc: UTIL.C touched: only UTIL compiled, and the link', '> CC -C UTIL' in second and '> CC -C MAIN' not in second
          and '> CC -L HELLO=MAIN,UTIL' in second),
         ('cc: then up to date', "'HELLO.CODE' is up to date" in third),
+        ('cc: a recipe over 79 characters: CC @#4:MAKE1R1', '> CC @#4:MAKE1R1\n' in fourth),
+        ('cc: ... its commands a line each', '-O WORK:\n-Z -C WORK:MAIN.C\n-Z -C WORK:UTIL.C\n-L WORK:HELLO2=WORK:MAIN,WORK:UTIL\n' in fourth),
+        ('cc: HELLO2 runs', fourth.count('hello 42') >= 1),
     ]
 
 
@@ -207,7 +219,7 @@ def main(a):
          and stamp('ALL.OUT') == '26-11-07 10:06:30'),
         ('DIR shows the times', re.search(r'ALL\.OUT +\d+   7-Nov-26 10:06:30  Data', part('dir *.OUT')) is not None
          and re.search(r'B\.OUT +\d+   7-Nov-26 10:00:00  Data', part('dir *.OUT')) is not None),
-        ('functions: $(OBJS:.OUT=.TEXT), patsubst, words; @ taken off', 'srcs A.TEXT B.TEXT objs A B n 2' in part('make show')),
+        ('functions: $(OBJS:.OUT=.TEXT), patsubst, words; @ taken off; a \\ line: one blank', 'srcs A.TEXT B.TEXT objs A B n 2 list X,Y\n' in part('make show')),
         ('a - recipe that fails does not stop the next', 'after the failure' in part('make fail') and 'stopped' not in part('make fail')),
         ('no rule: said, status 2', "No rule to make target 'nosuch'" in part('make nosuch') and '[exit status 2]' in part('make nosuch')),
         ('date: the clock (past midnight)', 'Sun Nov  8 23:59:58 2026' in part('date')),

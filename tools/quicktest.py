@@ -3,9 +3,9 @@
 BIGGY.BLK that tools/mkbiggy.py made, the volumes of build/) that uses the compiler, the linker, the
 shell's pipes and most of the tools together:
 
-  cc @tiny-c:/src/lib/libs | grep Joining
-                                   the library compiles itself (CMPCODE: TINY-C:/LIB/TCLIB2.OBJ IDENTICAL to the
-                                   host's)
+  make -f tiny-c:/src/lib/makefile
+                                   the library compiles itself (MAKE's recipes, the long ones as CC @#4:MAKE1Rn;
+                                   CMPCODE: TINY-C:/LIB/TCLIB2.OBJ IDENTICAL to the host's)
   hexdump -i system.list | grep -n :10
                                    the 3 lines that are not 16-byte data records: two 64 KB segment records and
                                    the end record (SYSTEM.LIST is 287 blocks)
@@ -63,7 +63,8 @@ def main():
             'patch -s -i #13:P.TEXT #13:A.TEXT',
             'diff #13:A.TEXT #13:B.TEXT',
             'cd #13']
-    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "cc @tiny-c:/src/lib/libs | grep Joining\\r"',
+    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "make -f tiny-c:/src/lib/makefile\\r"',
+         'WAIT "> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/ASSERT.C"', 'WAIT "> CC @#4:MAKE1R1"',
          'WAIT "Joining TINY-C:/LIB/TCLIB2.OBJ"', 'WAIT "shell> "']
     for c in cmds:
         L += ['TYPE "%s\\r"' % c, 'WAIT "shell> "']
@@ -106,7 +107,10 @@ def main():
     hxl = [l for l in hx.split('\n') if l and not l.startswith('[exit')]
     checks = [
         ('the script completed', 'VERIFY SCRIPT COMPLETED' in r.stdout),
-        ('cc @tiny-c:/src/lib/libs | grep Joining: GREP found the join line', 'Joining TINY-C:/LIB/TCLIB2.OBJ' in tr[tr.find('cc @tiny-c'):]),
+        ('make -f tiny-c:/src/lib/makefile: every module compiled, joined in two parts (CC @#4:MAKE1R1, R2)',
+         'Joining TINY-C:/OBJ/TCLIBP1.OBJ' in tr and 'Joining TINY-C:/LIB/TCLIB2.OBJ' in tr and '> CC @#4:MAKE1R2' in tr
+         and tr.count('> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/') == len([f for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c')])
+         and 'Stopped' not in tr),
         ('TCLIB2.OBJ IDENTICAL to the host-built TCLIB.OBJ', 'IDENTICAL' in tr),
         ('hexdump -i system.list | grep -n :10: the %d lines that are not data records' % len(short), None not in short and hxl == short),
         ('lc -1 #11:*.CODE | wc -l: %d programs' % ncode, str(ncode) in (part(cmds[1]) or '').split()),

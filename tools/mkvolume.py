@@ -3,26 +3,26 @@
 
   TINY-C:   Tiny-C: CC.CODE, TCMSGS.TEXT, README.TEXT, FILES.TEXT and the
             sub-volumes INCLUDE (the headers), LIB (TCLIB.OBJ) and SRC (the
-            sources: CC/ with BUILD.TEXT, LIB/ with LIBS.TEXT); ALL.TEXT at
-            the top rebuilds everything.
+            sources: CC/ and LIB/, each with its MAKEFILE.TEXT); MAKEFILE.TEXT
+            at the top rebuilds everything (MAKE -f TINY-C:MAKEFILE).
             The name TINY-C: is built into the compiler: it finds
             TCMSGS.TEXT, TINY-C:/LIB/TCLIB.OBJ and TINY-C:/INCLUDE there.
   TCEXTRA:  the demo programs (DEMOS), the mini-shell and its examples
             (examples/), CMPCODE: sources and ready-to-run code files,
-            README.TEXT, DEMOS.TEXT, FILES.TEXT
+            README.TEXT, MAKEFILE.TEXT, FILES.TEXT
   TCTESTS:  the test programs (tests/ that are not demos): sources and
-            ready-to-run code files, README.TEXT, TESTS.TEXT, FILES.TEXT
+            ready-to-run code files, README.TEXT, MAKEFILE.TEXT, FILES.TEXT
   TOOLS:    the tools written in Tiny-C, ready to run (VI.CODE ...),
             MAN.TEXT, README.TEXT, FILES.TEXT and the sub-volume SRC: their
-            sources, a sub-volume each (SRC/VI, SRC/GREP ...), TOOLS.TEXT.
+            sources, a sub-volume each (SRC/VI, SRC/GREP ...), MAKEFILE.TEXT.
   (A UCSD directory holds 77 files: the demos and tests are volumes of
-  their own, and @DEMOS and @TESTS leave a NAME.OBJ for every program.)
+  their own, and their makefiles leave a NAME.OBJ for every program.)
 
 FILES.TEXT lists every file on its volume, those in its sub-volumes too
 (INCLUDE/STDIO.H), with its size and what it is; the same listing is
 written next to the zips (volumes/NAME.txt).
 """
-import os, sys, zipfile
+import os, re, sys, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
@@ -42,15 +42,16 @@ README_TC = """TINY-C for UCSD Pascal II.0                        volume TINY-C:
 WHAT IS WHERE (FILES.TEXT lists every file):
     CC.CODE          the compiler
     TCMSGS.TEXT      its messages
-    ALL.TEXT         CC @TINY-C:ALL rebuilds the compiler, the library,
-                     every tool, the operating system in C (SYS-C:SYSTEM.C)
-                     and the Pascal compiler in C (PASCALC:PC.CODE) at once
+    MAKEFILE.TEXT    MAKE -f TINY-C:MAKEFILE rebuilds the compiler, the
+                     library, every tool, the operating system in C
+                     (SYS-C:SYSTEM.C) and the Pascal compiler in C
+                     (PASCALC:PC.CODE) at once: what changed (MAKE is on TOOLS:)
     INCLUDE/         the headers: STDIO.H, STRING.H, PSYS.H ...
     LIB/             the C library, TCLIB.OBJ
-    OBJ/             empty: the objects a rebuild makes (BUILD's and LIBS's -O)
-    SRC/             the sources, and the batch files that rebuild them:
-      SRC/CC/          the compiler's modules, BUILD.TEXT
-      SRC/LIB/         the library's modules, LIBS.TEXT
+    OBJ/             empty: the objects a rebuild makes (-O TINY-C:/OBJ)
+    SRC/             the sources, and the makefiles that rebuild them:
+      SRC/CC/          the compiler's modules, MAKEFILE.TEXT
+      SRC/LIB/         the library's modules, MAKEFILE.TEXT
 The tools (VI, GREP, ...) are on TOOLS:, their sources in TOOLS:/SRC; the
 demos on TCEXTRA:, the test programs on TCTESTS:.  INCLUDE, LIB and SRC are
 sub-volumes (the shell's MKDIR, CD, DIR: DIR TINY-C:/INCLUDE, CD
@@ -74,7 +75,7 @@ Options start with - (a path may start with /); -c and -C are the same.
     @FILE                run the commands in FILE.TEXT, one per line
                          (blank lines and lines starting with ; skipped;
                          a line @OTHER runs OTHER.TEXT, then goes on)
-The same commands can be arguments instead: CC @TINY-C:ALL, CC -Z
+The same commands can be arguments instead: CC @MYBUILD, CC -Z
 HANOI SIEVE.  Options and the word after them make one command; they run
 in turn, no prompt, and the first that fails stops CC.
 X(ecute NAME runs a program.  WHICH DISK: a source, a #include file or
@@ -87,8 +88,7 @@ TINY-C:/INCLUDE first, "x.h" from the including file's sub-volume first,
 then as above, then from TINY-C:/INCLUDE.  SUB-VOLUMES: a path (CC A/X,
 CC #5:/A/B/X, #include "A/X.H", -L OUT=A/X,A/Y) is taken from there;
 after the shell's CD into a sub-volume CC looks in it first; the names in
-an @FILE in a sub-volume (SRC/CC/BUILD's MAIN, TOOLS:/SRC/TOOLS's VI/VIMAIN)
-are looked for beside it first.  An object (NAME.OBJ) goes next to its
+an @FILE in a sub-volume are looked for beside it first.  An object (NAME.OBJ) goes next to its
 source, and -L and -J find objects the same way as sources; the code file
 goes where NAME says (its volume or path, else the shell's path or the
 prefix volume) -- the shell runs a code file in a sub-volume where it is;
@@ -103,12 +103,13 @@ code) and the lines a second it compiled (the source's and its headers');
 a link ends in its least free bytes and the bytes a second it linked.  The
 rates need the emulator's clock (Options > Host clock).
 
-REBUILDING (see SRC/README.TEXT):  CC @TINY-C:/SRC/CC/BUILD makes
-TINY-C:CC2.CODE, CC @TINY-C:/SRC/LIB/LIBS TINY-C:/LIB/TCLIB2.OBJ, CC
-@TINY-C:ALL both and every tool.
+REBUILDING (see SRC/README.TEXT), from the shell with TOOLS: on line:
+MAKE -f TINY-C:/SRC/CC/MAKEFILE makes TINY-C:CC2.CODE, MAKE -f
+TINY-C:/SRC/LIB/MAKEFILE TINY-C:/LIB/TCLIB2.OBJ, MAKE -f TINY-C:MAKEFILE
+both and every tool -- each compiling only what changed (MAKE -B: all).
 
-THE DEMO PROGRAMS are on TCEXTRA: (DEMOS.TEXT, @DEMOS), the test
-programs on TCTESTS: (TESTS.TEXT, @TESTS).
+THE DEMO PROGRAMS are on TCEXTRA: (MAKE -f TCEXTRA:MAKEFILE), the test
+programs on TCTESTS: (MAKE -f TCTESTS:MAKEFILE).
 
 RUNNING PROGRAMS FROM A PROGRAM: PSYS.H's pexec("NAME") runs NAME.CODE
 and then starts the calling program again from the beginning, with
@@ -126,13 +127,13 @@ FUNCTION POINTERS: a call through a function pointer (qsort, bsearch and
 printf's floating-point formatting use them) is by default compiled to
 CSP 138 (CALLI), which the native P-Code engine implements and the Z80
 interpreter does not.  -Z compiles the older sequence that works in both,
-so TCLIB.OBJ and the programs on TCEXTRA: are built with -Z (LIBS.TEXT and
-DEMOS.TEXT say so).  Build with -Z anything that must run in Z80 mode,
+so TCLIB.OBJ and the programs on TCEXTRA: are built with -Z (their
+makefiles say so).  Build with -Z anything that must run in Z80 mode,
 the library included; without -Z a program that calls through a function
 pointer runs in Z80 mode but gives wrong results.
 
-MEMORY: Tiny-C runs in Z80 mode as well as P-Code mode, and @BUILD
-works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
+MEMORY: Tiny-C runs in Z80 mode as well as P-Code mode, and its
+rebuild works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
 EXP, ATAN, SQT, LOG or LN: math.h's sqrt, sin ... stop there with
 "Unimplemented instruction"; P-Code mode has them.)
 
@@ -147,28 +148,34 @@ FILES.TEXT lists every file on this volume.
 README_SRC = """TINY-C SOURCES                              TINY-C:/SRC
 
 The sources of the Tiny-C compiler (CC/: 14 modules, TC.H, PARSE.H,
-GEN.H) and of its library (LIB/: %d modules, LIBINT.H), and the batch
-files that rebuild them; the tools' sources are in TOOLS:/SRC.
+GEN.H) and of its library (LIB/: %d modules, LIBINT.H), and the makefiles
+that rebuild them; the tools' sources are in TOOLS:/SRC.  MAKE is on
+TOOLS: (MAN MAKE): it compiles a module when its source or one of the
+headers it includes is newer than its object (files have their times of
+day: BIGGY 1.34, emulator 2.13), then links or joins; MAKE -B ... does it
+all again, MAKE -n ... shows what it would do.
 
-REBUILDING THE COMPILER:  from the shell, CC @TINY-C:/SRC/CC/BUILD (or
-X(ecute TINY-C:CC, answer @TINY-C:/SRC/CC/BUILD).  BUILD.TEXT compiles the
-compiler's modules and links TINY-C:CC2.CODE (next to the compiler),
-identical to TINY-C:CC.CODE apart from its name (check it with
-TCEXTRA:CMPCODE).  To use it, change its name to CC.CODE with the Filer.
+REBUILDING THE COMPILER:  from the shell, MAKE -f TINY-C:/SRC/CC/MAKEFILE.
+It compiles the compiler's modules and links TINY-C:CC2.CODE (next to the
+compiler), identical to TINY-C:CC.CODE apart from its name (check it with
+TCEXTRA:CMPCODE).  To use it, MOVE TINY-C:CC2.CODE TINY-C:CC.CODE.
 
-REBUILDING THE LIBRARY:  CC @TINY-C:/SRC/LIB/LIBS.  LIBS.TEXT compiles the
+REBUILDING THE LIBRARY:  MAKE -f TINY-C:/SRC/LIB/MAKEFILE.  It compiles the
 library modules and joins them (-J) into TINY-C:/LIB/TCLIB2.OBJ, identical
-to TINY-C:/LIB/TCLIB.OBJ (check it with CMPCODE).  To use it, RENAME
-TINY-C:/LIB/TCLIB2.OBJ TCLIB.OBJ from the shell (after deleting the old
-one).
+to TINY-C:/LIB/TCLIB.OBJ (check it with CMPCODE).  To use it, MOVE
+TINY-C:/LIB/TCLIB2.OBJ TINY-C:/LIB/TCLIB.OBJ.
 
-EVERYTHING AT ONCE:  CC @TINY-C:ALL (TOOLS: on line too): BUILD, LIBS,
-then TOOLS:/SRC/TOOLS (every tool linked onto TOOLS:).
+EVERYTHING AT ONCE:  MAKE -f TINY-C:MAKEFILE (TOOLS:, SYS-C: and PASCALC:
+on line too): the two above, then every tool (TOOLS:/SRC/MAKEFILE), the
+operating system in C and the Pascal compiler in C, each MAKE -f of its
+own makefile.
 
-The names in a batch file are looked for beside it first, so these work
-from anywhere.  Their first command, -O TINY-C:/OBJ, puts every NAME.OBJ
-into TINY-C:/OBJ, not among the sources (DELETE TINY-C:/OBJ/*.OBJ from
-the shell to clear it).
+The makefiles name every file with its volume, so they work from
+anywhere; -O TINY-C:/OBJ puts every NAME.OBJ into TINY-C:/OBJ, not among
+the sources (DELETE TINY-C:/OBJ/*.OBJ from the shell to clear it: the
+next MAKE compiles everything).  A recipe line longer than the shell's
+79 characters (a link of many modules) MAKE runs as CC @#4:MAKEnRk, its
+commands written into that file.
 CC/OBJFORMAT.TEXT describes what is in a .OBJ file and how the linker
 reads it.
 """
@@ -183,9 +190,10 @@ on TCTESTS:).  Every program is here as source (NAME.C) and ready to run
 X(ecute TCEXTRA:NAME.  To compile one yourself, set the prefix to
 TCEXTRA: and X(ecute TINY-C:CC, answer NAME.
 
-REBUILDING THEM ALL:  set the prefix to TCEXTRA:, X(ecute TINY-C:CC,
-answer  @DEMOS.  DEMOS.TEXT compiles and links every program here (each
-leaves a NAME.OBJ as well; remove those with the Filer if you like).
+REBUILDING THEM:  from the shell, MAKE -f TCEXTRA:MAKEFILE (TINY-C: and
+TOOLS: on line) compiles and links each program here whose source is
+newer than its code file (each leaves a NAME.OBJ as well); MAKE -B -f
+TCEXTRA:MAKEFILE all of them.
 
 SHELL is a small shell (its prompt is where names without a volume are:
 BIGGY:> , or BIGGY:/A/B>  after a CD into a sub-volume; PWD says it too):
@@ -260,8 +268,8 @@ F or S).  Only an estimate (see memgap in PSYS.H); the emulator's
 Options > Track Least Free Memory gives the exact figure.
 
 CMPCODE compares two files byte by byte (for .CODE files the program
-name in block 0 aside): after CC @TINY-C:/SRC/CC/BUILD, compare
-TINY-C:CC.CODE with TINY-C:CC2.CODE, after CC @TINY-C:/SRC/LIB/LIBS
+name in block 0 aside): after MAKE -f TINY-C:/SRC/CC/MAKEFILE, compare
+TINY-C:CC.CODE with TINY-C:CC2.CODE, after MAKE -f TINY-C:/SRC/LIB/MAKEFILE
 TINY-C:/LIB/TCLIB.OBJ with TINY-C:/LIB/TCLIB2.OBJ; it prints IDENTICAL.
 
 FILES.TEXT lists every file on this volume.
@@ -274,9 +282,10 @@ TCEXTRA:): each exercises a part of the language or the library and
 prints what it computed.  Every program is here as source (NAME.C) and
 ready to run (NAME.CODE): X(ecute TCTESTS:NAME.
 
-REBUILDING THEM ALL:  set the prefix to TCTESTS:, X(ecute TINY-C:CC,
-answer  @TESTS.  TESTS.TEXT compiles and links every program here (each
-leaves a NAME.OBJ as well; remove those with the Filer if you like).
+REBUILDING THEM:  from the shell, MAKE -f TCTESTS:MAKEFILE (TINY-C: and
+TOOLS: on line) compiles and links each program here whose source is
+newer than its code file (each leaves a NAME.OBJ as well); MAKE -B -f
+TCTESTS:MAKEFILE all of them.
 
 FILES.TEXT lists every file on this volume.
 """
@@ -314,6 +323,7 @@ TOOLS = [
     ('MAKE', ['ports/make/make.c'], [], 'make: MAKE [-f FILE] [-nqBi] [NAME=VALUE] [TARGET ...] targets up to date'),
     ('TOUCH', ['ports/touch/touch.c'], [], 'touch: TOUCH [-c] [-d DATE | -t STAMP | -r FILE] FILE ... date and time'),
     ('DATE', ['ports/date/date.c'], [], 'date: DATE [-r FILE] [+FORMAT] the date and time'),
+    ('MOUNT', ['ports/mount/mount.c'], [], 'mount: MOUNT [#n IMAGE | -u #n] a unit gets another disk image (emulator 2.14)'),
 ]
 
 README_TOOLS = """TOOLS                                               volume TOOLS:
@@ -508,18 +518,22 @@ README_TOOLS_SRC = """TOOL SOURCES                                TOOLS:/SRC
 The sources of the tools on TOOLS:, a sub-volume each: SRC/VI holds vi's
 modules, SRC/GREP GREP.C, and so on.
 
-REBUILDING THEM:  from the shell, CC @TOOLS:/SRC/TOOLS (or X(ecute
-TINY-C:CC, answer @TOOLS:/SRC/TOOLS).  TOOLS.TEXT compiles every tool's
-modules (VI/VIMAIN: found beside TOOLS.TEXT; -O TOOLS:/OBJ puts each
-NAME.OBJ into TOOLS:/OBJ) and links the tool straight onto TOOLS:
-(TOOLS:NAME.CODE, replacing the one there).
+REBUILDING THEM:  from the shell, MAKE -f TOOLS:/SRC/MAKEFILE (TINY-C: on
+line).  MAKEFILE.TEXT compiles each module whose source, or a header it
+includes, is newer than its object (-Z; -O TOOLS:/OBJ puts each NAME.OBJ
+into TOOLS:/OBJ) and links each tool whose objects changed straight onto
+TOOLS: (TOOLS:NAME.CODE, replacing the one there).  TOOLS:/OBJ is empty
+on a new volume, so the first MAKE builds them all; MAKE -B -f
+TOOLS:/SRC/MAKEFILE does every time; MAKE -f TOOLS:/SRC/MAKEFILE
+TOOLS:VI.CODE makes one.
 
-EVERYTHING AT ONCE:  CC @TINY-C:ALL: the compiler (TINY-C:CC2.CODE),
-the library (TINY-C:/LIB/TCLIB2.OBJ), then TOOLS; a batch file can name
-other batch files (@NAME).
+EVERYTHING AT ONCE:  MAKE -f TINY-C:MAKEFILE: the compiler
+(TINY-C:CC2.CODE), the library (TINY-C:/LIB/TCLIB2.OBJ), then TOOLS ...,
+each the MAKE of its own makefile.
 
-A NEW TOOL: MKDIR TOOLS:/SRC/NAME, its sources there, its lines in
-TOOLS.TEXT (-Z -C NAME/NAME, -L TOOLS:NAME=NAME/NAME) and a page in
+A NEW TOOL: MKDIR TOOLS:/SRC/NAME, its sources there, its rules in
+MAKEFILE.TEXT (as GREP's: TOOLS:NAME.CODE from $(O)NAME.OBJ, $(O)NAME.OBJ
+from $(S)NAME/NAME.C), its name in all's list, and a page in
 TOOLS:MAN.TEXT.
 
 VI      vi: the BusyBox "tiny vi" (GPL v2 or later, see VI.H), edited
@@ -527,8 +541,8 @@ VI      vi: the BusyBox "tiny vi" (GPL v2 or later, see VI.H), edited
         main loop), VISCREEN.C (the screen), VITEXT.C (moving, changing
         text), VICOLON.C (the : commands), VICMD.C (the vi commands),
         VIPAGE.C and VIPAGE.H (the window into big files), VIUCSD.C (the
-        P-System: keys, screen, files).  @TOOLS compiles each (-Z -C) and
-        links them (-L VI=...), in P-Code or Z80 mode.
+        P-System: keys, screen, files).  The makefile compiles each
+        (-Z -C) and links them (-L VI=...), in P-Code or Z80 mode.
 
 GREP.C  grep (a regular expression, wildcards, every disk).
 
@@ -548,6 +562,8 @@ ECHO.C, HEAD.C, TAIL.C, SORT.C, UNIQ.C, TR.C, CUT.C, TEE.C  the text tools
 MAKE.C  make (rules, variables, the recipes run by the shell after it).
 
 TOUCH.C, DATE.C  touch, date (files' dates and times of day).
+
+MOUNT.C mount (a unit gets another disk image, by name: emulator 2.14).
 
 KRUNCH.C  krunch (the files of a disk moved down, the free blocks in one area).
 
@@ -588,22 +604,120 @@ def join_lines(target, mods, width=140):
     return lines + ['-J %s=%s\n' % (target, ','.join(prev + part))]
 
 
-LIBS = """; LIBS -- rebuild the C library: CC @TINY-C:/SRC/LIB/LIBS from the shell
-; (or X(ecute TINY-C:CC and answer @TINY-C:/SRC/LIB/LIBS).  Compiles every library
-; module here (-O: each NAME.OBJ into TINY-C:/OBJ), then joins them into
-; TINY-C:/LIB/TCLIB2.OBJ (in parts, TINY-C:/OBJ/TCLIBPn, when one line would be
-; longer than the 150 characters CC reads).
--O TINY-C:/OBJ
-""" + ''.join('-Z -C %s\n' % m.upper() for m in LIBMODS_) + \
-    ''.join(join_lines('TINY-C:/LIB/TCLIB2', [m.upper() for m in LIBMODS_]))
+def headers(path, volname, seen=None):
+    """the headers path includes, on the P-System: "x.h" beside it (volname: that sub-volume's
+    name, TOOLS:/SRC/VI/), <x.h> and the rest in TINY-C:/INCLUDE -- recursively, in order"""
+    seen = [] if seen is None else seen
+    for line in open(path):
+        m = re.match(r'\s*#\s*include\s*([<"])([^>"]+\.[hc])[>"]', line)
+        if not m:
+            continue
+        h = m.group(2)
+        here = os.path.join(os.path.dirname(path), h)
+        if m.group(1) == '"' and os.path.exists(here):
+            name, host = volname + h.upper(), here
+        elif os.path.exists(os.path.join(INC, h)):
+            name, host = 'TINY-C:/INCLUDE/' + h.upper(), os.path.join(INC, h)
+        else:
+            continue
+        if name not in seen:
+            seen.append(name)
+            headers(host, volname if host == here else 'TINY-C:/INCLUDE/', seen)
+    return seen
 
-BUILD = """; BUILD -- rebuild the Tiny-C compiler: CC @TINY-C:/SRC/CC/BUILD from the shell
-; (or X(ecute TINY-C:CC and answer @TINY-C:/SRC/CC/BUILD).  Compiles every module
-; here (-O: each NAME.OBJ into TINY-C:/OBJ), then links them into TINY-C:CC2.CODE.
--O TINY-C:/OBJ
-""" + ''.join('-C %s\n' % m.upper() for m in MODULES) + \
-    '-L TINY-C:CC2=%s\n' % ','.join(m.upper() for m in MODULES)
 
+def wrap(words, first, indent='\t', width=76):
+    """first and the words, folded with \\ (make goes on at a line's end \\)"""
+    lines, cur = [], first
+    for w in words:
+        if len(cur) + 1 + len(w) > width:
+            lines.append(cur + ' \\')
+            cur = indent + w
+        else:
+            cur += ' ' + w
+    return '\n'.join(lines + [cur]) + '\n'
+
+
+def hdr_rules(objs_srcs, volname):
+    """OBJ : its headers, a line each (no recipe: the object's own rule makes it)"""
+    out = ''
+    for obj, src in objs_srcs:
+        h = [n.replace('TINY-C:/INCLUDE/', '$(I)').replace(volname, '$(H)') for n in headers(src, volname)]
+        if h:
+            out += wrap(h, obj + ' :')
+    return out
+
+
+def join_rules(target, mods, odir, width=140):
+    """the library's join: one -J when its command (CC's batch line, 150 at most) fits, else
+    in parts -- TINY-C:/OBJ/TCLIBPn joins some, the next one joins it first (a join leaves out
+    each object's trailing zeros: the same bytes as one join of them all)"""
+    rules, part, prev, k = [], [], [], 0
+    for m in mods:
+        if part and len('-J %s=%s' % (target, ','.join(prev + part + [m]))) > width:
+            k += 1
+            name = odir + 'TCLIBP%d' % k
+            rules.append((name, prev, part))
+            prev, part = [name], []
+        part.append(m)
+    rules.append((target, prev, part))
+    out = ''
+    for name, prev, part in reversed(rules):
+        deps = ['$(O)%s.OBJ' % p[len(odir):] for p in prev] + ['$(O)%s.OBJ' % m for m in part]
+        out += wrap(deps, '%s.OBJ :' % name.replace(odir, '$(O)'))
+        out += '\t$(CC) -O $(O) -J %s=%s\n' % (name.replace(odir, '$(O)'),
+                                               ','.join([p.replace(odir, '$(O)') for p in prev] + part))
+    return out
+
+
+def lib_makefile():
+    """TINY-C:/SRC/LIB/MAKEFILE.TEXT: the library"""
+    mods = [m.upper() for m in LIBMODS_]
+    return ("""# MAKEFILE -- the C library: from the shell, MAKE -f TINY-C:/SRC/LIB/MAKEFILE
+# (MAKE.CODE is on TOOLS:).  Compiles each module whose source or headers changed
+# (-Z; its NAME.OBJ into TINY-C:/OBJ), then joins them into TINY-C:/LIB/TCLIB2.OBJ,
+# identical to TINY-C:/LIB/TCLIB.OBJ (CMPCODE says so) -- in parts
+# (TINY-C:/OBJ/TCLIBPn) where one -J would be longer than the 150 characters a line
+# of CC's batch file holds.  MAKE -B ... compiles them all again.
+S = TINY-C:/SRC/LIB/
+O = TINY-C:/OBJ/
+I = TINY-C:/INCLUDE/
+
+""" + join_rules('TINY-C:/LIB/TCLIB2', mods, 'TINY-C:/OBJ/') + """
+$(O)%.OBJ : $(S)%.C
+	$(CC) -O $(O) -Z -C $<
+
+# each module's headers: it is compiled again when one of them changes
+""" + hdr_rules([('$(O)%s.OBJ' % m.upper(), os.path.join(LIB, m + '.c')) for m in LIBMODS_], 'TINY-C:/SRC/LIB/').replace('$(H)', '$(S)'))
+
+
+def program_makefile(comment, src, obj, mods, out, z=False):
+    """a makefile for a program in C of several modules (mods: their host paths): each module
+    in src (TINY-C:/SRC/CC/) compiled when it or a header it includes changed, its object into
+    obj (TINY-C:/OBJ/), then all linked into out (CC's -L name: TINY-C:CC2, SYS-C:SYSTEM.C.)"""
+    names = [os.path.splitext(os.path.basename(m))[0].upper() for m in mods]
+    return (''.join('# %s\n' % l for l in comment.split('\n')) + """S = %s
+O = %s
+I = TINY-C:/INCLUDE/
+""" % (src, obj) + wrap(names, 'MODS =') + """
+%s : $(addprefix $(O),$(addsuffix .OBJ,$(MODS)))
+\t$(CC) -O $(O) -L %s=$(subst $(space),$(comma),$(MODS))
+
+$(O)%%.OBJ : $(S)%%.C
+\t$(CC) -O $(O) %s-C $<
+
+# each module's headers: it is compiled again when one of them changes
+""" % (out[:-1] if out.endswith('.') else out + '.CODE', out, '-Z ' if z else '') +
+        hdr_rules([('$(O)%s.OBJ' % n, m) for n, m in zip(names, mods)], src).replace('$(H)', '$(S)'))
+
+
+def cc_makefile():
+    """TINY-C:/SRC/CC/MAKEFILE.TEXT: the compiler"""
+    return program_makefile("""MAKEFILE -- the Tiny-C compiler: from the shell, MAKE -f TINY-C:/SRC/CC/MAKEFILE
+(MAKE.CODE is on TOOLS:).  Compiles each module whose source or headers changed
+(its NAME.OBJ into TINY-C:/OBJ), then links them into TINY-C:CC2.CODE, identical to
+TINY-C:CC.CODE apart from its name (CMPCODE).  MAKE -B ... compiles them all again.""",
+                            'TINY-C:/SRC/CC/', 'TINY-C:/OBJ/', [os.path.join(SRC, m + '.c') for m in MODULES], 'TINY-C:CC2')
 
 WHAT = {
     'assert.h': 'assert()',
@@ -763,7 +877,7 @@ def tiny_c():
     t.binary('CC.CODE', open(code, 'rb').read(), 'the Tiny-C compiler: CC from the shell, X(ecute TINY-C:CC')
     t.textfile('TCMSGS.TEXT', os.path.join(INC, 'tcmsgs.txt'), "the compiler's messages (line n = message n)")
     t.text('README.TEXT', README_TC, 'how to use Tiny-C, and what is where')
-    t.text('ALL.TEXT', ALL, 'CC @TINY-C:ALL: rebuilds the compiler, the library, every tool, SYS-C:SYSTEM.C and PASCALC:PC.CODE')
+    t.text('MAKEFILE.TEXT', ALL, 'MAKE -f TINY-C:MAKEFILE: rebuilds the compiler, the library, every tool, SYS-C:SYSTEM.C, PASCALC:PC.CODE')
     inc = t.sub('INCLUDE', 'the headers (#include <stdio.h> finds them here)')
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
@@ -773,21 +887,21 @@ def tiny_c():
     lib.binary('TCLIB.OBJ', tclib, 'the C library (built with -Z), linked into every program')
     src = t.sub('SRC', 'the sources of the compiler and the library, and how to rebuild them')
     src.text('README.TEXT', README_SRC, 'how to rebuild Tiny-C and the tools')
-    cc = src.sub('CC', 'the compiler: its modules and BUILD.TEXT')
-    cc.text('BUILD.TEXT', BUILD, 'CC @TINY-C:/SRC/CC/BUILD: rebuilds the compiler -> TINY-C:CC2.CODE')
+    cc = src.sub('CC', 'the compiler: its modules and MAKEFILE.TEXT')
+    cc.text('MAKEFILE.TEXT', cc_makefile(), 'MAKE -f TINY-C:/SRC/CC/MAKEFILE: rebuilds the compiler -> TINY-C:CC2.CODE')
     cc.textfile('OBJFORMAT.TEXT', os.path.join(SRC, 'OBJFORMAT.TEXT'), 'the .OBJ file format: what CC writes, how the linker reads it')
     for m in MODULES:
         cc.textfile(m.upper() + '.C', os.path.join(SRC, m + '.c'))
     for h in ('tc.h', 'parse.h', 'gen.h'):
         cc.textfile(h.upper(), os.path.join(SRC, h))
-    lb = src.sub('LIB', 'the library: its modules and LIBS.TEXT')
-    lb.text('LIBS.TEXT', LIBS, 'CC @TINY-C:/SRC/LIB/LIBS: rebuilds the library -> TINY-C:/LIB/TCLIB2.OBJ')
+    lb = src.sub('LIB', 'the library: its modules and MAKEFILE.TEXT')
+    lb.text('MAKEFILE.TEXT', lib_makefile(), 'MAKE -f TINY-C:/SRC/LIB/MAKEFILE: rebuilds the library -> TINY-C:/LIB/TCLIB2.OBJ')
     for m in LIBMODS:
         lb.textfile(m.upper() + '.C', os.path.join(LIB, m + '.c'))
     lb.textfile('LIBINT.H', os.path.join(LIB, 'libint.h'))
     objdir(t, [os.path.join(os.path.dirname(code), m + '.obj') for m in MODULES] +
            [os.path.join(ROOT, 'build', 'libz', m + '.obj') for m in LIBMODS],
-           "empty: the objects BUILD and LIBS make (-O TINY-C:/OBJ)")
+           "empty: the objects the makefiles of SRC/CC and SRC/LIB make")
     t.finish()
 
 
@@ -798,12 +912,22 @@ def objdir(vol, objs, desc):
     vol.sub('OBJ', desc, 6 + 2 * need + ROOM)
 
 
-def programs(vol, batch, progs, desc):
-    """sources, ready-to-run code files and the @BATCH file that rebuilds them"""
+def programs(vol, progs, desc):
+    """sources, ready-to-run code files and the MAKEFILE.TEXT that rebuilds them"""
     names = [os.path.splitext(os.path.basename(p))[0].upper()[:10] for p in progs]
-    vol.text(batch + '.TEXT', '; %s -- compile and link every program on %s:\n'
-             '; prefix %s:, X(ecute TINY-C:CC, answer @%s\n' % (batch, vol.name, vol.name, batch) +
-             ''.join('-Z %s\n' % n for n in names), desc)
+    v = vol.name
+    vol.text('MAKEFILE.TEXT', """# MAKEFILE -- every program on %s: from the shell, MAKE -f %s:MAKEFILE (or CD %s:
+# and MAKE; TINY-C: on line): each program whose source changed compiled and linked
+# (-Z; it leaves a NAME.OBJ too).  MAKE -B ... all of them; MAKE -f %s:MAKEFILE
+# %s:%s.CODE one.
+V = %s:
+
+""" % (v, v, v, v, v, names[0], v) + wrap(['$(V)%s.CODE' % n for n in names], 'all :') + """
+$(V)%.CODE : $(V)%.C
+\t$(CC) -Z $(V)$*
+
+.PHONY : all
+""", desc)
     for p in progs:
         name = os.path.splitext(os.path.basename(p))[0].upper()[:10]
         vol.textfile(name + '.C', p, describe(p))
@@ -816,7 +940,7 @@ def extras():
     progs = [os.path.join(TESTS, d + '.c') for d in DEMOS]
     progs.append(os.path.join(ROOT, 'verify', 'cmpcode.c'))
     progs += [os.path.join(ROOT, 'examples', f) for f in sorted(os.listdir(os.path.join(ROOT, 'examples'))) if f.endswith('.c')]
-    programs(e, 'DEMOS', progs, 'X TINY-C:CC, @DEMOS: rebuilds every program here')
+    programs(e, progs, 'MAKE -f TCEXTRA:MAKEFILE: rebuilds the programs here whose sources changed')
     e.finish()
 
 
@@ -824,25 +948,55 @@ def tests():
     t = Vol('TCTESTS', 4000)
     t.text('README.TEXT', README_TS, 'what is on this volume')
     progs = [os.path.join(TESTS, f) for f in sorted(os.listdir(TESTS)) if f.endswith('.c') and f[:-2] not in DEMOS]
-    programs(t, 'TESTS', progs, 'X TINY-C:CC, @TESTS: rebuilds every program here')
+    programs(t, progs, 'MAKE -f TCTESTS:MAKEFILE: rebuilds the programs here whose sources changed')
     t.finish()
 
 
-ALL = """; ALL -- rebuild the compiler, the library, every tool, the operating system
-; in C and the Pascal compiler in C (TOOLS:, SYS-C: and PASCALC: on line too):
-; CC @TINY-C:ALL from the shell, or X(ecute TINY-C:CC and answer @TINY-C:ALL
-@TINY-C:/SRC/CC/BUILD
-@TINY-C:/SRC/LIB/LIBS
-@TOOLS:/SRC/TOOLS
-@SYS-C:BUILD
-@PASCALC:/SRC/BUILD
+ALL = """# MAKEFILE -- everything: the compiler, the library, every tool, the operating
+# system in C and the Pascal compiler in C, each with its own makefile (TOOLS:,
+# SYS-C: and PASCALC: on line too).  From the shell: MAKE -f TINY-C:MAKEFILE, or
+# MAKE -f TINY-C:MAKEFILE TOOLS for one of them (CC LIB TOOLS SYSC PASCALC).
+all : CC LIB TOOLS SYSC PASCALC
+
+CC :
+\t$(MAKE) -f TINY-C:/SRC/CC/MAKEFILE
+LIB :
+\t$(MAKE) -f TINY-C:/SRC/LIB/MAKEFILE
+TOOLS :
+\t$(MAKE) -f TOOLS:/SRC/MAKEFILE
+SYSC :
+\t$(MAKE) -f SYS-C:MAKEFILE
+PASCALC :
+\t$(MAKE) -f PASCALC:/SRC/MAKEFILE
+
+.PHONY : all CC LIB TOOLS SYSC PASCALC
 """
 
 
-def tool_batch(name, mods):
-    """TOOLS.TEXT's lines for a tool: each module in its sub-volume compiled (-Z -C), then linked"""
-    names = ['%s/%s' % (name, os.path.splitext(os.path.basename(m))[0].upper()) for m in mods]
-    return ''.join('-Z -C %s\n' % n for n in names) + '-L TOOLS:%s=%s\n' % (name, ','.join(names))
+def tools_makefile():
+    """TOOLS:/SRC/MAKEFILE.TEXT: every tool"""
+    out = """# MAKEFILE -- every tool on TOOLS:: from the shell, MAKE -f TOOLS:/SRC/MAKEFILE
+# (TINY-C: on line), or MAKE -f TOOLS:/SRC/MAKEFILE TOOLS:VI.CODE for one.  Compiles
+# each module whose source or headers changed (-Z; its NAME.OBJ into TOOLS:/OBJ)
+# and links the tools whose objects changed onto TOOLS:.  TOOLS:/OBJ is empty on a
+# new volume: the first MAKE builds every tool.  MAKE -B ... builds them all again.
+S = TOOLS:/SRC/
+O = TOOLS:/OBJ/
+I = TINY-C:/INCLUDE/
+ZC = $(CC) -O $(O) -Z -C
+
+""" + wrap(['TOOLS:%s.CODE' % name for name, mods, hdrs, desc in TOOLS], 'all :') + '\n'
+    for name, mods, hdrs, desc in TOOLS:
+        ms = [os.path.splitext(os.path.basename(m))[0].upper() for m in mods]
+        out += '# %s\n' % name
+        out += wrap(['$(O)%s.OBJ' % m for m in ms], 'TOOLS:%s.CODE :' % name)
+        out += '\t$(CC) -O $(O) -L TOOLS:%s=%s\n' % (name, ','.join(ms))
+        for m, path in zip(ms, mods):
+            out += '$(O)%s.OBJ : $(S)%s/%s.C ; $(ZC) $<\n' % (m, name, m)
+        out += hdr_rules([('$(O)%s.OBJ' % m, os.path.join(ROOT, path)) for m, path in zip(ms, mods)],
+                         'TOOLS:/SRC/%s/' % name).replace('$(H)', '$(S)%s/' % name)
+        out += '\n'
+    return out + '.PHONY : all\n'
 
 
 def tools():
@@ -860,20 +1014,16 @@ def tools():
     if missing:
         raise SystemExit('ports/man/MAN.TEXT has no page (%%%% NAME) for: %s' % ', '.join(missing))
     t.text('MAN.TEXT', man, 'the manual pages MAN shows (one %% NAME entry a program: edit and add here)')
-    s = t.sub('SRC', "the tools' sources (a sub-volume each) and TOOLS.TEXT")
+    s = t.sub('SRC', "the tools' sources (a sub-volume each) and MAKEFILE.TEXT")
     s.text('README.TEXT', README_TOOLS_SRC, "how to rebuild the tools")
-    s.text('TOOLS.TEXT', '; TOOLS -- compile and link every tool onto TOOLS:\n'
-           '; CC @TOOLS:/SRC/TOOLS from the shell, or X(ecute TINY-C:CC and answer @TOOLS:/SRC/TOOLS\n'
-           '; (-O: the objects into TOOLS:/OBJ)\n-O TOOLS:/OBJ\n' +
-           ''.join(tool_batch(name, mods) for name, mods, hdrs, desc in TOOLS),
-           'CC @TOOLS:/SRC/TOOLS: rebuilds every tool')
+    s.text('MAKEFILE.TEXT', tools_makefile(), 'MAKE -f TOOLS:/SRC/MAKEFILE: rebuilds the tools whose sources changed')
     for name, mods, hdrs, desc in TOOLS:
         d = s.sub(name, name.lower() + "'s source")
         for f in mods + hdrs:
             d.textfile(os.path.basename(f).upper(), os.path.join(ROOT, f))
     objdir(t, [os.path.join(TMP, os.path.splitext(os.path.basename(m))[0] + '.obj')
                for name, mods, hdrs, desc in TOOLS for m in mods],
-           "empty: the objects TOOLS.TEXT makes (-O TOOLS:/OBJ)")
+           "empty: the objects MAKEFILE.TEXT makes (-O TOOLS:/OBJ)")
     t.finish()
 
 

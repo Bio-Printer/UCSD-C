@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
 """shellalltest.py -- a total system rebuild the way a user starts it: at the
-Command: prompt, S (the Tiny-C shell), then  cc @tiny-c:all  (the
-compiler, the library and every tool), and the least free memory of it.
-
-  @TINY-C:/SRC/CC/BUILD   the compiler -> TINY-C:CC2.CODE: CMPCODE IDENTICAL
-                          to CC.CODE
-  @TINY-C:/SRC/LIB/LIBS   the library  -> TINY-C:/LIB/TCLIB2.OBJ: IDENTICAL
-                          to TCLIB.OBJ
-  @TOOLS:/SRC/TOOLS       every tool linked onto TOOLS: (its tools removed
-                          first): the same bytes as mkvolume's
-  @SYS-C:BUILD            SYS-C:SYSTEM.C: the same bytes as UCSD-SYSTEM-C's
-  @PASCALC:/SRC/BUILD     PASCALC:PC.CODE: the same bytes as the host's
-                          build/psys/PC.CODE (UCSD-Pascal-compiler-written-in-C);
-                          its BODYPART.C is the least of the run
-and every object in TINY-C:/OBJ or TOOLS:/OBJ, none among the sources or on
-the prefix volume (alltest's checks).  The Filer's Prefix is not set: nothing else at the Command: prompt
-has less memory than the rebuild.
+Command: prompt, S (the Tiny-C shell), then  make -f tiny-c:makefile  (the
+compiler, the library, every tool, SYS-C and PASCALC: alltest.py's run, each
+makefile's MAKE in turn, then again: up to date), and the least free memory of it.
+The Filer's Prefix is not set: nothing else at the Command: prompt has less memory
+than the rebuild.
 
 Reported: the emulator's tracked least free memory (SP - NP at every P-code
 instruction, VERIFY_LOWWATER) of the whole run, and the lowest passes by the
@@ -36,7 +25,7 @@ sys.path.insert(0, HERE)
 import ucsdvol
 from psys import ensure_setup, BUILD, shell_script, shell_transcript
 from voltest import cmpcode
-from alltest import WAITS, prepare, results, units
+from alltest import prepare, results, units, script, biggy
 
 
 COMPILE = re.compile(r'^\S+ +( *\d+) bytes free  Compiling ( *\d+) bytes free  Generating code ( *\d+) bytes free( +\d+ lines/s)?$')
@@ -76,22 +65,17 @@ def main():
     ensure_setup()
     d = tempfile.mkdtemp(prefix='shellall_')
     names = prepare(d)
-    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "cc @tiny-c:all\\r"'] + \
-        ['WAIT "%s"' % w for w in WAITS] + \
-        ['WAIT "[exit status 0]"', 'WAIT "shell> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
-    L += cmpcode('TINY-C:CC.CODE', 'TINY-C:CC2.CODE')
-    L += cmpcode('TINY-C:/LIB/TCLIB.OBJ', 'TINY-C:/LIB/TCLIB2.OBJ')
     sp = os.path.join(d, 'shellall.script')
-    open(sp, 'w').write(shell_script('\n'.join(L) + '\n'))
+    open(sp, 'w').write(script())
     mode = os.environ.get('PSYS_MODE', 'native')
     env = dict(os.environ, VERIFY_LOWWATER='1', VERIFY_HOSTCLOCK='1', **units(d))
     # (P-Code mode without VERIFY_RECLAIM: Z80 mode's layout, many times faster)
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), biggy(d),
                         os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
                         os.path.join(d, 'out'), '', '7200'], capture_output=True, text=True, env=env)
     tr = shell_transcript(open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read())
     checks = results(d, r, tr, names)
-    checks.insert(2, ('the shell: cc exit status 0', '[exit status 0]' in tr))
+    checks.insert(2, ('the shell: make exit status 0', '[exit status 0]' in tr))
     checks += columns(tr)
     print([l for l in r.stdout.split('\n') if 'VERIFY' in l][-1:])
     lw = [l for l in r.stdout.split('\n') if l.startswith('least free memory')]
@@ -102,7 +86,7 @@ def main():
     bad = [n for n, good in checks if not good]
     for n, good in checks:
         print('%-5s %s' % ('ok' if good else 'FAIL', n))
-    print('shell cc @all test (%s): %s   (work: %s)' % (mode, 'FAILED' if bad else 'PASSED', d))
+    print('shell make all test (%s): %s   (work: %s)' % (mode, 'FAILED' if bad else 'PASSED', d))
     return 1 if bad else 0
 
 

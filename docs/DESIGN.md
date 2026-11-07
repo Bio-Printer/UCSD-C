@@ -346,3 +346,18 @@ DIR -E (with -S, sort by size, and -N, by name).  The tools always took - option
 directory is one global (it was a copy in each batch file's frame, which stays on the stack
 through every pass: 60 words at the least free memory of a rebuild).  SHRINK NAME without a
 size leaves the sub-volume no free blocks (svresize with "": its directory and files).
+
+The volumes are rebuilt with MAKE (TOOLS:), not CC's batch files: mkvolume.py writes
+TINY-C:MAKEFILE.TEXT (its recipes `$(MAKE) -f` the others: TINY-C:/SRC/CC, TINY-C:/SRC/LIB,
+TOOLS:/SRC, SYS-C:, PASCALC:/SRC), TCEXTRA:MAKEFILE.TEXT and TCTESTS:MAKEFILE.TEXT; each
+object depends on its source and the headers it includes (mkvolume's `headers()` follows
+the #includes as CC does), so a changed header compiles only the modules that include it.
+A recipe line longer than the shell's 79 characters (a link of many modules) MAKE writes
+into #4:MAKEnRk.TEXT, a CC command a line, and runs as `CC @#4:MAKEnRk`; the library's join
+stays two -J rules (TINY-C:/OBJ/TCLIBP1, then TCLIB2), a line of a CC batch file holding
+150 characters.  MAKE keeps its targets, prerequisites and recipes in 512-byte pools and
+looks at directories with a buffer of its own: the library's malloc gives a freed block
+whole to the next small request, and filetime's 2 KB, freed, went to a 4-byte one (the
+next filetime found no memory; the TOOLS makefile then ran out with 2 KB left -- now about
+15 KB).  A whole rebuild (alltest.py, shellalltest.py) runs every CC from the shell's batch
+file: the least free memory is compiling PASCALC's BODYPART.C, 508 words.
