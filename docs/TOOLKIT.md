@@ -26,8 +26,9 @@ Status: **done** (on TOOLS:), **next** (agreed, not started), **investigate**
   (`\040`, `\t`, `\s` ...).
 * **No users or permissions**; no links; directories of at most 77 files
   (sub-volumes for more).
-* **Dates are whole days** (a file's date has no time); SYSCOM has a 1/60 s
-  clock (`lowtime`, `hightime`) when the machine has one (`MI_HASCLOCK`).
+* **Dates and times**: a file's date is a DATEREC (two-digit years: 00-69 the 2000s,
+  70-99 the 1900s); since BIGGY 1.34 (OS source 1.16, emulator 2.13) its entry has
+  the time of day as well (below).
 * **Text files** are UCSD text (1 KB pages, DLE blanks, CR): stdio converts, so a
   line is at most 1023 characters.
 
@@ -53,7 +54,7 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
 | find | next | `-name`, `-type`, `-newer`, `-size` into sub-volumes, the names into a pipe; WHEREIS finds names only |
 | xargs | next | cannot start the programs itself: writes a batch file for the shell (`@FILE`) and runs it |
 | cmp | next | any two files byte by byte (CMPCODE compares code files only) |
-| touch, date | next | a file's date; the system date (days only) |
+| touch, date | **done** | `TOUCH [-c] [-d DATE\|-t STAMP\|-r FILE]`, `DATE [-r FILE] [+FORMAT]`: dates and times of day (below) |
 | cksum, sum | next | CRC-32 with longs: cheap; checks copies and transfers |
 
 ## Tier 2: useful, more work
@@ -76,7 +77,7 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
 | awk | investigate | the most valuable here.  one-true-awk or BusyBox awk: 3000-6000 lines, regular expressions, hashes, floats (Tiny-C's are 32-bit).  Maybe a cut-down awk in code segments; sed covers part of it |
 | gzip, zip | no | deflate wants a 32 KB window and tables |
 | compress | investigate | 12-bit LZW might just fit; an LZSS packer certainly would |
-| make | no | day-only dates cannot order two edits of one day; CC's `@` batch files do the builds |
+| make | **done** | files now have a time of day, to the second (below); the recipes run as a shell batch after MAKE ends |
 | perl, python, bash, vim, emacs, git, groff, info | no | far too big |
 
 ## Impossible or meaningless here
@@ -89,6 +90,30 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
 | ping, curl, wget, ssh, ftp | no network |
 | yes | endless output into a pipe that runs one stage at a time |
 | od, xxd; df; ls; which | there already: hexdump/objcopy; VOLUMES; DIR and lc; WHEREIS |
+
+## Files' times of day (BIGGY 1.34, emulator 2.13)
+
+A UCSD directory entry has no field for a time, but two have room: DFKIND's word uses
+4 bits (FILLER2 is bits 4..14, the Filer's STATUS bit 15) and DLASTBYTE 10 of its 16.
+The time -- seconds since midnight + 1, 0: none -- has its low 11 bits in word 2's bits
+4..14 and its high 6 in word 11's bits 10..15.  The OS (SYSTEM.C and SYSTEM.PASCAL,
+OS source 1.16) writes it when it closes a file it wrote, with the date, from TIME's
+answers of the emulator (25611: the time's parts, 25612: today's date, which THEDATE
+follows past midnight); the library writes it for files in sub-volumes; DIR shows it;
+MAKE, TOUCH and DATE use it (`<dirs.h>`: entstamp, filetime, setfiletime, pcnow).
+
+* **Older systems and this.**  An older SYSTEM.C (BIGGY 1.27-1.33) checks DLASTBYTE
+  when it sees a new disk and *deletes* entries it thinks bad: one whose word 11 is over
+  512, i.e. a file written after 00:34:07 by a 1.16 system.  Do not boot an older
+  BIGGY with disks written by 1.34 (SYSTEM.PASCAL, any version, reads the 10-bit field
+  and is safe).  Host tools that read DLASTBYTE whole need `& 1023` (ucsdvol.py,
+  extract_all.py, UCSD-SYSTEM-C's filertest.py and the emulator are changed).
+* **Copies.**  The shell's COPY keeps a file's time; the Filer's T(ransfer keeps the
+  date but not the time (its own copy of the entry); Import gives a file the Windows
+  file's time, Export the other way round.
+* **Without the clock** (Options > PC date and time off, and every Verify run without
+  `VERIFY_HOSTCLOCK`) files get no time and MAKE compares dates (a file without a time
+  is the start of its day).
 
 ## To decide
 
@@ -104,6 +129,13 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
   Then they would hold at most half the free area -- a limit they do not have now.
 
 ## Notes from doing it
+
+* MAKE cannot run a program and wait for it (one program at a time): it decides
+  everything first, writes the recipes into `#4:MAKEn.TEXT` and adds that file to the
+  shell's batch files (`#4:SYSTEM.BATCH`, the innermost); the shell runs it after MAKE
+  ends and stops at the first recipe that fails (the shell now takes `-COMMAND` in a
+  batch file: its status does not stop it).  So `$(shell ...)` is not possible, and a
+  recipe's CD stays for the lines after it.
 
 * **The first batch** (head, tail, sort, uniq, tr, cut, echo, tee) share the
   library's `forfiles()` (tinyc/lib/fileargs.c, `<dirs.h>`): a FILE argument as it

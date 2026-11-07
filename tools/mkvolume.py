@@ -311,6 +311,9 @@ TOOLS = [
     ('TR', ['ports/tr/tr.c'], [], 'tr: TR [-cdst] SET1 [SET2] characters changed or deleted'),
     ('CUT', ['ports/cut/cut.c'], [], 'cut: CUT -b|-c|-f LIST [-d C] [-s] [FILE ...] parts of lines'),
     ('TEE', ['ports/tee/tee.c'], [], 'tee: TEE [-ai] [FILE ...] the standard input to files as well'),
+    ('MAKE', ['ports/make/make.c'], [], 'make: MAKE [-f FILE] [-nqBi] [NAME=VALUE] [TARGET ...] targets up to date'),
+    ('TOUCH', ['ports/touch/touch.c'], [], 'touch: TOUCH [-c] [-d DATE | -t STAMP | -r FILE] FILE ... date and time'),
+    ('DATE', ['ports/date/date.c'], [], 'date: DATE [-r FILE] [+FORMAT] the date and time'),
 ]
 
 README_TOOLS = """TOOLS                                               volume TOOLS:
@@ -447,6 +450,19 @@ CUT     CUT -b LIST | -c LIST | -f LIST [-d C] [-s] [--complement]
         [--output-delimiter=S] [FILE ...]  bytes, characters or fields of
         each line: CUT -c1-8, CUT -d: -f1,3, CUT -d\\040 -f2.
 
+MAKE    MAKE [-f FILE] [-nqBi] [NAME=VALUE ...] [TARGET ...]  from the shell:
+        brings targets up to date (MAKEFILE.TEXT; rules, pattern rules %.OBJ :
+        %.C, variables, $@ $< $^ $? $*, functions; built in: %.OBJ from %.C by
+        CC -C, %.CODE from %.C by CC).  By the files' dates and times of day
+        (BIGGY 1.34's systems keep the time, emulator 2.13 gives it).  It
+        writes the recipes into #4:MAKEn.TEXT and the shell runs them after
+        it, as a batch file; one that fails stops them (not a -LINE).
+
+TOUCH   TOUCH [-c] [-d DATE | -t STAMP | -r FILE] FILE ...  each file's date
+DATE    and time of day now (or the one given), a file not there made; DATE
+        [-r FILE] [+FORMAT]  the date and time (or a file's): Sat Nov  7
+        12:34:56 2026.  DIR shows files' times.
+
 TEE     TEE [-ai] [FILE ...]  the standard input to the output and to each
         FILE: DIR | TEE #5:DIR.TEXT | GREP .C.  A new file takes the largest
         free area of its disk until it is closed: a FILE cannot be made on
@@ -529,6 +545,10 @@ LC.C    lc (the file names of a disk in columns).
 ECHO.C, HEAD.C, TAIL.C, SORT.C, UNIQ.C, TR.C, CUT.C, TEE.C  the text tools
         (as coreutils' echo, head, tail, sort, uniq, tr, cut, tee).
 
+MAKE.C  make (rules, variables, the recipes run by the shell after it).
+
+TOUCH.C, DATE.C  touch, date (files' dates and times of day).
+
 KRUNCH.C  krunch (the files of a disk moved down, the free blocks in one area).
 
 GROW.C, SHRINK.C  grow, shrink (a sub-volume's size: the library's svresize).
@@ -551,13 +571,31 @@ FILES.TEXT lists every file on this volume.
 DEMOS = ('boxes', 'calc', 'demo', 'guess', 'hanoi', 'pi', 'queens', 'sieve')
 
 LIBMODS_ = sorted(f[:-2] for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c'))
+
+
+def join_lines(target, mods, width=140):
+    """-J lines that join mods into target, each at most width characters (CC reads a batch
+    line into 150): the first ones into TINY-C:/OBJ/TCLIBPn, which the next one joins first
+    (a join leaves out each object's trailing zeros: the same bytes as one join of them all)"""
+    lines, part, prev, k = [], [], [], 0
+    for m in mods:
+        if part and len('-J %s=%s' % (target, ','.join(prev + part + [m]))) > width:
+            k += 1
+            name = 'TINY-C:/OBJ/TCLIBP%d' % k
+            lines.append('-J %s=%s\n' % (name, ','.join(prev + part)))
+            prev, part = [name], []
+        part.append(m)
+    return lines + ['-J %s=%s\n' % (target, ','.join(prev + part))]
+
+
 LIBS = """; LIBS -- rebuild the C library: CC @TINY-C:/SRC/LIB/LIBS from the shell
 ; (or X(ecute TINY-C:CC and answer @TINY-C:/SRC/LIB/LIBS).  Compiles every library
 ; module here (-O: each NAME.OBJ into TINY-C:/OBJ), then joins them into
-; TINY-C:/LIB/TCLIB2.OBJ.
+; TINY-C:/LIB/TCLIB2.OBJ (in parts, TINY-C:/OBJ/TCLIBPn, when one line would be
+; longer than the 150 characters CC reads).
 -O TINY-C:/OBJ
 """ + ''.join('-Z -C %s\n' % m.upper() for m in LIBMODS_) + \
-    '-J TINY-C:/LIB/TCLIB2=%s\n' % ','.join(m.upper() for m in LIBMODS_)
+    ''.join(join_lines('TINY-C:/LIB/TCLIB2', [m.upper() for m in LIBMODS_]))
 
 BUILD = """; BUILD -- rebuild the Tiny-C compiler: CC @TINY-C:/SRC/CC/BUILD from the shell
 ; (or X(ecute TINY-C:CC and answer @TINY-C:/SRC/CC/BUILD).  Compiles every module
@@ -610,6 +648,7 @@ WHAT = {
     'strtold.c': 'strtold, atold (<stdlib.h>, P-Code mode)',
     'dirs.c': 'volunit, pathdir, wildmatch, opens by a place ...: disks, directories, sub-volumes (<dirs.h>)',
     'fileargs.c': "forfiles: a program's FILE arguments with wild cards (<dirs.h>)",
+    'ftime.c': "filetime, setfiletime, pcnow, datesecs: files' dates and times (<dirs.h>)",
     'subvol.c': 'svcanon, dirfree, dirkrunch, svresize: KRUNCH, GROW, SHRINK (<dirs.h>)',
     'tcrt.c': 'runtime helpers: C division, shifts, unsigned, longs',
     'vi.h': "vi's modules share this: configuration, globals",

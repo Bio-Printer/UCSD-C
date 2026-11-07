@@ -132,6 +132,24 @@ def main():
         assert shell in text
         text = text.replace(shell, shell + '                 1.33: built with the library that takes NAME.TEXT[*]\n'
                             '                 (a size asked of the OS) for a text file (>FILE[*])\n')
+    if 'revision 1.33 ' in text:
+        text = text.replace('BIGGY boot volume, revision 1.33  (07-Nov-26)', 'BIGGY boot volume, revision 1.34  (07-Nov-26)')
+        old_os = '  SYSTEM.PASCAL  the OS from U134.4_OS_SOURCE_v1.15 (MAXUNIT = 14:\n'
+        assert old_os in text
+        text = text.replace(old_os, '  SYSTEM.PASCAL  the OS from U134.4_OS_SOURCE_v1.16 (MAXUNIT = 14:\n')
+        end = '                 file, as NAME.TEXT is; SYSTEM.C as well\n'
+        assert end in text
+        text = text.replace(end, end + '                 1.34: a file gets the time of day it was written\n'
+                            '                 with its date (emulator 2.13, PC date and time on:\n'
+                            '                 TIME\'s answers), and the date follows the PC\'s past\n'
+                            '                 midnight; SYSTEM.C as well.  Do not boot an older\n'
+                            '                 BIGGY with disks written here: its SYSTEM.C takes a\n'
+                            '                 file with a time for a bad entry and removes it\n')
+        shell = '                 (a size asked of the OS) for a text file (>FILE[*])\n'
+        assert shell in text
+        text = text.replace(shell, shell + '                 1.34: DIR shows files\' times of day; a batch line\n'
+                            '                 that starts with - does not stop it when it fails\n'
+                            '                 (MAKE\'s recipes); built with the library\'s ftime.c\n')
     put('VERSION.TEXT', ucsdvol.text_to_ucsd(text), 3)
     if changed:
         v.save()

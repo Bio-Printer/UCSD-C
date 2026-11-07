@@ -91,7 +91,13 @@ class Volume:
             raise SystemExit(f'{name}: not found on {self.volname}:')
         first, last, kind, _, lastbyte, _ = e
         raw = bytes(self.data[first * BLK: last * BLK])
-        return raw[:len(raw) - BLK + lastbyte] if last > first else raw, kind & 15
+        return raw[:len(raw) - BLK + (lastbyte & 1023)] if last > first else raw, kind & 15
+
+    def stamp(self, name):
+        """name's date and time of day: (DATEREC, seconds since midnight + 1, 0 none) -- the
+        time (the 1.16 systems) is in DFKIND's bits 4..14 (low 11) and DLASTBYTE's 10..15"""
+        e = self.find(name)
+        return e[5], ((e[2] >> 4) & 2047) | (e[4] >> 10) << 11
 
     def remove(self, name):
         e = self.find(name)
