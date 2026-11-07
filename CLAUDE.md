@@ -68,6 +68,7 @@ full regression test is asked for (it takes a long time).
 | shell redirection / pipes (`examples/shell.c`, `tinyc/lib/redirect.c`) | `tools/redirtest.py`, `tools/pexectest.py`, `tools/greptest.py` |
 | the shell's batch files (`@FILE`), MOVE | `tools/batchtest.py` (both modes), `tools/redirtest.py`, `tools/pexectest.py` |
 | `#pragma system` (OS mode: `sysmode`, `sysouter` in stmt.c, genx.c, gen.c, ir.c, link.c `linksys`) | `tools/ostest.py` (both modes); UCSD-SYSTEM-C's `build.py`, `tools/systest.py` and `tools/suite.py quicktest pexectest` |
+| PASM, the P-code assembler (`pasm/`, `tools/pasm.py`, `tools/mkpasm.py`) | `tools/pasmtest.py` (both modes: PASM assembles itself as the host does) |
 | BIGGY's boot (SYSTEM.MICRO, the choice of SYSTEM.C / SYSTEM.PASCAL; UCSD-SYSTEM-C `tools/boot.py`) | UCSD-SYSTEM-C's `tools/boottest.py` (every mode and layout) |
 | emulator keys / break / ^S ^Q (`tools/mkbiggy.py` MISCINFO, psys.h handshakes) | `tools/keytest.py` |
 

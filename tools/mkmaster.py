@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mkmaster.py -- build/MASTER.BLK, the volume MASTER: (with build/SOURCE.BLK, an empty volume
 SOURCE:): one makefile that rebuilds everything -- what is new (Tiny-C, its tools, the demos
-and tests, the OS in C, the Pascal compiler in C, BC and B2) and the original UCSD Pascal II.0
+and tests, the OS in C, the Pascal compiler in C, BC and B2, PASM) and the original UCSD Pascal II.0
 programs from their source disks:
 
   MAKEFILE.TEXT          MAKE -f MASTER:MAKEFILE: each part the MAKE of its own makefile,
@@ -53,7 +53,7 @@ README = """MASTER                                                volume MASTER:
 
 One makefile that rebuilds everything: what is new -- Tiny-C (the compiler,
 its library, its tools), the demos and tests, the operating system in C, the
-Pascal compiler in C, BC and B2 -- and the original UCSD Pascal II.0 programs
+Pascal compiler in C, BC and B2, PASM (the P-code assembler) -- and the original UCSD Pascal II.0 programs
 from their source disks.  From the shell (S at the Command: prompt):
 
     MAKE -f MASTER:MAKEFILE              everything (what changed)
@@ -65,8 +65,8 @@ image), P-Code mode with Options > Harvard Mode on (BC and B2 rebuilding
 themselves need its memory), and every image in one folder on the PC, as UCSD-Pascal-Volumes'
 BLK_format has them: BIGGY (Big_Disk.BLK) on #4, TINY-C on #5, MASTER on #9,
 TOOLS on #11 (MAKE, MOUNT).  It mounts the others itself, by their names, from
-the folder of the image on the unit: #12 TCEXTRA, TCTESTS, SYS-C, PASCAL-C in
-turn, #13 BASIC, BASIC2 and SOURCE, #10 each source disk; for the operating
+the folder of the image on the unit: #12 TCEXTRA, TCTESTS, SYS-C, PASCAL-C,
+U016.1_PCODE_ASSEM (PASM: it rebuilds itself) in turn, #13 BASIC, BASIC2 and SOURCE, #10 each source disk; for the operating
 system's sources (their $I name #5:) U134.4_OS_SOURCE_v1.16 on #5, then TINY-C
 again, and the prefix on it.  (If it stops there, MOUNT #5 TINY-C.)
 
@@ -153,8 +153,8 @@ MASTER = """# MAKEFILE -- everything: what is new and the original UCSD Pascal I
 # part the MAKE of its own makefile, its volume mounted first (MOUNT: emulator 2.14).
 # From the shell, with BIGGY on #4, TINY-C on #5, MASTER on #9, TOOLS on #11 and the
 # other images in the same folder on the PC: MAKE -f MASTER:MAKEFILE, or ... BASIC for
-# one part (TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 ORIG).  MASTER:README.TEXT.
-all : TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 ORIG
+# one part (TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 PASM ORIG).  MASTER:README.TEXT.
+all : TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 PASM ORIG
 
 # Tiny-C: the compiler, its library, the tools
 TINYC :
@@ -182,12 +182,16 @@ BASIC :
 BASIC2 :
 \tMOUNT #13 BASIC2
 \t$(MAKE) -f BASIC2:MAKEFILE
+# PASM, the P-code assembler, rebuilt by itself (U016.1)
+PASM :
+\tMOUNT #12 U016.1_PCODE_ASSEM
+\t$(MAKE) -f U016.1:MAKEFILE
 # the original programs (PC on PASCALC:)
 ORIG :
 \tMOUNT #12 PASCAL-C
 \t$(MAKE) -f MASTER:/ORIG/MAKEFILE
 
-.PHONY : all TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 ORIG
+.PHONY : all TINYC DEMOS TESTS SYSC PASCALC BASIC BASIC2 PASM ORIG
 """
 
 

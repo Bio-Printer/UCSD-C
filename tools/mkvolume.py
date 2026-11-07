@@ -822,6 +822,7 @@ class Dir:
             need = 6 + sum(max(1, (len(r) + 511) // 512) for n, r, k in parts)
             own = sum(max(1, (len(r) + 511) // 512) for n, r, k, d in self.items if not isinstance(r, Dir))
             v = ucsdvol.Volume.new(self.name, self.blocks or need + own // 4 + ROOM)
+            v.volname = self.name[:7]       # (a volume's name may hold a dot: U016.1)
             for n, r, k in parts:
                 v.write(n, r, k)
             self.v = v
@@ -837,9 +838,10 @@ class Dir:
                 lines.append('  %-24s %6d  %s' % (pre + n, max(1, (len(r) + 511) // 512), d))
         return lines
 
-    def finish(self):
+    def finish(self, image=None):
         """FILES.TEXT (every file, the sub-volumes' too: written once to learn its own size, then
-        with it), the volume saved as build/NAME.BLK, volumes/NAME.zip and NAME.txt"""
+        with it), the volume saved as build/NAME.BLK, volumes/NAME.zip and NAME.txt (IMAGE in
+        place of NAME when given)"""
         for d in [r for n, r, k, d in self.items if isinstance(r, Dir)]:
             d.made()
         self.items.append(['FILES.TEXT', b'', 3, 'this list'])
@@ -847,12 +849,13 @@ class Dir:
             listing = '\n'.join(['%s:  every file, the sub-volumes\' too (A/NAME: NAME in the sub-volume A)' % self.name, '',
                                  '  %-24s %6s  %s' % ('FILE', 'BLOCKS', 'WHAT'), ''] + self.listing()) + '\n'
             self.items[-1][1] = ucsdvol.text_to_ucsd(listing)
-        path = os.path.join(ROOT, 'build', self.name + '.BLK')
+        image = image or self.name
+        path = os.path.join(ROOT, 'build', image + '.BLK')
         open(path, 'wb').write(self.made().image())
         os.makedirs(OUT, exist_ok=True)
-        open(os.path.join(OUT, self.name + '.txt'), 'w').write(listing)
-        with zipfile.ZipFile(os.path.join(OUT, self.name + '.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
-            z.write(path, self.name + '.BLK')
+        open(os.path.join(OUT, image + '.txt'), 'w').write(listing)
+        with zipfile.ZipFile(os.path.join(OUT, image + '.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
+            z.write(path, image + '.BLK')
         print('%s: %d files' % (self.name, len(self.listing())))
 
 

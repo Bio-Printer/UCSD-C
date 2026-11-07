@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""mastertest.py -- MASTER:MAKEFILE on the P-System (tools/mkmaster.py): from the shell,
-make -f master:makefile rebuilds everything -- Tiny-C's compiler, library and tools, the demos
-and tests, SYS-C:SYSTEM.C, PASCALC:PC.CODE, BC and B2 (their volumes' makefiles, each volume
-mounted by MOUNT first) and the original programs (origtest.py's part); then again: nothing
-to be done anywhere (no CC, BC, B2 or PC runs).  The parts' results are what their own tests
-check (alltest, voltest, UCSD-BASIC's voltest and voltest2, origtest); here: the run, every
-part in turn, nothing stopped, and the second run.
+"""mastertest.py -- MASTER:MAKEFILE on the P-System (tools/mkmaster.py): from the shell, make -f
+master:makefile rebuilds everything -- Tiny-C's compiler, library and tools, the demos and
+tests, SYS-C:SYSTEM.C, PASCALC:PC.CODE, BC and B2 (their volumes' makefiles, each volume
+mounted by MOUNT first) and the original programs (origtest.py's part); then again: nothing to
+be done anywhere (no CC, BC, B2, PASM or PC runs).  The parts' results are what their own tests
+check (alltest, voltest, UCSD-BASIC's voltest and voltest2, origtest, pasmtest); here: the run,
+every part in turn, nothing stopped, and the second run.
 
 Disks, all in the run's folder (MOUNT looks there): #4 BIGGY, #5 TINY-C, #9 MASTER, #10 the
-source disks, #11 TOOLS, #12 TCEXTRA, TCTESTS, SYS-C and PASCAL-C in turn, #13 BASIC, BASIC2
-and SOURCE.  The volumes: build/ (mkvolume.py, mkmaster.py), UCSD-SYSTEM-C's build/SYS-C.BLK
-($SYSTEMC), UCSD-Pascal-compiler-written-in-C's build/PASCAL-C.BLK ($PASCALC), UCSD-BASIC's
-build/BASIC.BLK and BASIC2.BLK ($BASIC), UCSD-Pascal-Volumes' source disks ($VOLUMES).  About
-9 minutes in P-Code mode with the Harvard layout."""
+source disks, #11 TOOLS, #12 TCEXTRA, TCTESTS, SYS-C, PASCAL-C and U016.1_PCODE_ASSEM in turn,
+#13 BASIC, BASIC2 and SOURCE.  The volumes: build/ (mkvolume.py, mkmaster.py, mkpasm.py),
+UCSD-SYSTEM-C's build/SYS-C.BLK ($SYSTEMC), UCSD-Pascal-compiler-written-in-C's build/PASCAL-C.BLK
+($PASCALC), UCSD-BASIC's build/BASIC.BLK and BASIC2.BLK ($BASIC), UCSD-Pascal-Volumes' source
+disks ($VOLUMES).  About 9 minutes in P-Code mode with the Harvard layout."""
 import os, re, shutil, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -28,7 +28,8 @@ PARTS = ['> MAKE -f TINY-C:/SRC/CC/MAKEFILE', '> MAKE -f TINY-C:/SRC/LIB/MAKEFIL
          '> MOUNT #12 TCEXTRA', '> MAKE -f TCEXTRA:MAKEFILE', '> MOUNT #12 TCTESTS', '> MAKE -f TCTESTS:MAKEFILE',
          '> MOUNT #12 SYS-C', '> MAKE -f SYS-C:MAKEFILE', '> MOUNT #12 PASCAL-C', '> MAKE -f PASCALC:/SRC/MAKEFILE',
          '> MOUNT #13 BASIC', '> MAKE -f BASIC:MAKEFILE', '> MAKE -f BASIC:/TEST/MAKEFILE', '> MOUNT #13 BASIC2',
-         '> MAKE -f BASIC2:MAKEFILE', '> MAKE -f BASIC2:/TEST/MAKEFILE', '> MAKE -f MASTER:/ORIG/MAKEFILE',
+         '> MAKE -f BASIC2:MAKEFILE', '> MAKE -f BASIC2:/TEST/MAKEFILE', '> MOUNT #12 U016.1_PCODE_ASSEM',
+         '> MAKE -f U016.1:MAKEFILE', '> MAKE -f MASTER:/ORIG/MAKEFILE',
          '> MAKE -f MASTER:/ORIG/U134', '> MOUNT #5 TINY-C']
 
 
@@ -36,7 +37,7 @@ def main():
     ensure_setup()
     mode = os.environ.get('PSYS_MODE', 'native')
     d = tempfile.mkdtemp(prefix='mastertest_')
-    for v in ('TOOLS', 'MASTER', 'SOURCE', 'TCEXTRA', 'TCTESTS'):
+    for v in ('TOOLS', 'MASTER', 'SOURCE', 'TCEXTRA', 'TCTESTS', 'U016.1_PCODE_ASSEM'):
         shutil.copy(os.path.join(BUILD, v + '.BLK'), d)
     shutil.copy(os.path.join(BUILD, 'TINY-C.BLK'), os.path.join(d, 'TINYC0.BLK'))
     os.symlink('VERIFY_SOURCE.BLK', os.path.join(d, 'TINY-C.BLK'))   # (#5's image: MOUNT #5 TINY-C brings it back)
@@ -69,7 +70,7 @@ def main():
     i = tr.find('shell> ' + cmd, tr.find('shell> ' + cmd) + 10)
     first, second = tr[:i], tr[i:]
     pos = [first.find(p) for p in PARTS]
-    progs = re.findall(r'> (?:-?)(CC|BC|B2|PC) ', second)
+    progs = re.findall(r'> (?:-?)(CC|BC|B2|PC|U016\.1:PASM) ', second)
     checks = [('the script completed', 'VERIFY SCRIPT COMPLETED' in r.stdout),
               ('every part in turn', -1 not in pos and pos == sorted(pos)),
               ('nothing stopped', '@: stopped' not in tr and 'make: ***' not in tr and 'no such image' not in tr),
