@@ -20,6 +20,7 @@ compiles it) and a SYSTEM.C to match: a new NAME.BAS (a BASIC source,
 UCSD-BASIC) is a text file, as NAME.TEXT is.  BIGGY 1.30: SYSTEM.SHELL with
 the library that takes NAME.BAS for a text file (TYPE).  BIGGY 1.31: the
 shell's TYPE shows a data file of lines that end in CR (a listing, NAME.LST).
+BIGGY 1.36: VOLUMES (VOLS) lists the volumes MOUNT can put on a unit, too.
 BIGGY 1.32: the shell runs batch files (@FILE), and its MOVE replaces a file of
 the new name.
 The 8-byte doubles (CSP 100..137) are in the emulator itself (build it
@@ -156,6 +157,12 @@ def main():
         assert shell in text
         text = text.replace(shell, shell + '                 1.35: a batch line whose program cannot be run (no\n'
                             '                 such program, a line too long) stops the batch file\n')
+    if 'revision 1.35 ' in text:
+        text = text.replace('BIGGY boot volume, revision 1.35  (07-Nov-26)', 'BIGGY boot volume, revision 1.36  (09-Nov-26)')
+        shell = '                 such program, a line too long) stops the batch file\n'
+        assert shell in text
+        text = text.replace(shell, shell + '                 1.36: VOLUMES (VOLS) also lists the volumes not on\n'
+                            '                 line that MOUNT can put on a unit (emulator 2.18)\n')
     put('VERSION.TEXT', ucsdvol.text_to_ucsd(text), 3)
     if changed:
         v.save()
