@@ -75,7 +75,7 @@ grow, shrink, man, binderc; the shell's CD, DIR (ls), TYPE, DELETE (rm), COPY
 
 | Tool | Status | Notes |
 |---|---|---|
-| awk | investigate | the most valuable here.  one-true-awk or BusyBox awk: 3000-6000 lines, regular expressions, hashes, floats (Tiny-C's are 32-bit).  Maybe a cut-down awk in code segments; sed covers part of it |
+| awk | investigate | the most valuable here.  one-true-awk or BusyBox awk: 3000-6000 lines, regular expressions, hashes, floats (UCSD-C's are 32-bit).  Maybe a cut-down awk in code segments; sed covers part of it |
 | gzip, zip | no | deflate wants a 32 KB window and tables |
 | compress | investigate | 12-bit LZW might just fit; an LZSS packer certainly would |
 | make | **done** | files now have a time of day, to the second (below); the recipes run as a shell batch after MAKE ends |
@@ -139,10 +139,10 @@ MAKE, TOUCH and DATE use it (`<dirs.h>`: entstamp, filetime, setfiletime, pcnow)
   recipe's CD stays for the lines after it.  A recipe longer than the shell's 79
   characters is run as `PROG @#4:MAKEnRk` (its arguments in that file, a command a line:
   CC's, BC's and B2's batch files); every volume is rebuilt with makefiles now
-  (`MAKE -f TINY-C:MAKEFILE`: everything).
+  (`MAKE -f UCSD-C:MAKEFILE`: everything).
 
 * **The first batch** (head, tail, sort, uniq, tr, cut, echo, tee) share the
-  library's `forfiles()` (tinyc/lib/fileargs.c, `<dirs.h>`): a FILE argument as it
+  library's `forfiles()` (ucsdc/lib/fileargs.c, `<dirs.h>`): a FILE argument as it
   is, or each file its wildcards match (`*.C`, `#5:*.TEXT`, `A/*.H`), handed to a
   function of the tool's (a call through a function pointer).  `tools/texttest.py`
   checks them against the host's tools, in both modes.

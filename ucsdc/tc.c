@@ -1,0 +1,16 @@
+/* tc.c -- the whole compiler as one translation unit (UCSD-C compiles a
+   single file; the host build uses this too). */
+#include "util.c"
+#include "types.c"
+#include "pp.c"
+#include "lex.c"
+#include "psym.c"
+#include "expr.c"
+#include "decl.c"
+#include "stmt.c"
+#include "compile.c"
+#include "ir.c"
+#include "gen.c"
+#include "genx.c"
+#include "link.c"
+#include "main.c"

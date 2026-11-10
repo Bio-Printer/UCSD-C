@@ -4,7 +4,7 @@
 
 When work changes what a repository holds, commit and push that repository
 too -- not only a patch or a copy somewhere else:
-* UCSD-TinyC (this one): `main` and the session's branch.
+* UCSD-C (this one): `main` and the session's branch.
 * UCSD-Pascal-Volumes: `main` -- the changed BLK_format disks, the extracted
   files (`tools/extract_all.py BLK_format .`), the manifest, and a README.txt
   entry.
@@ -27,7 +27,7 @@ Say in the report which emulator version a change needs.
 
 The normal regression test is `tools/quicktest.py` (about 12 s native; about 5 minutes
 in Z80 mode, `PSYS_MODE=z80`): one shell session on the P-System in which the library
-compiles itself (`make -f tiny-c:/src/lib/makefile`, IDENTICAL to the host's), `hexdump -i
+compiles itself (`make -f ucsd-c:/src/lib/makefile`, IDENTICAL to the host's), `hexdump -i
 system.list | grep -n :10` gives its 3 non-data lines, `lc | wc`, `wc`, `cat | grep -n
 | wc` (two pipes), `diff -u` then `patch` turns one file into the other, and vi
 deletes a line and saves it.  So the compiler, linker, pipes, volumes and most tools
@@ -39,15 +39,15 @@ full regression test is asked for (it takes a long time).
 | Changed | Run |
 |---|---|
 | vi only (`ports/vi/`) | the Linux comparison (`gcc -DSTANDALONE vi*.c`: a tiny `VI_PAGECAP` window against one that holds the whole file), `tools/viscreentest.py` (screens vs the committed version), `tools/vipagetest.py` (the paged build, lazy loading, vs the committed version), `tools/vipostest.py` (the place kept in the header page; both modes), `tools/viswaptest.py` (a save on the volume that holds VI.SWAP; both modes), `tools/vicrtest.py` (a file of CR lines, a binary file, no room for VI.SWAP; both modes), `tools/viaddrtest.py` (`:/pat/` addresses, Pattern not found), `tools/viscrolltest.py` (with and without the emulator's scroll codes; needs `build/run_verify_new` from UCSD-Pascal_Windows_Emulator), then `tools/vitest.py` in Z80 mode |
-| compiler code generation or library | `tools/runtests.py` in both modes, `tools/selfcompile.py` (the compiler on the P-System against the host's); for stdio (`tinyc/lib/stdio.c`) also `tools/greptest.py`, `tools/pexectest.py` and `tools/vitest.py` |
+| compiler code generation or library | `tools/runtests.py` in both modes, `tools/selfcompile.py` (the compiler on the P-System against the host's); for stdio (`ucsdc/lib/stdio.c`) also `tools/greptest.py`, `tools/pexectest.py` and `tools/vitest.py` |
 | linker, volume layout, memory | add `tools/voltest.py` and `tools/vitest.py --build` |
 | pexec / shell | `tools/pexectest.py` |
-| sub-volumes (`tinyc/lib/dirs.c` pathdir, `__sv*`; the shell's MKDIR, CD PATH) | `tools/subvoltest.py` (both modes); vi in one: `tools/visubvoltest.py` (both modes) |
+| sub-volumes (`ucsdc/lib/dirs.c` pathdir, `__sv*`; the shell's MKDIR, CD PATH) | `tools/subvoltest.py` (both modes); vi in one: `tools/visubvoltest.py` (both modes) |
 | the OS (U134.4_OS_SOURCE in UCSD-Pascal-Volumes; build/img Big_Disk's SYSTEM.PASCAL) | `tools/xsubvoltest.py`, `tools/pexectest.py`, `tools/keytest.py`, quicktest (both modes) |
 | the emulator's Import / Export (sub-volumes) | `tools/subvolxfertest.py` (needs `build/run_verify_new`, 2.07) |
-| memory (segments, pools, parser or linker stack): the least free memory of `make -f tiny-c:makefile` from the shell | `tools/shellalltest.py` (add `PSYS_MODE=z80` before a commit: about 70 minutes), `tools/voltest.py` |
+| memory (segments, pools, parser or linker stack): the least free memory of `make -f ucsd-c:makefile` from the shell | `tools/shellalltest.py` (add `PSYS_MODE=z80` before a commit: about 70 minutes), `tools/voltest.py` |
 | where CC finds files (`findfile`, pp.c / main.c) | `tools/findtest.py`, `tools/ccsubvoltest.py` (sub-volumes), `tools/selfcompile.py` |
-| CC's batch files (`@`, main.c), where objects go | `tools/alltest.py` (TINY-C:ALL: BUILD, LIBS, TOOLS, SYS-C:BUILD and PASCALC:/SRC/BUILD in one run; needs UCSD-SYSTEM-C's `build/SYS-C.BLK`, from its `build.py`, and UCSD-Pascal-compiler-written-in-C's `build/PASCAL-C.BLK` and `build/psys/PC.CODE`, from `make psys` and its `tools/mkvolume.py`), `tools/findtest.py` |
+| CC's batch files (`@`, main.c), where objects go | `tools/alltest.py` (UCSD-C:ALL: BUILD, LIBS, TOOLS, SYS-C:BUILD and PASCALC:/SRC/BUILD in one run; needs UCSD-SYSTEM-C's `build/SYS-C.BLK`, from its `build.py`, and UCSD-Pascal-compiler-written-in-C's `build/PASCAL-C.BLK` and `build/psys/PC.CODE`, from `make psys` and its `tools/mkvolume.py`), `tools/findtest.py` |
 | the files CC writes (`wclose` in util.c: no room left on the disk), stdio's `__flushbuf` | `tools/fulltest.py` (both modes) |
 | grep (`ports/grep/`) | `tools/greptest.py` (both modes) |
 | cat (`ports/cat/`) | `tools/cattest.py` |
@@ -59,13 +59,13 @@ full regression test is asked for (it takes a long time).
 | diff (`ports/diff/`) | `tools/difftest.py` (against the host's diff and patch) |
 | wc (`ports/wc/`) | `tools/wctest.py` (against the host's wc; needs cat) |
 | lc (`ports/lc/`) | `tools/lctest.py` (needs wc) |
-| echo, head, tail, sort, uniq, tr, cut, tee (`ports/NAME/`), `tinyc/lib/fileargs.c` | `tools/texttest.py` (both modes; against the host's coreutils) |
+| echo, head, tail, sort, uniq, tr, cut, tee (`ports/NAME/`), `ucsdc/lib/fileargs.c` | `tools/texttest.py` (both modes; against the host's coreutils) |
 | MOUNT (`ports/mount/`), the master makefile and the originals' (`tools/mkmaster.py`) | `tools/origtest.py` (`build/run_verify` from emulator 2.14: CSP 140, 141), `tools/mastertest.py` (everything: about 9 minutes; UCSD-BASIC's and the other repositories' volumes built) |
-| make, touch, date (`ports/make/`, the volumes' makefiles (`tools/mkvolume.py`), `ports/touch/`, `ports/date/`), files' times (`tinyc/lib/ftime.c`, the OS's FCLOSE, the shell's DIR and `-` batch lines) | `tools/maketest.py` and `tools/maketest.py --pascal` (both modes; `build/run_verify` from emulator 2.13: a clock the script sets) |
+| make, touch, date (`ports/make/`, the volumes' makefiles (`tools/mkvolume.py`), `ports/touch/`, `ports/date/`), files' times (`ucsdc/lib/ftime.c`, the OS's FCLOSE, the shell's DIR and `-` batch lines) | `tools/maketest.py` and `tools/maketest.py --pascal` (both modes; `build/run_verify` from emulator 2.13: a clock the script sets) |
 | krunch (`ports/krunch/`), the shell's DIR -E | `tools/krunchtest.py` (both modes: it krunches the boot disk while SYSTEM.PASCAL and the shell run) |
-| grow, shrink (`ports/grow/`, `ports/shrink/`), `tinyc/lib/subvol.c` (dirkrunch, svresize) | `tools/growtest.py` (both modes; `build/run_verify` from emulator 2.09: CSP 139, a volume's disk image), `tools/krunchtest.py` |
+| grow, shrink (`ports/grow/`, `ports/shrink/`), `ucsdc/lib/subvol.c` (dirkrunch, svresize) | `tools/growtest.py` (both modes; `build/run_verify` from emulator 2.09: CSP 139, a volume's disk image), `tools/krunchtest.py` |
 | patch (`ports/patch/`) | `tools/patchtest.py` (against the host's diff) |
-| shell redirection / pipes (`examples/shell.c`, `tinyc/lib/redirect.c`) | `tools/redirtest.py`, `tools/pexectest.py`, `tools/greptest.py` |
+| shell redirection / pipes (`examples/shell.c`, `ucsdc/lib/redirect.c`) | `tools/redirtest.py`, `tools/pexectest.py`, `tools/greptest.py` |
 | the shell's batch files (`@FILE`), MOVE | `tools/batchtest.py` (both modes), `tools/redirtest.py`, `tools/pexectest.py` |
 | `#pragma system` (OS mode: `sysmode`, `sysouter` in stmt.c, genx.c, gen.c, ir.c, link.c `linksys`) | `tools/ostest.py` (both modes); UCSD-SYSTEM-C's `build.py`, `tools/systest.py` and `tools/suite.py quicktest pexectest` |
 | PASM, the P-code assembler (`pasm/`, `tools/pasm.py`, `tools/mkpasm.py`) | `tools/pasmtest.py` (both modes: PASM assembles itself as the host does) |

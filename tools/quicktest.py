@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""quicktest.py -- the normal regression test: one short session on the P-System (the Tiny-C shell, the
+"""quicktest.py -- the normal regression test: one short session on the P-System (the UCSD-C shell, the
 BIGGY.BLK that tools/mkbiggy.py made, the volumes of build/) that uses the compiler, the linker, the
 shell's pipes and most of the tools together:
 
-  make -f tiny-c:/src/lib/makefile
+  make -f ucsd-c:/src/lib/makefile
                                    the library compiles itself (MAKE's recipes, the long ones as CC @#4:MAKE1Rn;
-                                   CMPCODE: TINY-C:/LIB/TCLIB2.OBJ IDENTICAL to the host's)
+                                   CMPCODE: UCSD-C:/LIB/TCLIB2.OBJ IDENTICAL to the host's)
   hexdump -i system.list | grep -n :10
                                    the 3 lines that are not 16-byte data records: two 64 KB segment records and
                                    the end record (SYSTEM.LIST is 287 blocks)
@@ -40,7 +40,7 @@ def main():
     ensure_setup()
     mode = os.environ.get('PSYS_MODE', 'native')
     d = tempfile.mkdtemp(prefix='quick_')
-    for v in ('TINY-C', 'TCEXTRA', 'TOOLS'):
+    for v in ('UCSD-C', 'TCEXTRA', 'TOOLS'):
         shutil.copy(os.path.join(BUILD, v + '.BLK'), d)
     data = os.path.join(d, 'data')                  # BIGGY as mkbiggy.py made it is the boot disk
     os.makedirs(data)
@@ -63,18 +63,18 @@ def main():
             'patch -s -i #13:P.TEXT #13:A.TEXT',
             'diff #13:A.TEXT #13:B.TEXT',
             'cd #13']
-    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "make -f tiny-c:/src/lib/makefile\\r"',
-         'WAIT "> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/ASSERT.C"', 'WAIT "> CC @#4:MAKE1R1"',
-         'WAIT "Joining TINY-C:/LIB/TCLIB2.OBJ"', 'WAIT "shell> "']
+    L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "make -f ucsd-c:/src/lib/makefile\\r"',
+         'WAIT "> CC -O UCSD-C:/OBJ/ -Z -C UCSD-C:/SRC/LIB/ASSERT.C"', 'WAIT "> CC @#4:MAKE1R1"',
+         'WAIT "Joining UCSD-C:/LIB/TCLIB2.OBJ"', 'WAIT "shell> "']
     for c in cmds:
         L += ['TYPE "%s\\r"' % c, 'WAIT "shell> "']
     L += ['TYPE "vi V.TEXT\\r"', 'WAIT "V.TEXT"', 'TYPE "dd:w\\rZZ"', 'WAIT "shell> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
-    L += cmpcode('TINY-C:/LIB/TCLIB.OBJ', 'TINY-C:/LIB/TCLIB2.OBJ')
+    L += cmpcode('UCSD-C:/LIB/TCLIB.OBJ', 'UCSD-C:/LIB/TCLIB2.OBJ')
     sp = os.path.join(d, 'quick.script')
     open(sp, 'w').write(shell_script('\n'.join(L) + '\n'))
     env = dict(os.environ, VERIFY_UNIT11=os.path.join(d, 'TOOLS.BLK'), VERIFY_UNIT12=os.path.join(d, 'TCEXTRA.BLK'),
                VERIFY_UNIT13=work)
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'TINY-C.BLK'), spare,
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'UCSD-C.BLK'), spare,
                         sp, mode, os.path.join(d, 'out'), '', '3000'], capture_output=True, text=True, env=env)
     tp = os.path.join(d, 'out', 'transcript.txt')
     tr = shell_transcript(open(tp, encoding='latin1').read()).replace('\r', '\n') if os.path.exists(tp) else ''
@@ -107,9 +107,9 @@ def main():
     hxl = [l for l in hx.split('\n') if l and not l.startswith('[exit')]
     checks = [
         ('the script completed', 'VERIFY SCRIPT COMPLETED' in r.stdout),
-        ('make -f tiny-c:/src/lib/makefile: every module compiled, joined in two parts (CC @#4:MAKE1R1, R2)',
-         'Joining TINY-C:/OBJ/TCLIBP1.OBJ' in tr and 'Joining TINY-C:/LIB/TCLIB2.OBJ' in tr and '> CC @#4:MAKE1R2' in tr
-         and tr.count('> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/') == len([f for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c')])
+        ('make -f ucsd-c:/src/lib/makefile: every module compiled, joined in two parts (CC @#4:MAKE1R1, R2)',
+         'Joining UCSD-C:/OBJ/TCLIBP1.OBJ' in tr and 'Joining UCSD-C:/LIB/TCLIB2.OBJ' in tr and '> CC @#4:MAKE1R2' in tr
+         and tr.count('> CC -O UCSD-C:/OBJ/ -Z -C UCSD-C:/SRC/LIB/') == len([f for f in os.listdir(os.path.join(ROOT, 'ucsdc', 'lib')) if f.endswith('.c')])
          and 'Stopped' not in tr),
         ('TCLIB2.OBJ IDENTICAL to the host-built TCLIB.OBJ', 'IDENTICAL' in tr),
         ('hexdump -i system.list | grep -n :10: the %d lines that are not data records' % len(short), None not in short and hxl == short),

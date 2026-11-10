@@ -18,11 +18,11 @@ def main(mods):
     ps = PSystem(blocks=6000)
     ps.put('CC.CODE', open(code, 'rb').read())
     put_headers(ps)
-    ps.put('TC.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'tc.h')).read())
-    ps.put('PARSE.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'parse.h')).read())
-    ps.put('GEN.H.TEXT', open(os.path.join(ROOT, 'tinyc', 'gen.h')).read())
+    ps.put('TC.H.TEXT', open(os.path.join(ROOT, 'ucsdc', 'tc.h')).read())
+    ps.put('PARSE.H.TEXT', open(os.path.join(ROOT, 'ucsdc', 'parse.h')).read())
+    ps.put('GEN.H.TEXT', open(os.path.join(ROOT, 'ucsdc', 'gen.h')).read())
     for m in MODULES:
-        ps.put(m.upper() + '.C', open(os.path.join(ROOT, 'tinyc', m + '.c')).read())
+        ps.put(m.upper() + '.C', open(os.path.join(ROOT, 'ucsdc', m + '.c')).read())
     todo = mods or MODULES
     script = ['WAIT "Command:"', 'TYPE "F"', 'WAIT "Filer:"', 'TYPE "P"', 'WAIT "Prefix"',
               'TYPE "#5:\\r"', 'WAIT "Filer:"', 'TYPE "Q"', 'WAIT "Command:"']

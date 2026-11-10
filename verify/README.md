@@ -1,12 +1,12 @@
-# Tiny-C Verify
+# UCSD-C Verify
 
 A keyboard script in the Verify P-System format (`PSystemVerify.h`: WAIT /
-TYPE) that checks Tiny-C on the P-System itself:
+TYPE) that checks UCSD-C on the P-System itself:
 
 1. every test program in `tests/` is compiled with CC and run; each
    line of its expected output (`tests/NAME.expect`) must appear, in order
 2. the compiler rebuilds itself (`@BUILD`) to CC2.CODE;
-   CMPCODE (a Tiny-C program, `cmpcode.c`) must report it IDENTICAL to
+   CMPCODE (a UCSD-C program, `cmpcode.c`) must report it IDENTICAL to
    CC.CODE (block 0's program-name bytes aside)
 3. CC2 compiles and runs HANOI
 
@@ -23,9 +23,9 @@ copied; `tools/mkverify.py` generates both and the script):
 | `TCEXPCT:` `NAME.EXPECT` | what every test prints |
 | `cmpcode.c` | the byte-compare program (CMPCODE on TCEXTRA:) |
 
-Units: #5 TINY-C:, #9 TCSRC:, #10 TCTESTS:, #11 TCEXTRA:, #12 TCVERIF:,
+Units: #5 UCSD-C:, #9 TCSRC:, #10 TCTESTS:, #11 TCEXTRA:, #12 TCVERIF:,
 #13 TCEXPCT:.  Each test compiles where its source is (TCTESTS: or TCEXTRA:);
-the compiler rebuilds itself with `@BUILD` on TCSRC: (CC2.CODE on TINY-C:).
+the compiler rebuilds itself with `@BUILD` on TCSRC: (CC2.CODE on UCSD-C:).
 The results are on the volumes, which the host keeps.
 On Linux, `tools/tcverify.py [native|z80]` runs it through `build/run_verify`,
 the same engine and runner the GUI uses.
@@ -54,7 +54,7 @@ the same engine and runner the GUI uses.
 
 The existing Verify uses `verify\SOURCE.BLK` (unit 5), `verify\COMPASM.BLK`
 (unit 9), `verify\VERIFY.SCRIPT` and a P-code reference log. A
-"Verify Tiny-C..." item can reuse the same machinery with:
+"Verify UCSD-C..." item can reuse the same machinery with:
 
 * unit 5 = `verify\TCVERIFY.BLK`, script = `verify\TCVERIFY.SCRIPT`
   (unit 9 can be any volume: COMPASM.BLK is fine);

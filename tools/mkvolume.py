@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""mkvolume.py -- build the Tiny-C volumes (volumes/*.zip):
+"""mkvolume.py -- build the UCSD-C volumes (volumes/*.zip):
 
-  TINY-C:   Tiny-C: CC.CODE, TCMSGS.TEXT, README.TEXT, FILES.TEXT and the
+  UCSD-C:   the compiler: CC.CODE, TCMSGS.TEXT, README.TEXT, FILES.TEXT and the
             sub-volumes INCLUDE (the headers), LIB (TCLIB.OBJ) and SRC (the
             sources: CC/ and LIB/, each with its MAKEFILE.TEXT); MAKEFILE.TEXT
-            at the top rebuilds everything (MAKE -f TINY-C:MAKEFILE).
-            The name TINY-C: is built into the compiler: it finds
-            TCMSGS.TEXT, TINY-C:/LIB/TCLIB.OBJ and TINY-C:/INCLUDE there.
+            at the top rebuilds everything (MAKE -f UCSD-C:MAKEFILE).
+            The name UCSD-C: is built into the compiler: it finds
+            TCMSGS.TEXT, UCSD-C:/LIB/TCLIB.OBJ and UCSD-C:/INCLUDE there.
   TCEXTRA:  the demo programs (DEMOS), the mini-shell and its examples
             (examples/), CMPCODE: sources and ready-to-run code files,
             README.TEXT, MAKEFILE.TEXT, FILES.TEXT
   TCTESTS:  the test programs (tests/ that are not demos): sources and
             ready-to-run code files, README.TEXT, MAKEFILE.TEXT, FILES.TEXT
-  TOOLS:    the tools written in Tiny-C, ready to run (VI.CODE ...),
+  TOOLS:    the tools written in UCSD-C, ready to run (VI.CODE ...),
             MAN.TEXT, README.TEXT, FILES.TEXT and the sub-volume SRC: their
             sources, a sub-volume each (SRC/VI, SRC/GREP ...), MAKEFILE.TEXT.
   (A UCSD directory holds 77 files: the demos and tests are volumes of
@@ -30,35 +30,35 @@ import ucsdvol
 from tcrun import build_lib, compile_c, compile_modules, INC
 from buildtc import build, MODULES
 
-SRC = os.path.join(ROOT, 'tinyc')
+SRC = os.path.join(ROOT, 'ucsdc')
 LIB = os.path.join(SRC, 'lib')
 TESTS = os.path.join(ROOT, 'tests')
 OUT = os.path.join(ROOT, 'volumes')
 TMP = os.path.join(ROOT, 'build', 'volume_tmp')
 LIBMODS = sorted(f[:-2] for f in os.listdir(LIB) if f.endswith('.c'))
 
-README_TC = """TINY-C for UCSD Pascal II.0                        volume TINY-C:
+README_TC = """UCSD-C for UCSD Pascal II.0                        volume UCSD-C:
 
 WHAT IS WHERE (FILES.TEXT lists every file):
     CC.CODE          the compiler
     TCMSGS.TEXT      its messages
-    MAKEFILE.TEXT    MAKE -f TINY-C:MAKEFILE rebuilds the compiler, the
+    MAKEFILE.TEXT    MAKE -f UCSD-C:MAKEFILE rebuilds the compiler, the
                      library, every tool, the operating system in C
                      (SYS-C:SYSTEM.C) and the Pascal compiler in C
                      (PASCALC:PC.CODE) at once: what changed (MAKE is on TOOLS:)
     INCLUDE/         the headers: STDIO.H, STRING.H, PSYS.H ...
     LIB/             the C library, TCLIB.OBJ
-    OBJ/             empty: the objects a rebuild makes (-O TINY-C:/OBJ)
+    OBJ/             empty: the objects a rebuild makes (-O UCSD-C:/OBJ)
     SRC/             the sources, and the makefiles that rebuild them:
       SRC/CC/          the compiler's modules, MAKEFILE.TEXT
       SRC/LIB/         the library's modules, MAKEFILE.TEXT
 The tools (VI, GREP, ...) are on TOOLS:, their sources in TOOLS:/SRC; the
 demos on TCEXTRA:, the test programs on TCTESTS:.  INCLUDE, LIB and SRC are
-sub-volumes (the shell's MKDIR, CD, DIR: DIR TINY-C:/INCLUDE, CD
-TINY-C:/SRC/CC); the Filer sees each as one data file.
+sub-volumes (the shell's MKDIR, CD, DIR: DIR UCSD-C:/INCLUDE, CD
+UCSD-C:/SRC/CC); the Filer sees each as one data file.
 
 Use: from the shell (S at the Command: prompt) type CC NAME, or
-X(ecute TINY-C:CC and answer "Compile what file?" with
+X(ecute UCSD-C:CC and answer "Compile what file?" with
     NAME                 compile NAME.C (or NAME.TEXT), link with
                          TCLIB.OBJ -> NAME.CODE  (NAME.C works too)
     -C NAME              compile only -> NAME.OBJ
@@ -69,7 +69,7 @@ X(ecute TINY-C:CC and answer "Compile what file?" with
                          (OUT. or LIB. with a dot at its end: that name
                          exactly, as the Filer's: -L SYS-C:SYSTEM.C.=SYSC)
     -O DIR               the objects of the commands after it go into DIR
-                         (TINY-C:/OBJ), and -L and -J look there first; until
+                         (UCSD-C:/OBJ), and -L and -J look there first; until
                          the next -O
 Options start with - (a path may start with /); -c and -C are the same.
     @FILE                run the commands in FILE.TEXT, one per line
@@ -84,8 +84,8 @@ there only.  Named without one, CC looks on every disk: on one disk only,
 that one; on several, the one on the disk of the file that names it (the
 including file, the @FILE), else the one on the prefix volume, else it
 lists the volumes and stops (name one).  HEADERS: <x.h> is taken from
-TINY-C:/INCLUDE first, "x.h" from the including file's sub-volume first,
-then as above, then from TINY-C:/INCLUDE.  SUB-VOLUMES: a path (CC A/X,
+UCSD-C:/INCLUDE first, "x.h" from the including file's sub-volume first,
+then as above, then from UCSD-C:/INCLUDE.  SUB-VOLUMES: a path (CC A/X,
 CC #5:/A/B/X, #include "A/X.H", -L OUT=A/X,A/Y) is taken from there;
 after the shell's CD into a sub-volume CC looks in it first; the names in
 an @FILE in a sub-volume are looked for beside it first.  An object (NAME.OBJ) goes next to its
@@ -95,7 +95,7 @@ prefix volume) -- the shell runs a code file in a sub-volume where it is;
 the temporary files (TCTEMP.TEXT, TCTEMP.IR) go to the prefix volume, or to
 the volume that holds the shell's path; TCLIB.OBJ and TCMSGS.TEXT are
 taken from the prefix volume or the boot volume when they are there, else
-from TINY-C:/LIB and TINY-C:.
+from UCSD-C:/LIB and UCSD-C:.
 
 WHAT CC SHOWS: a line for each source, its name, then the least free
 memory of each pass in bytes (the preprocessor's, Compiling, Generating
@@ -104,8 +104,8 @@ a link ends in its least free bytes and the bytes a second it linked.  The
 rates need the emulator's clock (Options > Host clock).
 
 REBUILDING (see SRC/README.TEXT), from the shell with TOOLS: on line:
-MAKE -f TINY-C:/SRC/CC/MAKEFILE makes TINY-C:CC2.CODE, MAKE -f
-TINY-C:/SRC/LIB/MAKEFILE TINY-C:/LIB/TCLIB2.OBJ, MAKE -f TINY-C:MAKEFILE
+MAKE -f UCSD-C:/SRC/CC/MAKEFILE makes UCSD-C:CC2.CODE, MAKE -f
+UCSD-C:/SRC/LIB/MAKEFILE UCSD-C:/LIB/TCLIB2.OBJ, MAKE -f UCSD-C:MAKEFILE
 both and every tool -- each compiling only what changed (MAKE -B: all).
 
 THE DEMO PROGRAMS are on TCEXTRA: (MAKE -f TCEXTRA:MAKEFILE), the test
@@ -132,22 +132,22 @@ makefiles say so).  Build with -Z anything that must run in Z80 mode,
 the library included; without -Z a program that calls through a function
 pointer runs in Z80 mode but gives wrong results.
 
-MEMORY: Tiny-C runs in Z80 mode as well as P-Code mode, and its
+MEMORY: UCSD-C runs in Z80 mode as well as P-Code mode, and its
 rebuild works in both.  (The Z80 interpreter on the boot disk has no SIN, COS,
 EXP, ATAN, SQT, LOG or LN: math.h's sqrt, sin ... stop there with
 "Unimplemented instruction"; P-Code mode has them.)
 
 SOURCE FILES are NAME.C and headers NAME.H, in UCSD text format (a
-.TEXT file's layout, and marked as text in the directory).  Tiny-C also
+.TEXT file's layout, and marked as text in the directory).  UCSD-C also
 takes NAME.TEXT when there is no NAME.C, and X.H.TEXT for "x.h".  The
 Filer's T(ransfer copies a text file to such a name as it is.
 
 FILES.TEXT lists every file on this volume.
 """
 
-README_SRC = """TINY-C SOURCES                              TINY-C:/SRC
+README_SRC = """UCSD-C SOURCES                              UCSD-C:/SRC
 
-The sources of the Tiny-C compiler (CC/: 14 modules, TC.H, PARSE.H,
+The sources of the UCSD-C compiler (CC/: 14 modules, TC.H, PARSE.H,
 GEN.H) and of its library (LIB/: %d modules, LIBINT.H), and the makefiles
 that rebuild them; the tools' sources are in TOOLS:/SRC.  MAKE is on
 TOOLS: (MAN MAKE): it compiles a module when its source or one of the
@@ -155,24 +155,24 @@ headers it includes is newer than its object (files have their times of
 day: BIGGY 1.34, emulator 2.13), then links or joins; MAKE -B ... does it
 all again, MAKE -n ... shows what it would do.
 
-REBUILDING THE COMPILER:  from the shell, MAKE -f TINY-C:/SRC/CC/MAKEFILE.
-It compiles the compiler's modules and links TINY-C:CC2.CODE (next to the
-compiler), identical to TINY-C:CC.CODE apart from its name (check it with
-TCEXTRA:CMPCODE).  To use it, MOVE TINY-C:CC2.CODE TINY-C:CC.CODE.
+REBUILDING THE COMPILER:  from the shell, MAKE -f UCSD-C:/SRC/CC/MAKEFILE.
+It compiles the compiler's modules and links UCSD-C:CC2.CODE (next to the
+compiler), identical to UCSD-C:CC.CODE apart from its name (check it with
+TCEXTRA:CMPCODE).  To use it, MOVE UCSD-C:CC2.CODE UCSD-C:CC.CODE.
 
-REBUILDING THE LIBRARY:  MAKE -f TINY-C:/SRC/LIB/MAKEFILE.  It compiles the
-library modules and joins them (-J) into TINY-C:/LIB/TCLIB2.OBJ, identical
-to TINY-C:/LIB/TCLIB.OBJ (check it with CMPCODE).  To use it, MOVE
-TINY-C:/LIB/TCLIB2.OBJ TINY-C:/LIB/TCLIB.OBJ.
+REBUILDING THE LIBRARY:  MAKE -f UCSD-C:/SRC/LIB/MAKEFILE.  It compiles the
+library modules and joins them (-J) into UCSD-C:/LIB/TCLIB2.OBJ, identical
+to UCSD-C:/LIB/TCLIB.OBJ (check it with CMPCODE).  To use it, MOVE
+UCSD-C:/LIB/TCLIB2.OBJ UCSD-C:/LIB/TCLIB.OBJ.
 
-EVERYTHING AT ONCE:  MAKE -f TINY-C:MAKEFILE (TOOLS:, SYS-C: and PASCALC:
+EVERYTHING AT ONCE:  MAKE -f UCSD-C:MAKEFILE (TOOLS:, SYS-C: and PASCALC:
 on line too): the two above, then every tool (TOOLS:/SRC/MAKEFILE), the
 operating system in C and the Pascal compiler in C, each MAKE -f of its
 own makefile.
 
 The makefiles name every file with its volume, so they work from
-anywhere; -O TINY-C:/OBJ puts every NAME.OBJ into TINY-C:/OBJ, not among
-the sources (DELETE TINY-C:/OBJ/*.OBJ from the shell to clear it: the
+anywhere; -O UCSD-C:/OBJ puts every NAME.OBJ into UCSD-C:/OBJ, not among
+the sources (DELETE UCSD-C:/OBJ/*.OBJ from the shell to clear it: the
 next MAKE compiles everything).  A recipe line longer than the shell's
 79 characters (a link of many modules) MAKE runs as CC @#4:MAKEnRk, its
 commands written into that file.
@@ -180,17 +180,17 @@ CC/OBJFORMAT.TEXT describes what is in a .OBJ file and how the linker
 reads it.
 """
 
-README_SRC = README_SRC % len([f for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c')])
+README_SRC = README_SRC % len([f for f in os.listdir(os.path.join(ROOT, 'ucsdc', 'lib')) if f.endswith('.c')])
 
-README_EX = """TINY-C EXTRAS                                     volume TCEXTRA:
+README_EX = """UCSD-C EXTRAS                                     volume TCEXTRA:
 
-Demo programs for Tiny-C (the compiler is on TINY-C:, the test programs
+Demo programs for UCSD-C (the compiler is on UCSD-C:, the test programs
 on TCTESTS:).  Every program is here as source (NAME.C) and ready to run
 (NAME.CODE):
 X(ecute TCEXTRA:NAME.  To compile one yourself, set the prefix to
-TCEXTRA: and X(ecute TINY-C:CC, answer NAME.
+TCEXTRA: and X(ecute UCSD-C:CC, answer NAME.
 
-REBUILDING THEM:  from the shell, MAKE -f TCEXTRA:MAKEFILE (TINY-C: and
+REBUILDING THEM:  from the shell, MAKE -f TCEXTRA:MAKEFILE (UCSD-C: and
 TOOLS: on line) compiles and links each program here whose source is
 newer than its code file (each leaves a NAME.OBJ as well); MAKE -B -f
 TCEXTRA:MAKEFILE all of them.
@@ -268,21 +268,21 @@ F or S).  Only an estimate (see memgap in PSYS.H); the emulator's
 Options > Track Least Free Memory gives the exact figure.
 
 CMPCODE compares two files byte by byte (for .CODE files the program
-name in block 0 aside): after MAKE -f TINY-C:/SRC/CC/MAKEFILE, compare
-TINY-C:CC.CODE with TINY-C:CC2.CODE, after MAKE -f TINY-C:/SRC/LIB/MAKEFILE
-TINY-C:/LIB/TCLIB.OBJ with TINY-C:/LIB/TCLIB2.OBJ; it prints IDENTICAL.
+name in block 0 aside): after MAKE -f UCSD-C:/SRC/CC/MAKEFILE, compare
+UCSD-C:CC.CODE with UCSD-C:CC2.CODE, after MAKE -f UCSD-C:/SRC/LIB/MAKEFILE
+UCSD-C:/LIB/TCLIB.OBJ with UCSD-C:/LIB/TCLIB2.OBJ; it prints IDENTICAL.
 
 FILES.TEXT lists every file on this volume.
 """
 
-README_TS = """TINY-C TESTS                                      volume TCTESTS:
+README_TS = """UCSD-C TESTS                                      volume TCTESTS:
 
-Test programs for Tiny-C (the compiler is on TINY-C:, the demos on
+Test programs for UCSD-C (the compiler is on UCSD-C:, the demos on
 TCEXTRA:): each exercises a part of the language or the library and
 prints what it computed.  Every program is here as source (NAME.C) and
 ready to run (NAME.CODE): X(ecute TCTESTS:NAME.
 
-REBUILDING THEM:  from the shell, MAKE -f TCTESTS:MAKEFILE (TINY-C: and
+REBUILDING THEM:  from the shell, MAKE -f TCTESTS:MAKEFILE (UCSD-C: and
 TOOLS: on line) compiles and links each program here whose source is
 newer than its code file (each leaves a NAME.OBJ as well); MAKE -B -f
 TCTESTS:MAKEFILE all of them.
@@ -328,7 +328,7 @@ TOOLS = [
 
 README_TOOLS = """TOOLS                                               volume TOOLS:
 
-Tools written in Tiny-C, ready to run.  Their sources are in TOOLS:/SRC, a
+Tools written in UCSD-C, ready to run.  Their sources are in TOOLS:/SRC, a
 sub-volume each (TOOLS:/SRC/VI, TOOLS:/SRC/GREP ...; SRC/README.TEXT); the
 objects a rebuild makes go into TOOLS:/OBJ (empty until then).
 
@@ -504,7 +504,7 @@ MAN     MAN [-l] [-k WORD] [NAME ...]  from the shell: the manual page of a
         new tool: MAN VI | LESS).
 
 BINDERC [FILE]  (or X(ecute TOOLS:BINDERC): the Pascal System's
-        Binder, BINDER.CODE, rewritten in Tiny-C (its Pascal source is lost;
+        Binder, BINDER.CODE, rewritten in UCSD-C (its Pascal source is lost;
         it makes the same SYSTEM.PASCAL).  Puts the GOTOXY(X,Y: INTEGER)
         procedure of your own, the first procedure of the code file FILE
         (name as typed, else with .CODE), into SYSTEM.PASCAL of the prefix
@@ -518,7 +518,7 @@ README_TOOLS_SRC = """TOOL SOURCES                                TOOLS:/SRC
 The sources of the tools on TOOLS:, a sub-volume each: SRC/VI holds vi's
 modules, SRC/GREP GREP.C, and so on.
 
-REBUILDING THEM:  from the shell, MAKE -f TOOLS:/SRC/MAKEFILE (TINY-C: on
+REBUILDING THEM:  from the shell, MAKE -f TOOLS:/SRC/MAKEFILE (UCSD-C: on
 line).  MAKEFILE.TEXT compiles each module whose source, or a header it
 includes, is newer than its object (-Z; -O TOOLS:/OBJ puts each NAME.OBJ
 into TOOLS:/OBJ) and links each tool whose objects changed straight onto
@@ -527,8 +527,8 @@ on a new volume, so the first MAKE builds them all; MAKE -B -f
 TOOLS:/SRC/MAKEFILE does every time; MAKE -f TOOLS:/SRC/MAKEFILE
 TOOLS:VI.CODE makes one.
 
-EVERYTHING AT ONCE:  MAKE -f TINY-C:MAKEFILE: the compiler
-(TINY-C:CC2.CODE), the library (TINY-C:/LIB/TCLIB2.OBJ), then TOOLS ...,
+EVERYTHING AT ONCE:  MAKE -f UCSD-C:MAKEFILE: the compiler
+(UCSD-C:CC2.CODE), the library (UCSD-C:/LIB/TCLIB2.OBJ), then TOOLS ...,
 each the MAKE of its own makefile.
 
 A NEW TOOL: MKDIR TOOLS:/SRC/NAME, its sources there, its rules in
@@ -537,7 +537,7 @@ from $(S)NAME/NAME.C), its name in all's list, and a page in
 TOOLS:MAN.TEXT.
 
 VI      vi: the BusyBox "tiny vi" (GPL v2 or later, see VI.H), edited
-        for Tiny-C, in modules: VI.H (what they share), VIMAIN.C (start,
+        for UCSD-C, in modules: VI.H (what they share), VIMAIN.C (start,
         main loop), VISCREEN.C (the screen), VITEXT.C (moving, changing
         text), VICOLON.C (the : commands), VICMD.C (the vi commands),
         VIPAGE.C and VIPAGE.H (the window into big files), VIUCSD.C (the
@@ -586,18 +586,18 @@ FILES.TEXT lists every file on this volume.
 # tests/ programs go on TCTESTS:
 DEMOS = ('boxes', 'calc', 'demo', 'guess', 'hanoi', 'pi', 'queens', 'sieve')
 
-LIBMODS_ = sorted(f[:-2] for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c'))
+LIBMODS_ = sorted(f[:-2] for f in os.listdir(os.path.join(ROOT, 'ucsdc', 'lib')) if f.endswith('.c'))
 
 
 def join_lines(target, mods, width=140):
     """-J lines that join mods into target, each at most width characters (CC reads a batch
-    line into 150): the first ones into TINY-C:/OBJ/TCLIBPn, which the next one joins first
+    line into 150): the first ones into UCSD-C:/OBJ/TCLIBPn, which the next one joins first
     (a join leaves out each object's trailing zeros: the same bytes as one join of them all)"""
     lines, part, prev, k = [], [], [], 0
     for m in mods:
         if part and len('-J %s=%s' % (target, ','.join(prev + part + [m]))) > width:
             k += 1
-            name = 'TINY-C:/OBJ/TCLIBP%d' % k
+            name = 'UCSD-C:/OBJ/TCLIBP%d' % k
             lines.append('-J %s=%s\n' % (name, ','.join(prev + part)))
             prev, part = [name], []
         part.append(m)
@@ -606,7 +606,7 @@ def join_lines(target, mods, width=140):
 
 def headers(path, volname, seen=None):
     """the headers path includes, on the P-System: "x.h" beside it (volname: that sub-volume's
-    name, TOOLS:/SRC/VI/), <x.h> and the rest in TINY-C:/INCLUDE -- recursively, in order"""
+    name, TOOLS:/SRC/VI/), <x.h> and the rest in UCSD-C:/INCLUDE -- recursively, in order"""
     seen = [] if seen is None else seen
     for line in open(path):
         m = re.match(r'\s*#\s*include\s*([<"])([^>"]+\.[hc])[>"]', line)
@@ -617,12 +617,12 @@ def headers(path, volname, seen=None):
         if m.group(1) == '"' and os.path.exists(here):
             name, host = volname + h.upper(), here
         elif os.path.exists(os.path.join(INC, h)):
-            name, host = 'TINY-C:/INCLUDE/' + h.upper(), os.path.join(INC, h)
+            name, host = 'UCSD-C:/INCLUDE/' + h.upper(), os.path.join(INC, h)
         else:
             continue
         if name not in seen:
             seen.append(name)
-            headers(host, volname if host == here else 'TINY-C:/INCLUDE/', seen)
+            headers(host, volname if host == here else 'UCSD-C:/INCLUDE/', seen)
     return seen
 
 
@@ -642,7 +642,7 @@ def hdr_rules(objs_srcs, volname):
     """OBJ : its headers, a line each (no recipe: the object's own rule makes it)"""
     out = ''
     for obj, src in objs_srcs:
-        h = [n.replace('TINY-C:/INCLUDE/', '$(I)').replace(volname, '$(H)') for n in headers(src, volname)]
+        h = [n.replace('UCSD-C:/INCLUDE/', '$(I)').replace(volname, '$(H)') for n in headers(src, volname)]
         if h:
             out += wrap(h, obj + ' :')
     return out
@@ -650,7 +650,7 @@ def hdr_rules(objs_srcs, volname):
 
 def join_rules(target, mods, odir, width=140):
     """the library's join: one -J when its command (CC's batch line, 150 at most) fits, else
-    in parts -- TINY-C:/OBJ/TCLIBPn joins some, the next one joins it first (a join leaves out
+    in parts -- UCSD-C:/OBJ/TCLIBPn joins some, the next one joins it first (a join leaves out
     each object's trailing zeros: the same bytes as one join of them all)"""
     rules, part, prev, k = [], [], [], 0
     for m in mods:
@@ -671,34 +671,34 @@ def join_rules(target, mods, odir, width=140):
 
 
 def lib_makefile():
-    """TINY-C:/SRC/LIB/MAKEFILE.TEXT: the library"""
+    """UCSD-C:/SRC/LIB/MAKEFILE.TEXT: the library"""
     mods = [m.upper() for m in LIBMODS_]
-    return ("""# MAKEFILE -- the C library: from the shell, MAKE -f TINY-C:/SRC/LIB/MAKEFILE
+    return ("""# MAKEFILE -- the C library: from the shell, MAKE -f UCSD-C:/SRC/LIB/MAKEFILE
 # (MAKE.CODE is on TOOLS:).  Compiles each module whose source or headers changed
-# (-Z; its NAME.OBJ into TINY-C:/OBJ), then joins them into TINY-C:/LIB/TCLIB2.OBJ,
-# identical to TINY-C:/LIB/TCLIB.OBJ (CMPCODE says so) -- in parts
-# (TINY-C:/OBJ/TCLIBPn) where one -J would be longer than the 150 characters a line
+# (-Z; its NAME.OBJ into UCSD-C:/OBJ), then joins them into UCSD-C:/LIB/TCLIB2.OBJ,
+# identical to UCSD-C:/LIB/TCLIB.OBJ (CMPCODE says so) -- in parts
+# (UCSD-C:/OBJ/TCLIBPn) where one -J would be longer than the 150 characters a line
 # of CC's batch file holds.  MAKE -B ... compiles them all again.
-S = TINY-C:/SRC/LIB/
-O = TINY-C:/OBJ/
-I = TINY-C:/INCLUDE/
+S = UCSD-C:/SRC/LIB/
+O = UCSD-C:/OBJ/
+I = UCSD-C:/INCLUDE/
 
-""" + join_rules('TINY-C:/LIB/TCLIB2', mods, 'TINY-C:/OBJ/') + """
+""" + join_rules('UCSD-C:/LIB/TCLIB2', mods, 'UCSD-C:/OBJ/') + """
 $(O)%.OBJ : $(S)%.C
 	$(CC) -O $(O) -Z -C $<
 
 # each module's headers: it is compiled again when one of them changes
-""" + hdr_rules([('$(O)%s.OBJ' % m.upper(), os.path.join(LIB, m + '.c')) for m in LIBMODS_], 'TINY-C:/SRC/LIB/').replace('$(H)', '$(S)'))
+""" + hdr_rules([('$(O)%s.OBJ' % m.upper(), os.path.join(LIB, m + '.c')) for m in LIBMODS_], 'UCSD-C:/SRC/LIB/').replace('$(H)', '$(S)'))
 
 
 def program_makefile(comment, src, obj, mods, out, z=False):
     """a makefile for a program in C of several modules (mods: their host paths): each module
-    in src (TINY-C:/SRC/CC/) compiled when it or a header it includes changed, its object into
-    obj (TINY-C:/OBJ/), then all linked into out (CC's -L name: TINY-C:CC2, SYS-C:SYSTEM.C.)"""
+    in src (UCSD-C:/SRC/CC/) compiled when it or a header it includes changed, its object into
+    obj (UCSD-C:/OBJ/), then all linked into out (CC's -L name: UCSD-C:CC2, SYS-C:SYSTEM.C.)"""
     names = [os.path.splitext(os.path.basename(m))[0].upper() for m in mods]
     return (''.join('# %s\n' % l for l in comment.split('\n')) + """S = %s
 O = %s
-I = TINY-C:/INCLUDE/
+I = UCSD-C:/INCLUDE/
 """ % (src, obj) + wrap(names, 'MODS =') + """
 %s : $(addprefix $(O),$(addsuffix .OBJ,$(MODS)))
 \t$(CC) -O $(O) -L %s=$(subst $(space),$(comma),$(MODS))
@@ -712,12 +712,12 @@ $(O)%%.OBJ : $(S)%%.C
 
 
 def cc_makefile():
-    """TINY-C:/SRC/CC/MAKEFILE.TEXT: the compiler"""
-    return program_makefile("""MAKEFILE -- the Tiny-C compiler: from the shell, MAKE -f TINY-C:/SRC/CC/MAKEFILE
+    """UCSD-C:/SRC/CC/MAKEFILE.TEXT: the compiler"""
+    return program_makefile("""MAKEFILE -- the UCSD-C compiler: from the shell, MAKE -f UCSD-C:/SRC/CC/MAKEFILE
 (MAKE.CODE is on TOOLS:).  Compiles each module whose source or headers changed
-(its NAME.OBJ into TINY-C:/OBJ), then links them into TINY-C:CC2.CODE, identical to
-TINY-C:CC.CODE apart from its name (CMPCODE).  MAKE -B ... compiles them all again.""",
-                            'TINY-C:/SRC/CC/', 'TINY-C:/OBJ/', [os.path.join(SRC, m + '.c') for m in MODULES], 'TINY-C:CC2')
+(its NAME.OBJ into UCSD-C:/OBJ), then links them into UCSD-C:CC2.CODE, identical to
+UCSD-C:CC.CODE apart from its name (CMPCODE).  MAKE -B ... compiles them all again.""",
+                            'UCSD-C:/SRC/CC/', 'UCSD-C:/OBJ/', [os.path.join(SRC, m + '.c') for m in MODULES], 'UCSD-C:CC2')
 
 WHAT = {
     'assert.h': 'assert()',
@@ -865,7 +865,7 @@ Vol = Dir
 
 
 def compiled(path):
-    """compile a program with the host Tiny-C; its .CODE bytes"""
+    """compile a program with the host UCSD-C; its .CODE bytes"""
     os.makedirs(TMP, exist_ok=True)
     base, code = compile_c(path, TMP, z80=True)      # -z: the volumes work in Z80 mode too
     d, n = os.path.split(os.path.splitext(path)[0])
@@ -875,14 +875,14 @@ def compiled(path):
     return open(code, 'rb').read()
 
 
-def tiny_c():
-    """TINY-C: the compiler, its headers and library, and their sources"""
-    t = Dir('TINY-C', 4000)
+def ucsd_c():
+    """UCSD-C: the compiler, its headers and library, and their sources"""
+    t = Dir('UCSD-C', 4000)
     code, log = build()
-    t.binary('CC.CODE', open(code, 'rb').read(), 'the Tiny-C compiler: CC from the shell, X(ecute TINY-C:CC')
+    t.binary('CC.CODE', open(code, 'rb').read(), 'the UCSD-C compiler: CC from the shell, X(ecute UCSD-C:CC')
     t.textfile('TCMSGS.TEXT', os.path.join(INC, 'tcmsgs.txt'), "the compiler's messages (line n = message n)")
-    t.text('README.TEXT', README_TC, 'how to use Tiny-C, and what is where')
-    t.text('MAKEFILE.TEXT', ALL, 'MAKE -f TINY-C:MAKEFILE: rebuilds the compiler, the library, every tool, SYS-C:SYSTEM.C, PASCALC:PC.CODE')
+    t.text('README.TEXT', README_TC, 'how to use UCSD-C, and what is where')
+    t.text('MAKEFILE.TEXT', ALL, 'MAKE -f UCSD-C:MAKEFILE: rebuilds the compiler, the library, every tool, SYS-C:SYSTEM.C, PASCALC:PC.CODE')
     inc = t.sub('INCLUDE', 'the headers (#include <stdio.h> finds them here)')
     for f in sorted(os.listdir(INC)):
         if f.endswith('.h'):
@@ -891,16 +891,16 @@ def tiny_c():
     lib = t.sub('LIB', 'the C library', 6 + 2 * ((len(tclib) + 511) // 512) + ROOM)  # (and TCLIB2.OBJ, LIBS)
     lib.binary('TCLIB.OBJ', tclib, 'the C library (built with -Z), linked into every program')
     src = t.sub('SRC', 'the sources of the compiler and the library, and how to rebuild them')
-    src.text('README.TEXT', README_SRC, 'how to rebuild Tiny-C and the tools')
+    src.text('README.TEXT', README_SRC, 'how to rebuild UCSD-C and the tools')
     cc = src.sub('CC', 'the compiler: its modules and MAKEFILE.TEXT')
-    cc.text('MAKEFILE.TEXT', cc_makefile(), 'MAKE -f TINY-C:/SRC/CC/MAKEFILE: rebuilds the compiler -> TINY-C:CC2.CODE')
+    cc.text('MAKEFILE.TEXT', cc_makefile(), 'MAKE -f UCSD-C:/SRC/CC/MAKEFILE: rebuilds the compiler -> UCSD-C:CC2.CODE')
     cc.textfile('OBJFORMAT.TEXT', os.path.join(SRC, 'OBJFORMAT.TEXT'), 'the .OBJ file format: what CC writes, how the linker reads it')
     for m in MODULES:
         cc.textfile(m.upper() + '.C', os.path.join(SRC, m + '.c'))
     for h in ('tc.h', 'parse.h', 'gen.h'):
         cc.textfile(h.upper(), os.path.join(SRC, h))
     lb = src.sub('LIB', 'the library: its modules and MAKEFILE.TEXT')
-    lb.text('MAKEFILE.TEXT', lib_makefile(), 'MAKE -f TINY-C:/SRC/LIB/MAKEFILE: rebuilds the library -> TINY-C:/LIB/TCLIB2.OBJ')
+    lb.text('MAKEFILE.TEXT', lib_makefile(), 'MAKE -f UCSD-C:/SRC/LIB/MAKEFILE: rebuilds the library -> UCSD-C:/LIB/TCLIB2.OBJ')
     for m in LIBMODS:
         lb.textfile(m.upper() + '.C', os.path.join(LIB, m + '.c'))
     lb.textfile('LIBINT.H', os.path.join(LIB, 'libint.h'))
@@ -922,7 +922,7 @@ def programs(vol, progs, desc):
     names = [os.path.splitext(os.path.basename(p))[0].upper()[:10] for p in progs]
     v = vol.name
     vol.text('MAKEFILE.TEXT', """# MAKEFILE -- every program on %s: from the shell, MAKE -f %s:MAKEFILE (or CD %s:
-# and MAKE; TINY-C: on line): each program whose source changed compiled and linked
+# and MAKE; UCSD-C: on line): each program whose source changed compiled and linked
 # (-Z; it leaves a NAME.OBJ too).  MAKE -B ... all of them; MAKE -f %s:MAKEFILE
 # %s:%s.CODE one.
 V = %s:
@@ -959,14 +959,14 @@ def tests():
 
 ALL = """# MAKEFILE -- everything: the compiler, the library, every tool, the operating
 # system in C and the Pascal compiler in C, each with its own makefile (TOOLS:,
-# SYS-C: and PASCALC: on line too).  From the shell: MAKE -f TINY-C:MAKEFILE, or
-# MAKE -f TINY-C:MAKEFILE TOOLS for one of them (CC LIB TOOLS SYSC PASCALC).
+# SYS-C: and PASCALC: on line too).  From the shell: MAKE -f UCSD-C:MAKEFILE, or
+# MAKE -f UCSD-C:MAKEFILE TOOLS for one of them (CC LIB TOOLS SYSC PASCALC).
 all : CC LIB TOOLS SYSC PASCALC
 
 CC :
-\t$(MAKE) -f TINY-C:/SRC/CC/MAKEFILE
+\t$(MAKE) -f UCSD-C:/SRC/CC/MAKEFILE
 LIB :
-\t$(MAKE) -f TINY-C:/SRC/LIB/MAKEFILE
+\t$(MAKE) -f UCSD-C:/SRC/LIB/MAKEFILE
 TOOLS :
 \t$(MAKE) -f TOOLS:/SRC/MAKEFILE
 SYSC :
@@ -981,13 +981,13 @@ PASCALC :
 def tools_makefile():
     """TOOLS:/SRC/MAKEFILE.TEXT: every tool"""
     out = """# MAKEFILE -- every tool on TOOLS:: from the shell, MAKE -f TOOLS:/SRC/MAKEFILE
-# (TINY-C: on line), or MAKE -f TOOLS:/SRC/MAKEFILE TOOLS:VI.CODE for one.  Compiles
+# (UCSD-C: on line), or MAKE -f TOOLS:/SRC/MAKEFILE TOOLS:VI.CODE for one.  Compiles
 # each module whose source or headers changed (-Z; its NAME.OBJ into TOOLS:/OBJ)
 # and links the tools whose objects changed onto TOOLS:.  TOOLS:/OBJ is empty on a
 # new volume: the first MAKE builds every tool.  MAKE -B ... builds them all again.
 S = TOOLS:/SRC/
 O = TOOLS:/OBJ/
-I = TINY-C:/INCLUDE/
+I = UCSD-C:/INCLUDE/
 ZC = $(CC) -O $(O) -Z -C
 
 """ + wrap(['TOOLS:%s.CODE' % name for name, mods, hdrs, desc in TOOLS], 'all :') + '\n'
@@ -1033,13 +1033,10 @@ def tools():
 
 
 def main():
-    tiny_c()
+    ucsd_c()
     extras()
     tests()
     tools()
-    old = os.path.join(ROOT, 'TinyC_Volume.zip')
-    if os.path.exists(old):
-        os.remove(old)
 
 
 if __name__ == '__main__':

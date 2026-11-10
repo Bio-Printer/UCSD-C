@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """mastertest.py -- MASTER:MAKEFILE on the P-System (tools/mkmaster.py): from the shell, make -f
-master:makefile rebuilds everything -- Tiny-C's compiler, library and tools, the demos and
+master:makefile rebuilds everything -- UCSD-C's compiler, library and tools, the demos and
 tests, SYS-C:SYSTEM.C, PASCALC:PC.CODE, BC and B2 (their volumes' makefiles, each volume
 mounted by MOUNT first) and the original programs (origtest.py's part); then again: nothing to
 be done anywhere (no CC, BC, B2, PASM or PC runs).  The parts' results are what their own tests
 check (alltest, voltest, UCSD-BASIC's voltest and voltest2, origtest, pasmtest); here: the run,
 every part in turn, nothing stopped, and the second run.
 
-Disks, all in the run's folder (MOUNT looks there): #4 BIGGY, #5 TINY-C, #9 MASTER, #10 the
+Disks, all in the run's folder (MOUNT looks there): #4 BIGGY, #5 UCSD-C, #9 MASTER, #10 the
 source disks, #11 TOOLS, #12 TCEXTRA, TCTESTS, SYS-C, PASCAL-C and U016.1_PCODE_ASSEM in turn,
 #13 BASIC, BASIC2 and SOURCE.  The volumes: build/ (mkvolume.py, mkmaster.py, mkpasm.py),
 UCSD-SYSTEM-C's build/SYS-C.BLK ($SYSTEMC), UCSD-Pascal-compiler-written-in-C's build/PASCAL-C.BLK
@@ -24,13 +24,13 @@ SYSTEMC = os.environ.get('SYSTEMC', os.path.join(SIB, 'ucsd-system-c'))
 PASCALC = os.environ.get('PASCALC', os.path.join(SIB, 'ucsd-pascal-compiler-written-in-c'))
 BASIC = os.environ.get('BASIC', os.path.join(SIB, 'ucsd-basic'))
 
-PARTS = ['> MAKE -f TINY-C:/SRC/CC/MAKEFILE', '> MAKE -f TINY-C:/SRC/LIB/MAKEFILE', '> MAKE -f TOOLS:/SRC/MAKEFILE',
+PARTS = ['> MAKE -f UCSD-C:/SRC/CC/MAKEFILE', '> MAKE -f UCSD-C:/SRC/LIB/MAKEFILE', '> MAKE -f TOOLS:/SRC/MAKEFILE',
          '> MOUNT #12 TCEXTRA', '> MAKE -f TCEXTRA:MAKEFILE', '> MOUNT #12 TCTESTS', '> MAKE -f TCTESTS:MAKEFILE',
          '> MOUNT #12 SYS-C', '> MAKE -f SYS-C:MAKEFILE', '> MOUNT #12 PASCAL-C', '> MAKE -f PASCALC:/SRC/MAKEFILE',
          '> MOUNT #13 BASIC', '> MAKE -f BASIC:MAKEFILE', '> MAKE -f BASIC:/TEST/MAKEFILE', '> MOUNT #13 BASIC2',
          '> MAKE -f BASIC2:MAKEFILE', '> MAKE -f BASIC2:/TEST/MAKEFILE', '> MOUNT #12 U016.1_PCODE_ASSEM',
          '> MAKE -f U016.1:MAKEFILE', '> MAKE -f MASTER:/ORIG/MAKEFILE',
-         '> MAKE -f MASTER:/ORIG/U134', '> MOUNT #5 TINY-C']
+         '> MAKE -f MASTER:/ORIG/U134', '> MOUNT #5 UCSD-C']
 
 
 def main():
@@ -39,8 +39,8 @@ def main():
     d = tempfile.mkdtemp(prefix='mastertest_')
     for v in ('TOOLS', 'MASTER', 'SOURCE', 'TCEXTRA', 'TCTESTS', 'U016.1_PCODE_ASSEM'):
         shutil.copy(os.path.join(BUILD, v + '.BLK'), d)
-    shutil.copy(os.path.join(BUILD, 'TINY-C.BLK'), os.path.join(d, 'TINYC0.BLK'))
-    os.symlink('VERIFY_SOURCE.BLK', os.path.join(d, 'TINY-C.BLK'))   # (#5's image: MOUNT #5 TINY-C brings it back)
+    shutil.copy(os.path.join(BUILD, 'UCSD-C.BLK'), os.path.join(d, 'UCSDC0.BLK'))
+    os.symlink('VERIFY_SOURCE.BLK', os.path.join(d, 'UCSD-C.BLK'))   # (#5's image: MOUNT #5 UCSD-C brings it back)
     shutil.copy(os.path.join(SYSTEMC, 'build', 'SYS-C.BLK'), d)
     shutil.copy(os.path.join(PASCALC, 'build', 'PASCAL-C.BLK'), d)
     for b in ('BASIC', 'BASIC2'):
@@ -54,7 +54,7 @@ def main():
     shutil.copy(os.path.join(BUILD, 'BIGGY.BLK'), os.path.join(data, 'Big_Disk.BLK'))
     cmd = 'make -f master:makefile'
     L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "shell> "', 'TYPE "%s\\r"' % cmd] + ['WAIT "%s"' % p for p in PARTS] + \
-        ['WAIT "shell> "', 'TYPE "%s\\r"' % cmd, 'WAIT "> MOUNT #5 TINY-C"', 'WAIT "shell> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
+        ['WAIT "shell> "', 'TYPE "%s\\r"' % cmd, 'WAIT "> MOUNT #5 UCSD-C"', 'WAIT "shell> "', 'TYPE "bye\\r"', 'WAIT "Command:"']
     sp = os.path.join(d, 'master.script')
     open(sp, 'w').write(shell_script('\n'.join(L) + '\n'))
     # (P-Code mode with the Harvard layout and the Z80 interpreter's memory reclaimed, as UCSD-BASIC's
@@ -62,7 +62,7 @@ def main():
     env = dict(os.environ, VERIFY_HARVARD='1', VERIFY_RECLAIM='1', VERIFY_HOSTCLOCK='2026-11-07T12:00:00', VERIFY_UNIT10=os.path.join(d, ORIG[0][1] + '.BLK'),
                VERIFY_UNIT11=os.path.join(d, 'TOOLS.BLK'), VERIFY_UNIT12=os.path.join(d, 'TCEXTRA.BLK'),
                VERIFY_UNIT13=os.path.join(d, 'BASIC.BLK'))
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'TINYC0.BLK'), os.path.join(d, 'MASTER.BLK'),
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'UCSDC0.BLK'), os.path.join(d, 'MASTER.BLK'),
                         sp, mode, d, '', '7200'], capture_output=True, text=True, env=env)
     tp = os.path.join(d, 'transcript.txt')
     tr = shell_transcript(open(tp, encoding='latin1').read()).replace('\r', '\n') if os.path.exists(tp) else ''

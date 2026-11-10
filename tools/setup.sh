@@ -7,7 +7,7 @@
 #     ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/setup.sh
 # Calls through function pointers are compiled to CSP 138 (CALLI) by default,
 # which needs emulator version 1.91 or later; the v1.88 zip has no CALLI, so
-# with it use  tc -z  (TINYC_Z80CALLS=1 for the tools).
+# with it use  tc -z  (UCSDC_Z80CALLS=1 for the tools).
 set -e
 cd "$(dirname "$0")/.."
 ZIP=UCSD-Pascal---P-Machine_work-v1.88.zip

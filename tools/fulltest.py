@@ -4,7 +4,7 @@ P-System: it says so (message 118, the file's name), the file goes (no short
 one is left that looks whole), and CC stops -- it does not go on as if the
 file were there.
 
-Disks: #5 TINY-C:, #9 BIG: (HELLO.C), #10 TINY: (10 blocks: 4 free).  From
+Disks: #5 UCSD-C:, #9 BIG: (HELLO.C), #10 TINY: (10 blocks: 4 free).  From
 the shell:
 
   cd #9; cc -c hello            HELLO.OBJ on BIG:
@@ -30,7 +30,7 @@ MSG = 'cannot write all of it'
 def main():
     ensure_setup()
     d = tempfile.mkdtemp(prefix='fulltest_')
-    shutil.copy(os.path.join(BUILD, 'TINY-C.BLK'), d)
+    shutil.copy(os.path.join(BUILD, 'UCSD-C.BLK'), d)
     big = os.path.join(d, 'BIG.BLK')
     ucsdvol.main(['new', big, 'BIG', '400'])
     v = ucsdvol.Volume(big)
@@ -47,7 +47,7 @@ def main():
     open(sp, 'w').write(shell_script('\n'.join(L) + '\n'))
     mode = os.environ.get('PSYS_MODE', 'native')
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
-                        os.path.join(d, 'TINY-C.BLK'), big, sp, mode, os.path.join(d, 'out'), '', '1200'],
+                        os.path.join(d, 'UCSD-C.BLK'), big, sp, mode, os.path.join(d, 'out'), '', '1200'],
                        capture_output=True, text=True, env=dict(os.environ, VERIFY_UNIT10=tiny))
     tp = os.path.join(d, 'out', 'transcript.txt')
     tr = shell_transcript(open(tp, encoding='latin1').read()).replace('\r', '\n') if os.path.exists(tp) else ''

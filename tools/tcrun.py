@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""tcrun.py -- compile a C program with the host Tiny-C and run it on the P-System.
+"""tcrun.py -- compile a C program with the host UCSD-C and run it on the P-System.
 
   tcrun.py prog.c [input-keys]      prints the program's console output
 
-The host compiler is built into build/tc from tinyc/tc.c if needed.
+The host compiler is built into build/tc from ucsdc/tc.c if needed.
 """
 import os, sys, subprocess, shutil
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -12,35 +12,35 @@ sys.path.insert(0, HERE)
 from psys import PSystem, esc
 
 TC = os.path.join(ROOT, 'build', 'tc')
-INC = os.path.join(ROOT, 'tinyc', 'include')
+INC = os.path.join(ROOT, 'ucsdc', 'include')
 
 
 def build_tc():
-    srcs = [os.path.join(ROOT, 'tinyc', f) for f in os.listdir(os.path.join(ROOT, 'tinyc')) if f.endswith(('.c', '.h'))]
+    srcs = [os.path.join(ROOT, 'ucsdc', f) for f in os.listdir(os.path.join(ROOT, 'ucsdc')) if f.endswith(('.c', '.h'))]
     if not os.path.exists(TC) or any(os.path.getmtime(s) > os.path.getmtime(TC) for s in srcs):
         os.makedirs(os.path.dirname(TC), exist_ok=True)
-        subprocess.check_call(['gcc', '-O1', '-w', '-o', TC, os.path.join(ROOT, 'tinyc', 'tc.c')])
+        subprocess.check_call(['gcc', '-O1', '-w', '-o', TC, os.path.join(ROOT, 'ucsdc', 'tc.c')])
 
 
-LIBSRC = os.path.join(ROOT, 'tinyc', 'lib')
+LIBSRC = os.path.join(ROOT, 'ucsdc', 'lib')
 LIB = os.path.join(INC, 'tclib.obj')
 LIBZ = os.path.join(INC, 'tclibz.obj')
 
 
 def z80calls(z80=None):
     """Calls through function pointers for the Z80 interpreter (tc -z; no CSP 138)?
-    Default: yes when running in Z80 mode (PSYS_MODE=z80) or TINYC_Z80CALLS=1;
-    TINYC_Z80CALLS=0: no, also in Z80 mode (the emulator's Z80-mode coprocessor,
+    Default: yes when running in Z80 mode (PSYS_MODE=z80) or UCSDC_Z80CALLS=1;
+    UCSDC_Z80CALLS=0: no, also in Z80 mode (the emulator's Z80-mode coprocessor,
     engine 1.93, does CSP 138). Volumes and packs that must work in both
     modes pass z80=True."""
     if z80 is None:
-        zc = os.environ.get('TINYC_Z80CALLS')
+        zc = os.environ.get('UCSDC_Z80CALLS')
         z80 = zc == '1' or (zc != '0' and os.environ.get('PSYS_MODE') == 'z80')
     return bool(z80)
 
 
 def build_lib(z80=None):
-    """compile tinyc/lib/*.c and concatenate the modules into tclib.obj
+    """compile ucsdc/lib/*.c and concatenate the modules into tclib.obj
     (tclibz.obj, built with -z, for the Z80 interpreter)"""
     z = z80calls(z80)
     lib = LIBZ if z else LIB

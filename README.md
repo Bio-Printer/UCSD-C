@@ -1,4 +1,4 @@
-# Tiny-C for UCSD Pascal II.0
+# UCSD-C for UCSD Pascal II.0
 
 A C compiler (a practical subset of C) that runs **on** the UCSD Pascal
 II.0 P-System and produces P-code `.CODE` files. It is written in the same
@@ -11,14 +11,14 @@ Start here when picking the project up in a new session.
 
 | Path | What |
 |---|---|
-| `tinyc/*.c`, `tc.h`, `parse.h`, `gen.h` | the compiler: `main` (driver, `@FILE` batches), `util`, `types`, `pp` (preprocessor), `lex`, `psym`/`expr`/`decl`/`stmt`/`compile` (parser; `compile` is its pass, split from `stmt`), `ir` (intermediate file), `gen`/`genx` (P-code: emitter and object file / expressions; split so that each compiles in Z80 mode), `link` (linker, `-J` join) |
-| `tinyc/lib/*.c`, `libint.h` | the C library (joined into `TCLIB.OBJ`) |
-| `tinyc/include/*.h` | headers; `tcmsgs.txt` = the compiler's messages (TCMSGS.TEXT) |
+| `ucsdc/*.c`, `tc.h`, `parse.h`, `gen.h` | the compiler: `main` (driver, `@FILE` batches), `util`, `types`, `pp` (preprocessor), `lex`, `psym`/`expr`/`decl`/`stmt`/`compile` (parser; `compile` is its pass, split from `stmt`), `ir` (intermediate file), `gen`/`genx` (P-code: emitter and object file / expressions; split so that each compiles in Z80 mode), `link` (linker, `-J` join) |
+| `ucsdc/lib/*.c`, `libint.h` | the C library (joined into `TCLIB.OBJ`) |
+| `ucsdc/include/*.h` | headers; `tcmsgs.txt` = the compiler's messages (TCMSGS.TEXT) |
 | `tests/NAME.c` + `.expect` (+ `.keys`, `.wait`) | test/demo programs and their expected output |
 | `examples/` | `shell.c` (a mini-shell built on `pexec()`: a program name without a volume is looked for on every disk on line, and when several have it the shell asks which; `CD #5` sets the prefix to unit 5's volume, `DIR [VOL:|#n:][PATTERN]` lists files with `*`/`=` and `?` wildcards, `TYPE` shows text files, `DELETE` deletes files (with wildcards it asks first), `WHEREIS` finds files on every disk and in every sub-volume, `VOLUMES` lists the disks, `COPY`/`MOVE`/`RENAME` (a copy keeps its kind and date), `MKDIR NAME [BLOCKS]` makes a sub-volume (`RMDIR NAME` removes it, asking first when it holds files; `DIR A` lists what is in it; COPY, MOVE and RENAME work in sub-volumes too) (a data file holding a volume of its own: its files are `VOL:A/NAME` or `VOL:/A/B/NAME`, which `fopen` and `remove` in every program take; a code file in one runs where it is: `A/PROG`, or a name on the path) and `CD VOL:/A` makes it the path for names without a volume (the prompt shows it, `BIGGY:/A> `, and `PWD`; `.` and `..` in any path; `COPY SRC` alone copies here); `COMMAND >FILE` / `>>FILE` / `<FILE` redirect a command's output / input and `A | B | C` pipe one program's output into the next (the shell's own commands and programs whose main has argc/argv, e.g. `DIR *.C | GREP TEST`; `.TEXT` files), its command line keeps the last 10 commands in `#4:SYSTEM.CMDS` (Up/Down) and is edited with Left, Right, Home, End, Insert, Delete; on BIGGY as SYSTEM.SHELL, which `S` at the Command: prompt runs) `memfree.c` (a program's free memory), `memmark.c` (`MEMMARK FILL`, run a program, `MEMMARK SCAN`: an estimate of that program's least free memory, from `memfill()`/`memgap()` in `psys.h`) and `args.c` (does what its `main(argc, argv)` arguments say: run it from the shell, e.g. `ARGS ADD 2 3`); on TCEXTRA |
-| `volumes/` | **TINY-C.zip** (Tiny-C in one volume, laid out like a Unix tree in sub-volumes: CC.CODE, TCMSGS.TEXT and MAKEFILE.TEXT (everything at once: `MAKE -f TINY-C:MAKEFILE`) at the top, `INCLUDE/` the headers, `LIB/` TCLIB.OBJ, `OBJ/` (empty) the objects a rebuild makes, `SRC/` the sources -- `SRC/CC/` the compiler and `SRC/LIB/` the library, each with its MAKEFILE.TEXT; the compiler looks for them on `TINY-C:`), **TOOLS.zip** (the tools written in Tiny-C, ready to run: VI.CODE, GREP.CODE, BINDERC.CODE ..., MAN.TEXT, and `SRC/` their sources, a sub-volume each -- `SRC/VI/`, `SRC/GREP/` ... -- with MAKEFILE.TEXT, and `OBJ/` for their objects), **TCEXTRA.zip** (demos, the shell and its examples, CMPCODE), **TCTESTS.zip** (the test programs; volumes of their own because a UCSD directory holds 77 files and their makefiles leave a NAME.OBJ per program) and **BIGGY.zip** (boot disk `Big_Disk.BLK` with Tiny-C ready to use; doubles need the v1.88 emulator's CSP 100..137); `*.txt` = file listings, a sub-volume's files as `A/NAME` |
+| `volumes/` | **UCSD-C.zip** (UCSD-C in one volume, laid out like a Unix tree in sub-volumes: CC.CODE, TCMSGS.TEXT and MAKEFILE.TEXT (everything at once: `MAKE -f UCSD-C:MAKEFILE`) at the top, `INCLUDE/` the headers, `LIB/` TCLIB.OBJ, `OBJ/` (empty) the objects a rebuild makes, `SRC/` the sources -- `SRC/CC/` the compiler and `SRC/LIB/` the library, each with its MAKEFILE.TEXT; the compiler looks for them on `UCSD-C:`), **TOOLS.zip** (the tools written in UCSD-C, ready to run: VI.CODE, GREP.CODE, BINDERC.CODE ..., MAN.TEXT, and `SRC/` their sources, a sub-volume each -- `SRC/VI/`, `SRC/GREP/` ... -- with MAKEFILE.TEXT, and `OBJ/` for their objects), **TCEXTRA.zip** (demos, the shell and its examples, CMPCODE), **TCTESTS.zip** (the test programs; volumes of their own because a UCSD directory holds 77 files and their makefiles leave a NAME.OBJ per program) and **BIGGY.zip** (boot disk `Big_Disk.BLK` with UCSD-C ready to use; doubles need the v1.88 emulator's CSP 100..137); `*.txt` = file listings, a sub-volume's files as `A/NAME` |
 | `ports/vi/` | **vi** (the BusyBox-derived tiny vi) ported to the P-System: modules `vi.h`, `vimain.c`, `viscreen.c`, `vitext.c`, `vicolon.c`, `vicmd.c`, `vipage.c` (still build on Linux) + `viucsd.c` (the P-System side); work in progress, see its README |
-| `ports/binder/` | **binderc.c**: `BINDERC [FILE]`, the Pascal System's Binder (BINDER.CODE; its Pascal source is lost) in Tiny-C: puts your GOTOXY procedure into SYSTEM.PASCAL, byte for byte what BINDER makes (TOOLS:BINDERC.CODE) |
+| `ports/binder/` | **binderc.c**: `BINDERC [FILE]`, the Pascal System's Binder (BINDER.CODE; its Pascal source is lost) in UCSD-C: puts your GOTOXY procedure into SYSTEM.PASCAL, byte for byte what BINDER makes (TOOLS:BINDERC.CODE) |
 | `ports/cat/` | **cat.c**: `CAT [-AbeEnstTuv] [FILE ...]` from the shell -- every option of cat(1) except the long ones (-A -b -e -E -n -s -t -T -u -v, joined as `-bn`); no FILE or `-`: the standard input; `.TEXT`/`.C`/`.H` files as text, others as their bytes (TOOLS:CAT.CODE, source TOOLS:/SRC/CAT/CAT.C) |
 | `ports/hexdump/` | **hexdump.c**: `HEXDUMP [-i] [FILE ...]` from the shell -- offset, 16 bytes in hex (two extra blanks after the 8th), the characters; `-i`: Intel Hex (16-byte records, extended linear address every 64 KB, end record) (TOOLS:HEXDUMP.CODE, source TOOLS:/SRC/HEXDUMP/HEXDUMP.C) |
 | `ports/objcopy/` | **objcopy.c**: `OBJCOPY [-I ihex|hexdump] [-O binary] [INFILE [OUTFILE]]` -- HEXDUMP's output (either form) back into the bytes (offsets place them, gaps are zero filled, Intel Hex checksums checked) (TOOLS:OBJCOPY.CODE) |
@@ -34,7 +34,7 @@ Start here when picking the project up in a new session.
 | `ports/patch/` | **patch.c**: `PATCH [-RsbClN] [-F N] [-pN] [-o OUT] [-i PATCHFILE] [FILE]` -- applies normal, unified and context diffs: hunks that moved (offset), fuzz up to 2, rejects in NAME.REJ.TEXT, `-R`, `-b`, hunks of up to 190 lines (TOOLS:PATCH.CODE) |
 | `ports/grep/` | **grep.c**: `GREP [-i] [-n] PATTERN [FILES]` from the shell (no FILES: the standard input, `DIR | GREP .C`) -- a regular expression (`*` any characters as in file names, `. [] + ? ^ $`), case ignored unless `-i`, `-n` the lines without the pattern, `VOL:NAME:LINE: text`; FILES with wildcards on every disk unless a volume is named (TOOLS:GREP.CODE) |
 | `pasm/` | **PASM, the P-code assembler, written in its own language**: `pasm.pasm` (the tables, MAIN), `pasmio.pasm` (the console, the files, the shell's command line), `pasmlex.pasm` (lines, tokens, names, expressions), `pasmgen.pasm` (instructions, directives, procedures, segments, the code file); `PASMDOC.TEXT` the language; `test/` HELLO, PTEST and ERRS.  `PASM NAME [CODE]` from the shell: two passes, a code file of one or more segments (`.PROGRAM`, `.SEGMENT`, `.MAIN`, `.PROC`, `.PARAM`, `.VAR`, `.GLOBAL`, `.EQU`, `.EXIT`, `.INCLUDE`; every II.0 mnemonic, short and long jumps through the jump table, XJP case tables, CXP by name).  On the system disk **U016.1_PCODE_ASSEM** (volume U016.1:, `tools/mkpasm.py`) with its sources, the examples and a makefile with which it rebuilds itself (`MAKE -f U016.1:MAKEFILE`); `tools/pasm.py` is the host's assembler, the reference: PASM on the P-System makes the same bytes, of itself too |
-| `verify/` | Tiny-C Verify: `TCVERIFY.SCRIPT`, `cmpcode.c`, `rmfiles.c`, README; the content is on the volumes **TCVERIF.zip** (script, RMFILES) and **TCEXPCT.zip** (expected output of every test) in `volumes/` |
+| `verify/` | UCSD-C Verify: `TCVERIFY.SCRIPT`, `cmpcode.c`, `rmfiles.c`, README; the content is on the volumes **TCVERIF.zip** (script, RMFILES) and **TCEXPCT.zip** (expected output of every test) in `volumes/` |
 | `repro/` | engine bug repros (REAL compare, DEEPCXP: both fixed in the engine) |
 | `tools/` | host tools (below) |
 | `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`), with the double CSPs (NativeDouble.inc) |
@@ -48,18 +48,18 @@ default (see below), which the emulator implements from **version 1.91**
 ([UCSD-Pascal_Windows_Emulator](https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator)).
 The zip in this directory is v1.88 and has no CALLI: build the runner from a checkout of the
 emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/setup.sh`
-(keep `ENGINE_DIR` set for the tools), or use `TINYC_Z80CALLS=1` with the zip.
+(keep `ENGINE_DIR` set for the tools), or use `UCSDC_Z80CALLS=1` with the zip.
 
 | Tool | Does |
 |---|---|
 | `runtests.py [name]` | compile each test with the host compiler, run it on the P-System, compare with `.expect` |
 | `selfcompile.py [module]` | compile the compiler's modules on the P-System, link CC2.CODE, compare with the host build |
 | `buildtc.py` | host build of CC.CODE from the modules (`build/tcmod/`) |
-| `mkvolume.py` | build `volumes/` (TINY-C, TCEXTRA, TCTESTS, TOOLS; the sub-volumes INCLUDE, LIB, SRC made on the host: `ucsdvol.Volume.new`) with FILES.TEXT listings of every file, the sub-volumes' too; a new tool is one line in its `TOOLS` table |
+| `mkvolume.py` | build `volumes/` (UCSD-C, TCEXTRA, TCTESTS, TOOLS; the sub-volumes INCLUDE, LIB, SRC made on the host: `ucsdvol.Volume.new`) with FILES.TEXT listings of every file, the sub-volumes' too; a new tool is one line in its `TOOLS` table |
 | `mkmaster.py` | build `build/MASTER.BLK` (MASTER: the master makefile, the original programs' makefiles in ORIG/, CODE/ for what they make) and `build/SOURCE.BLK` (an empty volume SOURCE:), reading the source disks of UCSD-Pascal-Volumes (`$VOLUMES`) for each program's `$I` files |
 | `pasm.py SOURCE CODE [-I DIR]` | PASM, the P-code assembler, on the host: the reference for `pasm/` (PASM written in PASM), which bootstraps it |
 | `mkpasm.py` | build `build/U016.1_PCODE_ASSEM.BLK` (volume U016.1:, `volumes/U016.1_PCODE_ASSEM.zip`): PASM.CODE (assembled by `pasm.py`), its sources, PASMDOC.TEXT, HELLO and PTEST, MAKEFILE.TEXT (PASM rebuilds itself) |
-| `mkbiggy.py` | build `volumes/BIGGY.zip`: the boot volume BIGGY: with SYSTEM.SHELL (the Tiny-C shell); Tiny-C itself is only on TINY-C: (`X TINY-C:CC`; since BIGGY 1.15); only files that differ are written, so it is byte-identical to the reference `Big_Disk.BLK` of [UCSD-Pascal-Volumes](https://github.com/Bio-Printer/UCSD-Pascal-Volumes) (Filer and Editor that take NAME.C / NAME.H workfiles); SYSTEM.PASCAL, SYSTEM.C, SYSTEM.MICRO and SYSTEM.FILER from UCSD-SYSTEM-C (`$SYSTEMC`): BIGGY 1.29's systems make a new NAME.BAS a text file |
+| `mkbiggy.py` | build `volumes/BIGGY.zip`: the boot volume BIGGY: with SYSTEM.SHELL (the UCSD-C shell); UCSD-C itself is only on UCSD-C: (`X UCSD-C:CC`; since BIGGY 1.15); only files that differ are written, so it is byte-identical to the reference `Big_Disk.BLK` of [UCSD-Pascal-Volumes](https://github.com/Bio-Printer/UCSD-Pascal-Volumes) (Filer and Editor that take NAME.C / NAME.H workfiles); SYSTEM.PASCAL, SYSTEM.C, SYSTEM.MICRO and SYSTEM.FILER from UCSD-SYSTEM-C (`$SYSTEMC`): BIGGY 1.29's systems make a new NAME.BAS a text file |
 | `viscreentest.py` | vi's screen after every key against an earlier version's (Linux, a pseudo-terminal and a small terminal emulator): refresh may skip only what is unchanged |
 | `vipagetest.py` | vi's paging on Linux: random sessions of the paged build with the file loaded lazily against the committed version |
 | `viscrolltest.py` | vi on the P-System with the emulator's scroll codes (2.03) and without: the same screen after every key |
@@ -78,15 +78,15 @@ emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/se
 | `xsubvoltest.py` | X(ecute at the Command: prompt with a path into sub-volumes (BIGGY 1.26's OS, U134.4_OS_SOURCE_v1.13): `#5:A/HELLO`, `#5:/A/B/HELLO2`, `#5:\a\b\hello2`, `A/HELLO` on the prefix, an exact name, a name without a path as before; No file, not code (both modes) |
 | `vicrtest.py` | a data file of lines that end in CR (a listing: UCSD-BASIC's NAME.LST): TYPE shows it, vi edits it with and without VI.SWAP (a prefix volume with no room for it) and writes it back with CRs; a binary file (a NUL before the padding) refused by both (both modes) |
 | `visubvoltest.py` | vi on a file in a sub-volume inside a sub-volume (CD): dd dd ZZ saves it, the place kept in its header page (vi opens there again), VI.SWAP on the prefix volume and gone afterwards; the file (600 lines) is bigger than the Z80 window: loaded lazily and saved by its place (the library's SVAT segment; both modes) |
-| `quicktest.py` | the normal regression test, one shell session: `make -f tiny-c:/src/lib/makefile` (IDENTICAL), `hexdump -i system.list \| grep -n :10` (its 3 non-data lines), `lc \| wc`, `wc`, `cat \| grep -n \| wc`, `diff -u` + `patch`, vi `dd` `:w` `ZZ` (12 s; Z80 mode 5 min) |
+| `quicktest.py` | the normal regression test, one shell session: `make -f ucsd-c:/src/lib/makefile` (IDENTICAL), `hexdump -i system.list \| grep -n :10` (its 3 non-data lines), `lc \| wc`, `wc`, `cat \| grep -n \| wc`, `diff -u` + `patch`, vi `dd` `:w` `ZZ` (12 s; Z80 mode 5 min) |
 | `keytest.py` | the emulator's keys in both modes: the keys-waiting count (2.04), the break key (2.05), ^S / ^Q (2.06) |
 | `difftest.py` | DIFF: every output form for 16 pairs of files, simple ones equal to the host's diff, all of them applied by the host's patch to make FILE2; -i -w -b -B -q -s, binary files, the exit status |
 | `wctest.py` | WC: every option, several files and the total, the standard input, a binary file; the numbers equal the host's wc |
 | `lctest.py` | LC: the column layouts (down, across, one a line), -F -s -r -S, patterns, several patterns, a pipe to WC, the exit status |
 | `texttest.py` | ECHO, HEAD, TAIL, SORT, UNIQ, TR, CUT, TEE: each command's output equals the host's coreutils' (LC_ALL=C) -- options, headers, wild cards, <FILE and pipes, SORT's keys and a sort through several temporary runs (-S), TEE's files; the errors, and a new file where >FILE is being written |
-| `origtest.py [DISK ...]` | MASTER:/ORIG/MAKEFILE (`mkmaster.py`): each source disk of UCSD Pascal II.0 mounted in turn (MOUNT, emulator 2.14; the OS's on #5, then TINY-C again), its programs compiled by PC -- SYSTEM.COMPILER, SYSTEM.PASCAL, SYSTEM.FILER, SYSTEM.LINKER, SYSTEM.EDITOR, L2, BASIC.COMPILER, BASICIO, PASCALIO, the seven utilities, ASMZ80, ASM11 -- each the host's PC's code file; then nothing to be done |
+| `origtest.py [DISK ...]` | MASTER:/ORIG/MAKEFILE (`mkmaster.py`): each source disk of UCSD Pascal II.0 mounted in turn (MOUNT, emulator 2.14; the OS's on #5, then UCSD-C again), its programs compiled by PC -- SYSTEM.COMPILER, SYSTEM.PASCAL, SYSTEM.FILER, SYSTEM.LINKER, SYSTEM.EDITOR, L2, BASIC.COMPILER, BASICIO, PASCALIO, the seven utilities, ASMZ80, ASM11 -- each the host's PC's code file; then nothing to be done |
 | `pasmtest.py` | PASM: the host's `pasm.py` on PASM itself, the examples and ERRS (its errors on their lines); on the P-System with U016.1 on #5: HELLO and PTEST print what they should, `PASM PASM P2.` is the host's PASM.CODE byte for byte, `PASM ERRS` the same errors on the same lines and no code file, `MAKE -f U016.1:MAKEFILE` after a TOUCH: PASM rebuilt by itself and the examples (the host's bytes), then nothing to be done (both modes) |
-| `mastertest.py` | MASTER:MAKEFILE: everything, new and original, each part's volume mounted first (TINY-C's makefiles, TCEXTRA, TCTESTS, SYS-C, PASCALC, BASIC, BASIC2, U016.1 (PASM), the originals); then again: nothing compiled (about 9 minutes in P-Code mode with Harvard Mode) |
+| `mastertest.py` | MASTER:MAKEFILE: everything, new and original, each part's volume mounted first (UCSD-C's makefiles, TCEXTRA, TCTESTS, SYS-C, PASCALC, BASIC, BASIC2, U016.1 (PASM), the originals); then again: nothing compiled (about 9 minutes in P-Code mode with Harvard Mode) |
 | `maketest.py [--pascal]` | MAKE, TOUCH, DATE and files' times of day on BIGGY (SYSTEM.C, or SYSTEM.PASCAL) with the emulator's clock set by the script (2.13 `VERIFY_HOSTCLOCK`, `CLOCK`): what is made and when, `-q -n`, a `-` recipe, functions, DIR's times, DATE's formats, TOUCH's `-d -t -r`, the times on the disk; then a program of two modules made with CC, one touched and only it compiled again |
 | `patchtest.py` | PATCH: the host's diff in all five forms applied (FILE2 results), displaced and fuzzy hunks, -R -b -o -C, names from headers, -p1 with two files, the standard input, a failing hunk |
 | `objcopytest.py` | OBJCOPY: HEXDUMP's output in both forms turned back into the files (binary, over 64 KB, a short last line of text), a gap, a bad checksum, errors |
@@ -94,13 +94,13 @@ emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/se
 | `hexdumptest.py` | HEXDUMP, its output redirected into files read back from the disk image: the dump layout, Intel Hex (read back by the host's objcopy), binary and text files, one over 64 KB, several files, stdin, a pipe, errors |
 | `cattest.py` | CAT from the shell: every option against the host's cat on the same bytes (text files with tabs and control characters, a binary file, several files, standard input, a pipe, errors) |
 | `greptest.py` | GREP from the shell: case, `-i`, regular expressions, wildcards on every disk or one volume, line numbers across pages |
-| `alltest.py` | TINY-C:MAKEFILE.TEXT from the shell: one makefile whose recipes run the MAKE of TINY-C:/SRC/CC, TINY-C:/SRC/LIB, TOOLS:/SRC, SYS-C: (UCSD-SYSTEM-C's, #13) and PASCALC:/SRC (#10); the compiler, library, tools, SYS-C:SYSTEM.C and PC.CODE identical to the shipped ones, every object in TINY-C:/OBJ or TOOLS:/OBJ (`-O`), none among the sources or on the prefix volume; then all up to date |
-| `shellalltest.py` | the way a user starts a total rebuild: `S` at the Command: prompt, then `make -f tiny-c:makefile` in the shell; the same checks as `alltest.py`, and the tracked least free memory with the lowest passes |
+| `alltest.py` | UCSD-C:MAKEFILE.TEXT from the shell: one makefile whose recipes run the MAKE of UCSD-C:/SRC/CC, UCSD-C:/SRC/LIB, TOOLS:/SRC, SYS-C: (UCSD-SYSTEM-C's, #13) and PASCALC:/SRC (#10); the compiler, library, tools, SYS-C:SYSTEM.C and PC.CODE identical to the shipped ones, every object in UCSD-C:/OBJ or TOOLS:/OBJ (`-O`), none among the sources or on the prefix volume; then all up to date |
+| `shellalltest.py` | the way a user starts a total rebuild: `S` at the Command: prompt, then `make -f ucsd-c:makefile` in the shell; the same checks as `alltest.py`, and the tracked least free memory with the lowest passes |
 | `findtest.py` | which disk CC takes `#include` files and a batch file's sources from (copies on several disks; the including file's disk, the prefix, an error) |
 | `fulltest.py` | a file CC writes that does not fit on its disk: the link onto a disk without room for the code file and a compile whose TCTEMP.TEXT does not fit on the prefix each stop with message 118 (the file's name), and the file goes (no short one is left that looks whole); the same link onto a disk with room works (both modes) |
 | `pexectest.py` | `pexec()` with the mini-shell (needs BIGGY 1.11; pexec itself works from 1.10): a program started from the shell has exactly the free memory it has from X(ecute; exit statuses, errors; the shell's CD, DIR, TYPE, DELETE, WHEREIS, VOLUMES, COPY, MOVE and RENAME, its command history and line editing; `S` at the Command: prompt |
-| `voltest.py` | on the volumes, from the shell: the makefiles of TINY-C:/SRC/LIB, TINY-C:/SRC/CC (then up to date), TCEXTRA: and TCTESTS: (`-B`), CMPCODE checks; reports least free memory |
-| `mkverify.py`, `tcverify.py [native\|z80]` | build / run the Tiny-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
+| `voltest.py` | on the volumes, from the shell: the makefiles of UCSD-C:/SRC/LIB, UCSD-C:/SRC/CC (then up to date), TCEXTRA: and TCTESTS: (`-B`), CMPCODE checks; reports least free memory |
+| `mkverify.py`, `tcverify.py [native\|z80]` | build / run the UCSD-C Verify pack (`TCV_MAX=seconds` for Z80 mode) |
 | `vitest.py [--build]` | `ports/vi`: the same 60-command editing session on Linux and on the P-System (from the shell), and shorter ones (dG, dgg; u and u again after many kinds of change); the saved files must be identical. `--build`: `@TOOLS:/SRC/TOOLS` (P-Code mode, Harvard layout) must make TOOLS:VI.CODE byte for byte |
 | `modes.py prog.c` | run a program in Z80 and P-Code mode and compare (engine bug hunting) |
 | `pdis.py FILE.CODE` | P-code disassembler |
@@ -112,9 +112,9 @@ emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/se
 | `psys.py`, `tcrun.py`, `selfhost.py` | library code used by the above |
 
 Host compiler: `build/tc [-c] [-z] [-I dir] [-L lib.obj] [-o out] files` (built from
-`tinyc/tc.c` by `tcrun.build_tc()`). Environment: `PSYS_MODE=z80|native`,
+`ucsdc/tc.c` by `tcrun.build_tc()`). Environment: `PSYS_MODE=z80|native`,
 `VERIFY_RECLAIM=1` (P-Code mode with the Z80 interpreter's memory reclaimed),
-`TINYC_MAP=1` (linker prints procedure addresses).
+`UCSDC_MAP=1` (linker prints procedure addresses).
 
 Before committing a compiler change, run: `runtests.py`, `selfcompile.py`,
 `mkvolume.py` + `voltest.py`, `mkverify.py` + `tcverify.py`,
@@ -122,7 +122,7 @@ Before committing a compiler change, run: `runtests.py`, `selfcompile.py`,
 
 ## On the P-System
 
-`X(ecute TINY-C:CC` (the compiler is CC.CODE on TINY-C:), then at "Compile what file?":
+`X(ecute UCSD-C:CC` (the compiler is CC.CODE on UCSD-C:), then at "Compile what file?":
 `NAME` (compile NAME.C, or NAME.TEXT, and link), `-C NAME`, `-L OUT=A,B`,
 `-J LIB=A,B` (join objects into a library; `OUT.` with a dot at its end is that name
 exactly, `-L SYS-C:SYSTEM.C.=SYSC`), `@FILE` (commands from FILE.TEXT);
@@ -139,16 +139,16 @@ volume (`TOOLS:/SRC/VI/VI.H`, `#5:X.C`) only from there; named without one, CC r
 disk's directory: on one disk only, that one; on several, the one on the disk of the
 file that names it (the including file, the `@FILE`), else the prefix volume's, else
 an error that lists the volumes (`findfile` in `pp.c`, code segment DIRS;
-`tools/findtest.py` tests it).  Headers: `<x.h>` comes from TINY-C:/INCLUDE first,
-`"x.h"` from the including file's sub-volume first and TINY-C:/INCLUDE last; the library
-is TINY-C:/LIB/TCLIB.OBJ (unless the prefix or boot volume has a TCLIB.OBJ); the names in
+`tools/findtest.py` tests it).  Headers: `<x.h>` comes from UCSD-C:/INCLUDE first,
+`"x.h"` from the including file's sub-volume first and UCSD-C:/INCLUDE last; the library
+is UCSD-C:/LIB/TCLIB.OBJ (unless the prefix or boot volume has a TCLIB.OBJ); the names in
 an `@FILE` in a sub-volume are looked for beside it first.  A file in a sub-volume named
 with its volume (a header, an object CC writes or the linker reads) is opened by the
 sub-volume's place, found once (`placeopen`, `svfopen`), not through the library's path
 code and a 2 KB directory each time.
-From the shell, MAKE (TOOLS:) rebuilds with makefiles, each compiling only the modules whose source or headers changed: `MAKE -f TINY-C:/SRC/CC/MAKEFILE` the compiler (TINY-C:CC2.CODE), `MAKE -f TINY-C:/SRC/LIB/MAKEFILE` the library (TINY-C:/LIB/TCLIB2.OBJ); `MAKE -f TOOLS:/SRC/MAKEFILE` links every tool onto TOOLS:; `MAKE -f TINY-C:MAKEFILE` runs those three, `SYS-C:MAKEFILE` (the operating system in C, SYS-C:SYSTEM.C, from UCSD-SYSTEM-C's SYS-C: volume) and `PASCALC:/SRC/MAKEFILE` (the Pascal compiler in C, PASCALC:PC.CODE, from UCSD-Pascal-compiler-written-in-C's PASCALC: volume, laid out as TINY-C: is), each a `$(MAKE) -f` recipe (the objects go into TINY-C:/OBJ, TOOLS:/OBJ ... with `-O`; a link longer than the shell lets a program have MAKE runs as `CC @#4:MAKEnRk`, a CC batch file it writes); `MAKE -f TCEXTRA:MAKEFILE` and `MAKE -f TCTESTS:MAKEFILE` the programs there.  CC's own batch files (`CC @FILE`: a command a line, `@OTHER` runs another) still work.
+From the shell, MAKE (TOOLS:) rebuilds with makefiles, each compiling only the modules whose source or headers changed: `MAKE -f UCSD-C:/SRC/CC/MAKEFILE` the compiler (UCSD-C:CC2.CODE), `MAKE -f UCSD-C:/SRC/LIB/MAKEFILE` the library (UCSD-C:/LIB/TCLIB2.OBJ); `MAKE -f TOOLS:/SRC/MAKEFILE` links every tool onto TOOLS:; `MAKE -f UCSD-C:MAKEFILE` runs those three, `SYS-C:MAKEFILE` (the operating system in C, SYS-C:SYSTEM.C, from UCSD-SYSTEM-C's SYS-C: volume) and `PASCALC:/SRC/MAKEFILE` (the Pascal compiler in C, PASCALC:PC.CODE, from UCSD-Pascal-compiler-written-in-C's PASCALC: volume, laid out as UCSD-C: is), each a `$(MAKE) -f` recipe (the objects go into UCSD-C:/OBJ, TOOLS:/OBJ ... with `-O`; a link longer than the shell lets a program have MAKE runs as `CC @#4:MAKEnRk`, a CC batch file it writes); `MAKE -f TCEXTRA:MAKEFILE` and `MAKE -f TCTESTS:MAKEFILE` the programs there.  CC's own batch files (`CC @FILE`: a command a line, `@OTHER` runs another) still work.
 
-**Everything at once, the original programs too: the volume MASTER:** (`tools/mkmaster.py`: `build/MASTER.BLK`, with `SOURCE.BLK`, an empty volume SOURCE:).  With BIGGY on #4, TINY-C on #5, MASTER on #9, TOOLS on #11 and every other image in the same folder on the PC (UCSD-Pascal-Volumes' BLK_format), `MAKE -f MASTER:MAKEFILE` runs each part's makefile -- Tiny-C's, TCEXTRA's, TCTESTS', SYS-C's, PASCALC's, BASIC's (BC), BASIC2's (B2), U016.1's (PASM, the P-code assembler, rebuilding itself) -- after mounting its volume (`MOUNT #12 SYS-C`: the tool MOUNT, emulator 2.14's CSP 140, gives a unit another image by its name), and then `MASTER:/ORIG/MAKEFILE`: each source disk of UCSD Pascal II.0 mounted on #10 in turn (the OS's on #5: its `$I` names #5:; TINY-C again after it), and its own makefile there (`MASTER:/ORIG/U132A` ...: a makefile cannot look at a disk not yet on line) compiles its programs with PC, the Pascal compiler in C, into MASTER:/ORIG/CODE: SYSTEM.COMPILER, SYSTEM.PASCAL, SYSTEM.FILER, SYSTEM.LINKER, SYSTEM.EDITOR (its `$I SOURCE:` names: its sources copied onto SOURCE: first), L2, BASIC.COMPILER, BASICIO, PASCALIO, the seven utilities of U138.3, ASMZ80 and ASM11 -- each the code file the host's PC makes (`origtest.py`).  Not made: the interpreters and BIOSes (assembly, U120), which the assembler and the linker make by answering their questions.
+**Everything at once, the original programs too: the volume MASTER:** (`tools/mkmaster.py`: `build/MASTER.BLK`, with `SOURCE.BLK`, an empty volume SOURCE:).  With BIGGY on #4, UCSD-C on #5, MASTER on #9, TOOLS on #11 and every other image in the same folder on the PC (UCSD-Pascal-Volumes' BLK_format), `MAKE -f MASTER:MAKEFILE` runs each part's makefile -- UCSD-C's, TCEXTRA's, TCTESTS', SYS-C's, PASCALC's, BASIC's (BC), BASIC2's (B2), U016.1's (PASM, the P-code assembler, rebuilding itself) -- after mounting its volume (`MOUNT #12 SYS-C`: the tool MOUNT, emulator 2.14's CSP 140, gives a unit another image by its name), and then `MASTER:/ORIG/MAKEFILE`: each source disk of UCSD Pascal II.0 mounted on #10 in turn (the OS's on #5: its `$I` names #5:; UCSD-C again after it), and its own makefile there (`MASTER:/ORIG/U132A` ...: a makefile cannot look at a disk not yet on line) compiles its programs with PC, the Pascal compiler in C, into MASTER:/ORIG/CODE: SYSTEM.COMPILER, SYSTEM.PASCAL, SYSTEM.FILER, SYSTEM.LINKER, SYSTEM.EDITOR (its `$I SOURCE:` names: its sources copied onto SOURCE: first), L2, BASIC.COMPILER, BASICIO, PASCALIO, the seven utilities of U138.3, ASMZ80 and ASM11 -- each the code file the host's PC makes (`origtest.py`).  Not made: the interpreters and BIOSes (assembly, U120), which the assembler and the linker make by answering their questions.
 
 ## Calls through function pointers (`-z` / `-Z`)
 
@@ -163,11 +163,11 @@ mode the engine's coprocessor (version 1.93) does it too.
 function value into the operands of a following `CXP` at run time. That works everywhere,
 Z80 mode included. Everything linked into a program must be built the same way, the library
 too: the tools build it twice (`tclib.obj`, and `tclibz.obj` with `-z`), `tcrun.py` picks
-`-z` and `tclibz.obj` when `PSYS_MODE=z80` or `TINYC_Z80CALLS=1`, and the shipped volumes
-(TINY-C:TCLIB.OBJ, the TCEXTRA: programs) are built with `-z` so that they work in both
+`-z` and `tclibz.obj` when `PSYS_MODE=z80` or `UCSDC_Z80CALLS=1`, and the shipped volumes
+(UCSD-C:TCLIB.OBJ, the TCEXTRA: programs) are built with `-z` so that they work in both
 modes. A program built without `-z` that calls through a function pointer and runs in Z80 mode
 on an engine before 1.93 does not stop: it gives wrong results. From 1.93 it runs correctly
-(`TINYC_Z80CALLS=0` makes `tcrun.py` test exactly that in Z80 mode).
+(`UCSDC_Z80CALLS=0` makes `tcrun.py` test exactly that in Z80 mode).
 
 ## setjmp and longjmp
 
@@ -320,4 +320,4 @@ docs/DESIGN.md for how.
 ## Ideas not done yet
 
 * More code-size work in the code generator (e.g. 1-byte global operands).
-* A "Verify Tiny-C" item in the emulator's menu (sketch in `verify/README.md`).
+* A "Verify UCSD-C" item in the emulator's menu (sketch in `verify/README.md`).

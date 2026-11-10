@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""runtests.py -- Tiny-C validation: compile each tests/*.c with the host
-Tiny-C, run it on the P-System and compare with tests/<name>.expect.
+"""runtests.py -- UCSD-C validation: compile each tests/*.c with the host
+UCSD-C, run it on the P-System and compare with tests/<name>.expect.
 
   runtests.py [name ...]      run all tests, or the named ones
   runtests.py --gcc name ...  (re)create name.expect from a gcc build

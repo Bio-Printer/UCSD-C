@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subvoltest.py -- sub-volumes (tinyc/lib/dirs.c pathdir, __svopen, __svclose, __svremove; the
+"""subvoltest.py -- sub-volumes (ucsdc/lib/dirs.c pathdir, __svopen, __svclose, __svremove; the
 shell's MKDIR, CD PATH, DIR, TYPE, DELETE on paths), on the P-System.
 
   MKDIR #5:A 200, MKDIR #5:/A/B 60     a sub-volume, and one inside it

@@ -5,7 +5,7 @@ diff -u a/UCSDPascal/MainFrm.cpp b/UCSDPascal/MainFrm.cpp
  //     Delete     "D" ^U ^C  delete the character under the cursor
  //   Every sequence was checked against the real SYSTEM.EDITOR in the
  //   harness (v1.68).
-+//   A program that sets SYSCOM^.EXPANSION[1] to 25605 while it runs (Tiny-C's
++//   A program that sets SYSCOM^.EXPANSION[1] to 25605 while it runs (UCSD-C's
 +//   vi; PX_KEYS in psys.h) gets these six keys as one code each instead:
 +//   Home 0x84, End 0x85, Insert 0x86, Delete 0x87, Page Up 0x88,
 +//   Page Down 0x89 (KEY_HOME ... KEY_PGDN in psys.h).
@@ -50,8 +50,8 @@ diff -u a/UCSDPascal/PSystemEngine.h b/UCSDPascal/PSystemEngine.h
      // ASCII control codes (ESC, CR, BS, etc.).
      void PostKey(uint8_t ch);
 +    // A program that wants Page Up, Page Down, Home, End, Insert and Delete
-+    // as one code each (Tiny-C's vi) sets SYSCOM^.EXPANSION[1] to 25605
-+    // (PX_KEYS in Tiny-C's psys.h) while it runs. See MainFrm OnKeyDown.
++    // as one code each (UCSD-C's vi) sets SYSCOM^.EXPANSION[1] to 25605
++    // (PX_KEYS in UCSD-C's psys.h) while it runs. See MainFrm OnKeyDown.
 +    bool WantsKeyCodes() const;
  
      // Verify P-System support (see verify/). IsWaitingForKey(): the system

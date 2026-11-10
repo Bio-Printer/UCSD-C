@@ -13,7 +13,7 @@ boundary (e.g. for a Harvard I/D-space machine).
       --ops        full opcode histogram
       --consumers  what consumes each LSA/LPA pointer (first non-push user)
       --strings    list the LSA/LPA string literals
-      --selfpatch  list Tiny-C indirect-call sites (LPA 0 .. STO, CXP)
+      --selfpatch  list UCSD-C indirect-call sites (LPA 0 .. STO, CXP)
       --check      validate: every jump target must be an instruction start
       --segments   per-segment lines
 
@@ -182,7 +182,7 @@ def consumer(ins, k):
     return 'other'
 
 def selfpatch_at(ins, k):
-    """LPA 0 ; SLDC n ; ADI ; (SLDL|LDL) t ; STO ; CXP  -- Tiny-C indirect call"""
+    """LPA 0 ; SLDC n ; ADI ; (SLDL|LDL) t ; STO ; CXP  -- UCSD-C indirect call"""
     N = [opname(i[1]) for i in ins[k:k + 6]]
     return (len(N) == 6 and ins[k][1] == LPA and ins[k][3] == 0 and N[1] == 'SLDC' and N[2] == 'ADI'
             and N[3] in ('SLDL', 'LDL') and N[4] == 'STO' and N[5] == 'CXP')

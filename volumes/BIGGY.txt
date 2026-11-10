@@ -1,4 +1,4 @@
-BIGGY:  37 files  (the boot volume, with the Tiny-C shell)
+BIGGY:  37 files  (the boot volume, with the UCSD-C shell)
 
   Z80T.MICRO          19
   MYGOTOXY.CODE        2

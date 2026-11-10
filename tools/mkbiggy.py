@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """mkbiggy.py -- volumes/BIGGY.zip: the emulator's boot volume BIGGY:
-(data/Big_Disk.BLK in the P-Machine zip) with SYSTEM.SHELL, the Tiny-C shell
-(examples/shell.c), which the Command: prompt's S runs.  Tiny-C itself --
-CC.CODE, TCLIB.OBJ, TCMSGS.TEXT, the headers -- is only on TINY-C: (since
-BIGGY 1.15; one copy of each file): X(ecute TINY-C:CC.  The compiler looks
+(data/Big_Disk.BLK in the P-Machine zip) with SYSTEM.SHELL, the UCSD-C shell
+(examples/shell.c), which the Command: prompt's S runs.  UCSD-C itself --
+CC.CODE, TCLIB.OBJ, TCMSGS.TEXT, the headers -- is only on UCSD-C: (since
+BIGGY 1.15; one copy of each file): X(ecute UCSD-C:CC.  The compiler looks
 for TCLIB.OBJ, TCMSGS.TEXT and headers on the prefix volume, the boot volume
-and TINY-C:; those on the base disk (and an old TINYC.CODE) are removed.
+and UCSD-C:; those on the base disk are removed.
 The base disk is the reference Big_Disk.BLK of UCSD-Pascal-Volumes (Filer
 and Editor that take NAME.C / NAME.H workfiles); only files that differ are
 written, so with a current base the result is byte-identical to it.
@@ -23,6 +23,7 @@ shell's TYPE shows a data file of lines that end in CR (a listing, NAME.LST).
 BIGGY 1.36: VOLUMES (VOLS) lists the volumes MOUNT can put on a unit, too.
 BIGGY 1.32: the shell runs batch files (@FILE), and its MOVE replaces a file of
 the new name.
+BIGGY 1.37: VERSION.TEXT names the C compiler UCSD-C and its volume UCSD-C:.
 The 8-byte doubles (CSP 100..137) are in the emulator itself (build it
 from UCSD-Pascal---P-Machine_work-v1.88.zip); nothing on the disk is needed
 for them."""
@@ -60,14 +61,14 @@ def main():
         else:
             v.write(name, data, kind)
         changed.append(name)
-    # Tiny-C is on TINY-C: only
-    gone = ['TINYC.CODE', 'CC.CODE', 'TCLIB.OBJ', 'TCMSGS.TEXT'] + \
+    # UCSD-C is on UCSD-C: only
+    gone = ['CC.CODE', 'TCLIB.OBJ', 'TCMSGS.TEXT'] + \
            sorted(f.upper() for f in os.listdir(INC) if f.endswith('.h'))
     for name in gone:
         if v.find(name):
             v.remove(name)
             changed.append('-' + name)
-    # the Tiny-C shell, which the Command: prompt's S runs (BIGGY 1.11)
+    # the UCSD-C shell, which the Command: prompt's S runs (BIGGY 1.11)
     base, shell = compile_c(os.path.join(ROOT, 'examples', 'shell.c'), os.path.join(ROOT, 'build'), z80=True)
     put('SYSTEM.SHELL', open(shell, 'rb').read(), 2)
     # the break key (emulator 2.05): ` in CRTINFO.BREAK of SYSTEM.MISCINFO (and NEW.MISCINFO, its
@@ -163,12 +164,18 @@ def main():
         assert shell in text
         text = text.replace(shell, shell + '                 1.36: VOLUMES (VOLS) also lists the volumes not on\n'
                             '                 line that MOUNT can put on a unit (emulator 2.18)\n')
+    if 'revision 1.36 ' in text:
+        text = text.replace('BIGGY boot volume, revision 1.36  (09-Nov-26)', 'BIGGY boot volume, revision 1.37  (10-Nov-26)')
+        end = '                 1.14, TCLIB.OBJ, TCMSGS.TEXT and the headers in 1.15\n'
+        assert end in text
+        text = text.replace(end, end + '                 1.37: the C compiler is UCSD-C, its volume UCSD-C:\n'
+                            '                 (UCSD-C.BLK); the files of BIGGY are as in 1.36\n')
     put('VERSION.TEXT', ucsdvol.text_to_ucsd(text), 3)
     if changed:
         v.save()
         print('updated on BIGGY:', ', '.join(changed))
     v = ucsdvol.Volume(out)
-    lines = ['BIGGY:  %d files  (the boot volume, with the Tiny-C shell)' % len(v.entries), '']
+    lines = ['BIGGY:  %d files  (the boot volume, with the UCSD-C shell)' % len(v.entries), '']
     for first, last, kind, name, lastbyte, date in v.entries:
         lines.append('  %-15s %6d' % (name, last - first))
     open(os.path.join(ROOT, 'volumes', 'BIGGY.txt'), 'w').write('\n'.join(lines) + '\n')

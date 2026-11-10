@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""pscompile.py file.c -- compile one file with the P-System Tiny-C, print its messages"""
+"""pscompile.py file.c -- compile one file with the P-System UCSD-C, print its messages"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from selfhost import compile_on_psystem

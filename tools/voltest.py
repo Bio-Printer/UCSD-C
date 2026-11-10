@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""voltest.py -- test the volumes (build/TINY-C.BLK, TCEXTRA.BLK, TCTESTS.BLK,
-made by mkvolume.py) on the P-System: TINY-C: on unit #5, an empty SPARE: on
+"""voltest.py -- test the volumes (build/UCSD-C.BLK, TCEXTRA.BLK, TCTESTS.BLK,
+made by mkvolume.py) on the P-System: UCSD-C: on unit #5, an empty SPARE: on
 #9, TCEXTRA: on #10, TCTESTS: on #11.
 
 TOOLS: (MAKE) on #12.  From the shell:
 
-  make -f tiny-c:/src/lib/makefile   -> TINY-C:/LIB/TCLIB2.OBJ (-Z -C each module, joined
-           in two parts), CMPCODE: IDENTICAL to TINY-C:/LIB/TCLIB.OBJ
-  make -f tiny-c:/src/cc/makefile    -> TINY-C:CC2.CODE, CMPCODE: IDENTICAL to TINY-C:CC.CODE;
+  make -f ucsd-c:/src/lib/makefile   -> UCSD-C:/LIB/TCLIB2.OBJ (-Z -C each module, joined
+           in two parts), CMPCODE: IDENTICAL to UCSD-C:/LIB/TCLIB.OBJ
+  make -f ucsd-c:/src/cc/makefile    -> UCSD-C:CC2.CODE, CMPCODE: IDENTICAL to UCSD-C:CC.CODE;
            make again: up to date
-  make -B -f tcextra:makefile        every demo (compiler and headers from TINY-C:), then
+  make -B -f tcextra:makefile        every demo (compiler and headers from UCSD-C:), then
            QUEENS runs
   make -B -f tctests:makefile        every test program, then LONGS runs
 
@@ -36,7 +36,7 @@ def prefix(v):
             'WAIT "Filer:"', 'TYPE "Q"', 'WAIT "Command:"']
 
 
-def tinyc(prog, cmd, waits):
+def ucsdc(prog, cmd, waits):
     return (['TYPE "X"', 'WAIT "Execute what file?"', 'TYPE "%s\\r"' % prog,
              'WAIT "Compile what file?"', 'TYPE "%s\\r"' % cmd] +
             ['WAIT "%s"' % w for w in waits] + ['WAIT "Done."', 'WAIT "Command:"'])
@@ -54,26 +54,26 @@ def shell(cmd, waits):
 
 def script():
     L = ['WAIT "Command:"'] + prefix('SPARE:') + ['TYPE "S"', 'WAIT "shell> "']
-    L += shell('make -f tiny-c:/src/lib/makefile', ['> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/ASSERT.C',
-                                                    '> CC -O TINY-C:/OBJ/ -Z -C TINY-C:/SRC/LIB/TCRT.C',
-                                                    'Joining TINY-C:/LIB/TCLIB2.OBJ'])
-    L += shell('make -f tiny-c:/src/cc/makefile', ['> CC -O TINY-C:/OBJ/ -C TINY-C:/SRC/CC/MAIN.C', '> CC @#4:MAKE1R1',
-                                                   '> -L TINY-C:CC2=', 'Done.'])
-    L += shell('make -f tiny-c:/src/cc/makefile', ["'TINY-C:CC2.CODE' is up to date"])
+    L += shell('make -f ucsd-c:/src/lib/makefile', ['> CC -O UCSD-C:/OBJ/ -Z -C UCSD-C:/SRC/LIB/ASSERT.C',
+                                                    '> CC -O UCSD-C:/OBJ/ -Z -C UCSD-C:/SRC/LIB/TCRT.C',
+                                                    'Joining UCSD-C:/LIB/TCLIB2.OBJ'])
+    L += shell('make -f ucsd-c:/src/cc/makefile', ['> CC -O UCSD-C:/OBJ/ -C UCSD-C:/SRC/CC/MAIN.C', '> CC @#4:MAKE1R1',
+                                                   '> -L UCSD-C:CC2=', 'Done.'])
+    L += shell('make -f ucsd-c:/src/cc/makefile', ["'UCSD-C:CC2.CODE' is up to date"])
     L += shell('make -B -f tcextra:makefile', ['> CC -Z TCEXTRA:BOXES', '> CC -Z TCEXTRA:CMPCODE', '> CC -Z TCEXTRA:SHELL'])
     L += shell('tcextra:queens', ['92'])
     L += shell('make -B -f tctests:makefile', ['> CC -Z TCTESTS:CONTROL', '> CC -Z TCTESTS:STRUCTS', '> CC -Z TCTESTS:SYSCOM'])
     L += shell('tctests:longs', [LONGS1])
     L += ['TYPE "bye\\r"', 'WAIT "Command:"']
-    L += cmpcode('TINY-C:/LIB/TCLIB.OBJ', 'TINY-C:/LIB/TCLIB2.OBJ')
-    L += cmpcode('TINY-C:CC.CODE', 'TINY-C:CC2.CODE')
+    L += cmpcode('UCSD-C:/LIB/TCLIB.OBJ', 'UCSD-C:/LIB/TCLIB2.OBJ')
+    L += cmpcode('UCSD-C:CC.CODE', 'UCSD-C:CC2.CODE')
     return '\n'.join(L) + '\n'
 
 
 def main():
     ensure_setup()
     d = tempfile.mkdtemp(prefix='voltest_')
-    for v in ('TINY-C', 'TCEXTRA', 'TCTESTS', 'TOOLS'):
+    for v in ('UCSD-C', 'TCEXTRA', 'TCTESTS', 'TOOLS'):
         shutil.copy(os.path.join(ROOT, 'build', v + '.BLK'), d)
     ucsdvol.main(['new', os.path.join(d, 'SPARE.BLK'), 'SPARE', '400'])
     data = os.path.join(d, 'data')                  # BIGGY as mkbiggy.py made it is the boot disk (its shell runs MAKE's batch)
@@ -89,7 +89,7 @@ def main():
     if mode == 'native':
         env['VERIFY_RECLAIM'] = '1'
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), data,
-                        os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
+                        os.path.join(d, 'UCSD-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
                         os.path.join(d, 'out'), '', '600' if mode == 'native' else '1800'], capture_output=True, text=True, env=env)
     ok = 'VERIFY SCRIPT COMPLETED' in r.stdout
     tr = shell_transcript(open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read())

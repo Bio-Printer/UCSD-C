@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen.py -- write f12test.c (a Tiny-C program exercising CSP 100..137, the
+"""gen.py -- write f12test.c (a UCSD-C program exercising CSP 100..137, the
 8-byte floating point procedures) and f12test.expect (what C's printf
 gives for the same operations on IEEE doubles)."""
 import struct, math

@@ -14,7 +14,7 @@ because the P-System has no codes for them:
 
 vi takes those letters as its own commands. With this change a program can
 ask for one code per key instead: while SYSCOM^.EXPANSION[1] is 25605
-(`PX_KEYS` in Tiny-C's `psys.h`) the emulator sends
+(`PX_KEYS` in UCSD-C's `psys.h`) the emulator sends
 
 | Key | Code | psys.h | vi |
 |---|---|---|---|
@@ -50,8 +50,8 @@ In a later emulator, by hand:
 1. `UCSDPascal\PSystemEngine.h`, in the class, after `void PostKey(uint8_t ch);`:
    ```cpp
        // A program that wants Page Up, Page Down, Home, End, Insert and Delete
-       // as one code each (Tiny-C's vi) sets SYSCOM^.EXPANSION[1] to 25605
-       // (PX_KEYS in Tiny-C's psys.h) while it runs. See MainFrm OnKeyDown.
+       // as one code each (UCSD-C's vi) sets SYSCOM^.EXPANSION[1] to 25605
+       // (PX_KEYS in UCSD-C's psys.h) while it runs. See MainFrm OnKeyDown.
        bool WantsKeyCodes() const;
    ```
 2. `UCSDPascal\PSystemEngine.cpp`, before `void PSystemEngine::PostKey(uint8_t ch) {`:

@@ -79,7 +79,7 @@ def main():
     build_tc()
     d = tempfile.mkdtemp(prefix='ostest_')
     open(os.path.join(d, 'os.c'), 'w').write(OS)
-    env = dict(os.environ, TINYC_MAP='1')
+    env = dict(os.environ, UCSDC_MAP='1')
     r = subprocess.run([TC, '-I', INC, 'os.c', '-o', 'SYSTEM.PASCAL'], cwd=d, capture_output=True, text=True, env=env)
     checks = [('compiled and linked', r.returncode == 0)]
     code = open(os.path.join(d, 'SYSTEM.PASCAL'), 'rb').read() if r.returncode == 0 else bytes(1024)

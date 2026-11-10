@@ -10,7 +10,7 @@ Z80-mode coprocessor runs the same code for those CSPs in Z80 mode.
 
 **Format**: IEEE-754 binary64, 8 bytes = 4 words, little-endian, lowest
 address first, exactly as `LDM 4` / `STM 4` move a value and as it lies on
-the stack from SP up. (Until Tiny-C [0.4] a double was 12 bytes: these 8
+the stack from SP up. (Until UCSD-C [0.4] a double was 12 bytes: these 8
 plus 4 reserved zero bytes. They were never used and were removed; programs
 compiled for the 12-byte engine must be recompiled, and the 12-byte and
 8-byte engines and compilers do not mix. `triple` went with them.)
@@ -51,7 +51,7 @@ Test: `tools/f12test.py` (51 of 51 pass). `repro/float12/gen.py` writes `f12test
 expected values from IEEE doubles); run it with the host compiler on the
 P-System in P-Code mode (`tools/tcrun.py` / `runtests.py` style).
 
-## The Tiny-C side (done)
+## The UCSD-C side (done)
 
 * **Types**: `float` is the 4-byte REAL (works in Z80 mode too); `double`
   and `long double` are the 8-byte type. `sizeof(double)` is 8.

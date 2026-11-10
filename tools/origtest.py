@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """origtest.py -- MASTER:/ORIG/MAKEFILE on the P-System (tools/mkmaster.py: build/MASTER.BLK):
 from the shell, make -f master:/orig/makefile mounts each source disk of UCSD Pascal II.0
-(MOUNT: emulator 2.14; the OS's on #5, then TINY-C again) and compiles its programs with PC
+(MOUNT: emulator 2.14; the OS's on #5, then UCSD-C again) and compiles its programs with PC
 into MASTER:/ORIG/CODE; then again: every one up to date.  Each code file must be the one the
 host's PC makes of the same sources (UCSD-Pascal-compiler-written-in-C's build/pc and
 tools/compare.py: what the code file defines, but for the bytes the compiler never sets).
 
   origtest.py [DISK ...]      (DISK: U132A ...; default all of them)
 
-Disks: #4 BIGGY (mkbiggy.py), #5 TINY-C, #9 MASTER, #10 the source disks in turn, #11
+Disks: #4 BIGGY (mkbiggy.py), #5 UCSD-C, #9 MASTER, #10 the source disks in turn, #11
 TOOLS, #12 PASCAL-C (its build/PASCAL-C.BLK: ../ucsd-pascal-compiler-written-in-c or
 $PASCALC), #13 SOURCE; all in one folder, the run's own (MOUNT looks there).  The source
 disks: UCSD-Pascal-Volumes' BLK_format ($VOLUMES).  Uses PSYS_MODE (native or z80)."""
@@ -21,7 +21,7 @@ from psys import ensure_setup, BUILD, shell_script, shell_transcript
 from mkmaster import ORIG, BLK
 PASCALC = os.environ.get('PASCALC', os.path.join(os.path.dirname(ROOT), 'ucsd-pascal-compiler-written-in-c'))
 sys.path.insert(0, os.path.join(PASCALC, 'tools'))
-os.environ.setdefault('TINYC', ROOT)
+os.environ.setdefault('UCSDC', ROOT)
 os.environ.setdefault('VOLUMES', os.path.dirname(BLK))
 from compare import regions, differences, put
 
@@ -47,7 +47,7 @@ def main(args):
     disks = [o for o in ORIG if not args or o[0] in args]
     mode = os.environ.get('PSYS_MODE', 'native')
     d = tempfile.mkdtemp(prefix='origtest_')
-    for v in ('TINY-C', 'TOOLS', 'MASTER', 'SOURCE'):
+    for v in ('UCSD-C', 'TOOLS', 'MASTER', 'SOURCE'):
         shutil.copy(os.path.join(BUILD, v + '.BLK'), d)
     shutil.copy(os.path.join(PASCALC, 'build', 'PASCAL-C.BLK'), d)
     for key, image, unit, progs, what in ORIG:
@@ -69,7 +69,7 @@ def main(args):
     env = dict(os.environ, VERIFY_HOSTCLOCK='2026-11-07T12:00:00', VERIFY_UNIT10=os.path.join(d, disks[0][1] + '.BLK'), VERIFY_UNIT11=os.path.join(d, 'TOOLS.BLK'),
                VERIFY_UNIT12=os.path.join(d, 'PASCAL-C.BLK'), VERIFY_UNIT13=os.path.join(d, 'SOURCE.BLK'))
     # (the work directory is d: #5's and #9's copies there, beside the other images)
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'MASTER.BLK'),
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, os.path.join(d, 'UCSD-C.BLK'), os.path.join(d, 'MASTER.BLK'),
                         sp, mode, d, '', '7200'], capture_output=True, text=True, env=env)
     tp = os.path.join(d, 'transcript.txt')
     tr = shell_transcript(open(tp, encoding='latin1').read()).replace('\r', '\n') if os.path.exists(tp) else ''
@@ -93,7 +93,7 @@ def main(args):
     checks.append(('again: every one up to date (no PC run)', '> PC ' not in second
                    and second.count("Nothing to be done for 'all'") == len(disks)))
     m = tr[tr.rfind('shell> mount'):]
-    checks.append(('#5 has TINY-C again, the prefix on it', re.search(r'#5 +TINY-C', m) is not None and 'TINY-C:> mount' in open(tp, encoding='latin1').read()))
+    checks.append(('#5 has UCSD-C again, the prefix on it', re.search(r'#5 +UCSD-C', m) is not None and 'UCSD-C:> mount' in open(tp, encoding='latin1').read()))
     bad = [n for n, g in checks if not g]
     if bad:
         print(tr[-4000:])

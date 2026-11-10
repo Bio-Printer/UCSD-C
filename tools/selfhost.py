@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""selfhost.py -- run the Tiny-C compiler ON the P-System.
+"""selfhost.py -- run the UCSD-C compiler ON the P-System.
 
   selfhost.py prog.c [TC.CODE]    compile prog.c on the P-System with the
                                   P-code compiler, return the transcript
                                   and the produced .CODE file.
 
 The compiler code file defaults to one built by the host compiler from
-tinyc/tc.c.  All headers go onto the work volume as NAME.H.TEXT.
+ucsdc/tc.c.  All headers go onto the work volume as NAME.H.TEXT.
 """
 import os, sys, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +28,7 @@ def compile_on_psystem(src_files, main_name, tc_code=None, timeout=1800, blocks=
     """src_files: list of (UCSD name, host path). main_name: e.g. 'HELLO'"""
     ps = PSystem(blocks=blocks)
     if tc_code is None:
-        base, tc_code = compile_c(os.path.join(ROOT, 'tinyc', 'tc.c'), ps.dir)
+        base, tc_code = compile_c(os.path.join(ROOT, 'ucsdc', 'tc.c'), ps.dir)
     ps.put('TC.CODE', open(tc_code, 'rb').read())
     put_headers(ps)
     for name, path in src_files:
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     src = sys.argv[1]
     name = os.path.splitext(os.path.basename(src))[0].upper()
     ok, tr, ps, info = compile_on_psystem([(name + '.TEXT', src)], name, sys.argv[2] if len(sys.argv) > 2 else None)
-    i = tr.find('Tiny-C')
+    i = tr.find('UCSD-C')
     print(tr[i:] if i >= 0 else tr[-2000:])
     if not ok:
         print(info)

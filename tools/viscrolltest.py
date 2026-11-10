@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""viscrolltest.py -- Tiny-C's vi (TOOLS:VI.CODE) on the P-System with the console's scroll
+"""viscrolltest.py -- UCSD-C's vi (TOOLS:VI.CODE) on the P-System with the console's scroll
 codes (emulator 2.03 and later: ESC [ n S / T) and with a vi that never scrolls (a build with
 scroll_ok = 0: it rewrites every row that changed), the screen after every key compared:
 

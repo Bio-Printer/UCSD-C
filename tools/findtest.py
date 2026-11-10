@@ -8,17 +8,17 @@
   file), else the one on the prefix volume, else an error that lists the
   volumes.
 
-Disks: #4 the boot volume, #5 TINY-C: (the compiler, TINY-C:/INCLUDE), #9 ONE:,
+Disks: #4 the boot volume, #5 UCSD-C: (the compiler, UCSD-C:/INCLUDE), #9 ONE:,
 #10 TWO:, #11 THREE: (the prefix, set with the Filer).  Every copy CC must
 not take is a syntax error, so a clean compile shows it took the right
 ones; the program it makes prints what the right ones define.
 
   ONE:T.TEXT (only on ONE: found by itself)
     -Z MAIN       MAIN.C on ONE: (the batch file's disk), not THREE:'s
-    -Z -C MAIN2   F.H on TINY-C: and TWO: only: error, Stopped.
+    -Z -C MAIN2   F.H on UCSD-C: and TWO: only: error, Stopped.
   ONE:MAIN.C includes
-    <stdio.h>     TINY-C:/INCLUDE's, though ONE: has a STDIO.H too
-    "stddef.h"    on no disk: TINY-C:/INCLUDE's (the last place looked)
+    <stdio.h>     UCSD-C:/INCLUDE's, though ONE: has a STDIO.H too
+    "stddef.h"    on no disk: UCSD-C:/INCLUDE's (the last place looked)
     "a.h"         only on TWO:; it includes "e.h": on TWO: and THREE:,
                   TWO:'s (the including file's disk beats the prefix)
     "b.h"         on ONE: and TWO:: ONE:'s (the including file's disk)
@@ -54,7 +54,7 @@ FILES = {
     'THREE': {'MAIN.C': WRONG,
               'C.H': '#define C 3\n',
               'E.H': WRONG},
-    'TINY-C': {'F.H': WRONG},
+    'UCSD-C': {'F.H': WRONG},
 }
 SCRIPT = r'''WAIT "Command:"
 TYPE "F"
@@ -67,7 +67,7 @@ TYPE "Q"
 WAIT "Command:"
 TYPE "X"
 WAIT "Execute what file?"
-TYPE "TINY-C:CC\r"
+TYPE "UCSD-C:CC\r"
 WAIT "Compile what file?"
 TYPE "@T\r"
 WAIT "Stopped."
@@ -82,7 +82,7 @@ WAIT "Command:"
 def main():
     ensure_setup()
     d = tempfile.mkdtemp(prefix='findtest_')
-    shutil.copy(os.path.join(ROOT, 'build', 'TINY-C.BLK'), d)
+    shutil.copy(os.path.join(ROOT, 'build', 'UCSD-C.BLK'), d)
     units = {'ONE': 9, 'TWO': 10, 'THREE': 11}
     for name in units:
         ucsdvol.main(['new', os.path.join(d, name + '.BLK'), name, '400'])
@@ -96,7 +96,7 @@ def main():
     mode = os.environ.get('PSYS_MODE', 'native')
     env = dict(os.environ, VERIFY_UNIT10=os.path.join(d, 'TWO.BLK'), VERIFY_UNIT11=os.path.join(d, 'THREE.BLK'))
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'),
-                        os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'ONE.BLK'), sp, mode,
+                        os.path.join(d, 'UCSD-C.BLK'), os.path.join(d, 'ONE.BLK'), sp, mode,
                         os.path.join(d, 'out'), '', '600'], capture_output=True, text=True, env=env)
     tr = open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read().replace('\r', '\n')
     tr = re.sub(r'\n+', '\n', tr)
@@ -108,8 +108,8 @@ def main():
         ('@T found on ONE: (the only disk with it); MAIN.C there, not THREE:\'s', '> -Z MAIN' in tr
          and 'ONE:MAIN.C' in main_part and 'rror' not in main_part and 'Linking' in main_part),
         ('MAIN: each include from the right disk (1 2 3 4 5)', 'values 1 2 3 4 5' in tr),
-        ('MAIN2: F.H on TINY-C: and TWO:: an error listing them, Stopped',
-         re.search(r'on TINY-C: TWO:', main2_part) is not None and 'Stopped.' in main2_part),
+        ('MAIN2: F.H on UCSD-C: and TWO:: an error listing them, Stopped',
+         re.search(r'on UCSD-C: TWO:', main2_part) is not None and 'Stopped.' in main2_part),
     ]
     bad = [n for n, good in checks if not good]
     for n, good in checks:

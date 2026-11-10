@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""modes.py prog.c -- compile with the host Tiny-C, run in Z80 mode and in
+"""modes.py prog.c -- compile with the host UCSD-C, run in Z80 mode and in
 P-Code mode (no memory reclaim) and compare the console output."""
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))

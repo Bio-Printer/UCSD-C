@@ -5,7 +5,7 @@ size of the blocks its permanent pool takes from the heap).
   pchunk.py [SIZE ...]        default: 128 192 256 320 384 448 512 640 768 1024
 
 For each size it builds CC.CODE with that PCHUNK (util.c is put back
-afterwards), then runs on the P-System, one X(ecute TINY-C:CC each, every
+afterwards), then runs on the P-System, one X(ecute UCSD-C:CC each, every
 command of @BUILD and @LIBS: -C of each compiler module, -L CC2=..., -Z -C
 of each library module, -J TCLIB2=....  The emulator tracks the least free
 memory (SP - NP at every P-code instruction, VERIFY_LOWWATER; emulator 1.97
@@ -13,8 +13,8 @@ or later) of each command.  Printed: the worst over all commands, and the
 commands within 300 words of it.
 
 P-Code mode without reclaimed memory: the same layout, and the same
-figures, as Z80 mode, many times faster.  Needs build/TINY-C.BLK
-(mkvolume.py); the sources of TINY-C:/SRC/CC and /SRC/LIB are put on one
+figures, as Z80 mode, many times faster.  Needs build/UCSD-C.BLK
+(mkvolume.py); the sources of UCSD-C:/SRC/CC and /SRC/LIB are put on one
 volume of their own, SRC: (the prefix), as the commands name them.  The least depends on how each file's
 declarations fill the blocks, so it jumps about from size to size; prefer
 a small size near the best to the best by a few words.
@@ -27,8 +27,8 @@ import ucsdvol, buildtc
 from psys import BUILD, ensure_setup
 from voltest import prefix
 
-UTIL = os.path.join(ROOT, 'tinyc', 'util.c')
-LIBMODS = sorted(f[:-2].upper() for f in os.listdir(os.path.join(ROOT, 'tinyc', 'lib')) if f.endswith('.c'))
+UTIL = os.path.join(ROOT, 'ucsdc', 'util.c')
+LIBMODS = sorted(f[:-2].upper() for f in os.listdir(os.path.join(ROOT, 'ucsdc', 'lib')) if f.endswith('.c'))
 COMMANDS = (['-C ' + m.upper() for m in buildtc.MODULES] +
             ['-L CC2=' + ','.join(m.upper() for m in buildtc.MODULES)] +
             ['-Z -C ' + m for m in LIBMODS] + ['-J TCLIB2=' + ','.join(LIBMODS)])
@@ -47,8 +47,8 @@ def build(size, work):
 def measure(cc, work):
     """the least free memory (words) of each command, and whether all were Done"""
     d = tempfile.mkdtemp(prefix='run_', dir=work)
-    shutil.copy(os.path.join(ROOT, 'build', 'TINY-C.BLK'), d)
-    vol = ucsdvol.Volume(os.path.join(d, 'TINY-C.BLK'))
+    shutil.copy(os.path.join(ROOT, 'build', 'UCSD-C.BLK'), d)
+    vol = ucsdvol.Volume(os.path.join(d, 'UCSD-C.BLK'))
     vol.write('CC.CODE', open(cc, 'rb').read(), 2)
     vol.save()
     ucsdvol.main(['new', os.path.join(d, 'SRC.BLK'), 'SRC', '2000'])
@@ -61,11 +61,11 @@ def measure(cc, work):
     L = ['WAIT "Command:"'] + prefix('SRC:')
     first = len(L) + 1                  # the first step of the first command
     for c in COMMANDS:
-        L += ['TYPE "X"', 'WAIT "Execute what file?"', 'TYPE "TINY-C:CC\\r"',
+        L += ['TYPE "X"', 'WAIT "Execute what file?"', 'TYPE "UCSD-C:CC\\r"',
               'WAIT "Compile what file?"', 'TYPE "%s\\r"' % c, 'WAIT "Command:"']
     sp = os.path.join(d, 'script')
     open(sp, 'w').write('\n'.join(L) + '\n')
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'), os.path.join(d, 'TINY-C.BLK'),
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), os.path.join(BUILD, 'data'), os.path.join(d, 'UCSD-C.BLK'),
                         os.path.join(d, 'SRC.BLK'), sp, 'native', os.path.join(d, 'out'), '', '1800'],
                        capture_output=True, text=True, env=dict(os.environ, VERIFY_LOWWATER='2'))
     steps = dict((int(a), int(b)) for a, b in re.findall(r'low water: step (\d+): (-?\d+) words', r.stdout))

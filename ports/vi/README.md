@@ -2,7 +2,7 @@
 
 vi is the BusyBox-derived "tiny vi" (Sterling Huxley; revised by brent@mbari.org
 2020 and Stefan Haubental 2024; GPL v2 or later, see `vi.h`'s header), edited so
-that it builds with Tiny-C and runs on UCSD Pascal II.0. It was one file, `vi.c`
+that it builds with UCSD-C and runs on UCSD Pascal II.0. It was one file, `vi.c`
 (123 KB, too big to edit with vi itself); it is now modules of about 20 KB:
 
 | File | What |
@@ -14,15 +14,15 @@ that it builds with Tiny-C and runs on UCSD Pascal II.0. It was one file, `vi.c`
 | `vicolon.c` | the `:` commands |
 | `vicmd.c` | the vi commands (`do_cmd`) |
 | `vipage.c`, `vipage.h` | a window into big files |
-| `viucsd.c` | the P-System: keys, screen, files, the library functions Tiny-C lacks |
+| `viucsd.c` | the P-System: keys, screen, files, the library functions UCSD-C lacks |
 
 A function used in one module only is `static` there; the others are declared in
 `vi.h`. The same files still build on Linux
 (`gcc -DSTANDALONE vimain.c viscreen.c vitext.c vicolon.c vicmd.c vipage.c viucsd.c`;
 `viucsd.c` is empty there).
 
-Build (host): each module `build/tc -c -z -I tinyc/include ports/vi/NAME.c -o NAME.obj`,
-then `build/tc -z -L tinyc/include/tclibz.obj vimain.obj ... viucsd.obj -o VI.CODE`
+Build (host): each module `build/tc -c -z -I ucsdc/include ports/vi/NAME.c -o NAME.obj`,
+then `build/tc -z -L ucsdc/include/tclibz.obj vimain.obj ... viucsd.obj -o VI.CODE`
 (`-z` and `tclibz.obj` so that it also runs in Z80 mode; `compile_modules` in
 `tools/tcrun.py` does it); `tools/mkvolume.py` puts VI.CODE on TOOLS: and the sources
 in TOOLS:/SRC/VI. On the P-System, `CC @TOOLS:/SRC/TOOLS` compiles each module (`-Z -C VI/VIMAIN`)
@@ -48,7 +48,7 @@ block: a binary file is not loaded); from X(ecute) it asks for the file.
   `USE_FEATURE_VI_*` are gone, and the cursor-motion optimisation that was off).
 * The CRASHME test code removed.
 * `do_cmd()` and `colon()` were too big for one P-code procedure (at most 60 long
-  jumps; Tiny-C's 3000-byte code buffer): the second half of `do_cmd()`'s switch is
+  jumps; UCSD-C's 3000-byte code buffer): the second half of `do_cmd()`'s switch is
   `do_cmd2()`, and `colon()`'s `:s` and `:set` are `colon_s()` and `colon_set()`.
   Plain C, so Linux uses them too; the same 60 commands give the same file on Linux,
   in P-Code mode and in Z80 mode.
@@ -99,7 +99,7 @@ block: a binary file is not loaded); from X(ecute) it asks for the file.
   bad one: RELEASE) the heap is put back where it was.  A save now needs only the
   open's stack: the window leaves `PG_SAVEW` (600 words; also what `u`'s own segment needs) for it, counted from where
   vi's main loop runs (`ucsd_avail`: the depth of a command does not change it), and a
-  yank or an undo that would take that room is refused (`ucsd_room`; Tiny-C's malloc
+  yank or an undo that would take that room is refused (`ucsd_room`; UCSD-C's malloc
   never gives memory back to the stack).  Without VI.SWAP (no window to lend) an open
   that would not have the directory's room is refused, not crashed.
 * The file being loaded holds the reserve's two blocks (its page and FIB) until it is

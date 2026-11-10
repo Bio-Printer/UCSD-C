@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """buildtc.py -- build CC.CODE (the compiler, P-code) from its modules
-with the host Tiny-C: each tinyc/*.c module -> .obj, linked with tclib."""
+with the host UCSD-C: each ucsdc/*.c module -> .obj, linked with tclib."""
 import os, sys, subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -17,7 +17,7 @@ def build(outdir=None):
     objs = []
     for m in MODULES:
         obj = os.path.join(outdir, m + '.obj')
-        r = subprocess.run([TC, '-c', '-I', INC, os.path.join(ROOT, 'tinyc', m + '.c'), '-o', obj],
+        r = subprocess.run([TC, '-c', '-I', INC, os.path.join(ROOT, 'ucsdc', m + '.c'), '-o', obj],
                            capture_output=True, text=True)
         if r.returncode:
             raise SystemExit('%s: %s' % (m, r.stdout + r.stderr))

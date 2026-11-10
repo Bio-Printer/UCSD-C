@@ -14,7 +14,7 @@ emulator 2.13):
   make fail            a - recipe that fails does not stop the next
   make nosuch          no rule: status 2
   date, date +FMT, date -r, touch -d, -t, -r
-  with CC (TINY-C: on unit 9): a program of two modules made; one touched, only it
+  with CC (UCSD-C: on unit 9): a program of two modules made; one touched, only it
                        compiled again and the program linked; then up to date
 Each file's time is read off the disk image: it must be the clock's at that step.
 Uses the mode of PSYS_MODE (native or z80) like the other tools."""
@@ -72,7 +72,7 @@ UTIL_C = ['int twice(int x)', '{', '    return 2 * x;', '}']
 
 
 def cc_part(data, mode, d):
-    """MAKE with CC (TINY-C: on unit 9): two modules compiled and linked; one touched: only it
+    """MAKE with CC (UCSD-C: on unit 9): two modules compiled and linked; one touched: only it
     compiled again, and the link"""
     work = os.path.join(d, 'CC.BLK')
     ucsdvol.main(['new', work, 'WORK', '800'])
@@ -84,8 +84,8 @@ def cc_part(data, mode, d):
     w.write('MAIN.C', make_text(MAIN_C), 3)
     w.write('UTIL.C', make_text(UTIL_C), 3)
     w.save()
-    tinyc = os.path.join(d, 'TINY-C.BLK')
-    shutil.copy(os.path.join(BUILD, 'TINY-C.BLK'), tinyc)
+    ucsdc = os.path.join(d, 'UCSD-C.BLK')
+    shutil.copy(os.path.join(BUILD, 'UCSD-C.BLK'), ucsdc)
     L = ['WAIT "Command:"', 'TYPE "S"', 'WAIT "> "', 'TYPE "cd #5\\r"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "',
          'WAIT "> CC -L HELLO=MAIN,UTIL"', 'WAIT "> "', 'TYPE "hello\\r"', 'WAIT "> "',
          'CLOCK "2026-11-07T11:00:00"', 'TYPE "touch UTIL.C\\r"', 'WAIT "> "', 'TYPE "make\\r"', 'WAIT "> "',
@@ -95,7 +95,7 @@ def cc_part(data, mode, d):
     sp = os.path.join(d, 'cc.script')
     open(sp, 'w').write('\n'.join(L) + '\n')
     env = dict(os.environ, VERIFY_HOSTCLOCK='2026-11-07T10:30:00')
-    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, work, tinyc, sp, mode, os.path.join(d, 'ccout'), '', '3000'],
+    r = subprocess.run([os.path.join(BUILD, 'run_verify'), data, work, ucsdc, sp, mode, os.path.join(d, 'ccout'), '', '3000'],
                        capture_output=True, text=True, env=env)
     tp = os.path.join(d, 'ccout', 'transcript.txt')
     tr = shell_transcript(open(tp, encoding='latin1').read()).replace('\r', '\n') if os.path.exists(tp) else ''

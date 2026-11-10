@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """shellalltest.py -- a total system rebuild the way a user starts it: at the
-Command: prompt, S (the Tiny-C shell), then  make -f tiny-c:makefile  (the
+Command: prompt, S (the UCSD-C shell), then  make -f ucsd-c:makefile  (the
 compiler, the library, every tool, SYS-C and PASCALC: alltest.py's run, each
 makefile's MAKE in turn, then again: up to date), and the least free memory of it.
 The Filer's Prefix is not set: nothing else at the Command: prompt has less memory
@@ -15,7 +15,7 @@ in the same columns, and every link ends in  N bytes free  N bytes/s.
 Z80 mode and P-Code mode without reclaimed memory (the default here) have the
 same layout, so the same figures; PSYS_MODE=z80 takes about 70 minutes.
 
-Disks: #5 TINY-C:, #9 SPARE:, #10 PASCALC:, #11 TOOLS:, #12 TCEXTRA: (CMPCODE),
+Disks: #5 UCSD-C:, #9 SPARE:, #10 PASCALC:, #11 TOOLS:, #12 TCEXTRA: (CMPCODE),
 #13 SYS-C: (as alltest.py).
 """
 import os, sys, re, shutil, subprocess, tempfile
@@ -71,7 +71,7 @@ def main():
     env = dict(os.environ, VERIFY_LOWWATER='1', VERIFY_HOSTCLOCK='1', **units(d))
     # (P-Code mode without VERIFY_RECLAIM: Z80 mode's layout, many times faster)
     r = subprocess.run([os.path.join(BUILD, 'run_verify'), biggy(d),
-                        os.path.join(d, 'TINY-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
+                        os.path.join(d, 'UCSD-C.BLK'), os.path.join(d, 'SPARE.BLK'), sp, mode,
                         os.path.join(d, 'out'), '', '7200'], capture_output=True, text=True, env=env)
     tr = shell_transcript(open(os.path.join(d, 'out', 'transcript.txt'), encoding='latin1').read())
     checks = results(d, r, tr, names)
