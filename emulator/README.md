@@ -43,15 +43,10 @@ program using doubles must be of the same kind -- they do not mix.
                      // 8-byte floating point (double): CSP 100..137 (NativeDouble.inc)
      #include "NativeDouble.inc"
      ```
-   `PSystemEngine-double.patch` is the same change as a unified diff
-   against the v1.88 you supplied (`patch -p1` in the
-   `UCSD-Pascal---P-Machine_work` folder).
 3. Rebuild and run in **P-Code mode** (native). Z80 mode will never have
    these CSPs.
 
-`UCSD-Pascal---P-Machine_work-v1.88.zip` in the repository root is the
-whole emulator with this change already made (plus the Linux runner used by
-the tools).
+The emulator (UCSD-Pascal_Windows_Emulator) has this change built in.
 
 What the CSPs do (format, stack effects): `docs/DOUBLES.md`.
 Test: `tools/f12test.py` (51 checks).
@@ -80,7 +75,7 @@ to
                  ext == L"C"    || ext == L"H") fileKind = 3;          // UCSD-C sources are text
 ```
 
-(Already made in `UCSD-Pascal---P-Machine_work-v1.88.zip`.) Without the
+(The emulator has it built in.) Without the
 change, import the file as `NAME.TEXT` and rename it to `NAME.C` in the
 Filer (the kind stays TEXT) -- or just compile `NAME`: UCSD-C looks for
 `NAME.C`, then `NAME.TEXT`.

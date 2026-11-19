@@ -2,27 +2,24 @@
 # setup.sh -- unpack the P-System emulator and disk images and build the Linux
 # runner (run_verify) from the emulator's own verify/run_verify.cpp.
 #
-# The emulator comes from the zip in the repository root, or -- when ENGINE_DIR
-# is set -- from a checkout of https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator:
+# The emulator comes from a checkout of
+# https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator beside this repository
+# (UCSD-Pascal_Windows_Emulator, any letter case, or its Download ZIP's -main folder),
+# or from ENGINE_DIR:
 #     ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/setup.sh
-# Calls through function pointers are compiled to CSP 138 (CALLI) by default,
-# which needs emulator version 1.91 or later; the v1.88 zip has no CALLI, so
-# with it use  tc -z  (UCSDC_Z80CALLS=1 for the tools).
 set -e
 cd "$(dirname "$0")/.."
-ZIP=UCSD-Pascal---P-Machine_work-v1.88.zip
-PM=build/pm/UCSD-Pascal---P-Machine_work
-if [ -n "$ENGINE_DIR" ]; then
-    PM="$ENGINE_DIR"
-    [ -f "$PM/UCSDPascal/PSystemEngine.cpp" ] || { echo "ENGINE_DIR: no UCSDPascal/PSystemEngine.cpp in $PM"; exit 1; }
-    ZIP=/dev/null
+if [ -z "$ENGINE_DIR" ]; then
+    for d in ../UCSD-Pascal_Windows_Emulator ../ucsd-pascal_windows_emulator ../UCSD-Pascal_Windows_Emulator-main \
+             ../bio-printer/ucsd-pascal_windows_emulator; do
+        [ -f "$d/UCSDPascal/PSystemEngine.cpp" ] && { ENGINE_DIR=$d; break; }
+    done
 fi
+PM="$ENGINE_DIR"
+[ -n "$PM" ] && [ -f "$PM/UCSDPascal/PSystemEngine.cpp" ] || {
+    echo "setup: no emulator -- clone https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator beside this"
+    echo "repository, or set ENGINE_DIR=/path/to/it"; exit 1; }
 mkdir -p build
-if [ -z "$ENGINE_DIR" ] && { [ ! -f $PM/UCSDPascal/PSystemEngine.cpp ] || [ $ZIP -nt $PM/UCSDPascal/PSystemEngine.cpp ]; }; then
-    rm -rf build/pm build/run_verify
-    mkdir -p build/pm && (cd build/pm && unzip -q -o ../../$ZIP)
-    touch $PM/UCSDPascal/PSystemEngine.cpp
-fi
 if [ ! -f build/img/Big_Disk.BLK ]; then
     mkdir -p build/img && (cd build/img && unzip -q -o ../../Usefull_System_Disk_Images.zip)
 fi

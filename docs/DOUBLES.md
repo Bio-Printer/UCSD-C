@@ -2,7 +2,7 @@
 
 ## The engine side (done): CSP 100..137
 
-`NativeDouble.inc` in the emulator (inside `UCSD-Pascal---P-Machine_work-v1.88.zip`,
+`NativeDouble.inc` in the emulator (UCSD-Pascal_Windows_Emulator,
 included by `PSystemEngine.cpp`'s CSP case; on its own in `emulator/`).
 Native P-Code mode; the Z80 interpreter does not have it (a CSP 100+ there
 jumps through a table it does not have), so from engine 1.93 the engine's

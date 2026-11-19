@@ -24,8 +24,8 @@ BIGGY 1.36: VOLUMES (VOLS) lists the volumes MOUNT can put on a unit, too.
 BIGGY 1.32: the shell runs batch files (@FILE), and its MOVE replaces a file of
 the new name.
 BIGGY 1.37: VERSION.TEXT names the C compiler UCSD-C and its volume UCSD-C:.
-The 8-byte doubles (CSP 100..137) are in the emulator itself (build it
-from UCSD-Pascal---P-Machine_work-v1.88.zip); nothing on the disk is needed
+The 8-byte doubles (CSP 100..137) are in the emulator itself
+(UCSD-Pascal_Windows_Emulator); nothing on the disk is needed
 for them."""
 import os, sys, zipfile, shutil
 HERE = os.path.dirname(os.path.abspath(__file__))

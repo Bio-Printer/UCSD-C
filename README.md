@@ -37,18 +37,16 @@ Start here when picking the project up in a new session.
 | `verify/` | UCSD-C Verify: `TCVERIFY.SCRIPT`, `cmpcode.c`, `rmfiles.c`, README; the content is on the volumes **TCVERIF.zip** (script, RMFILES) and **TCEXPCT.zip** (expected output of every test) in `volumes/` |
 | `repro/` | engine bug repros (REAL compare, DEEPCXP: both fixed in the engine) |
 | `tools/` | host tools (below) |
-| `UCSD-Pascal---P-Machine_work-v1.88.zip` | the emulator (engine, Linux runner `verify/run_verify.cpp`), with the double CSPs (NativeDouble.inc) |
-| `emulator/` | **the double CSPs on their own**: `NativeDouble.inc` + the 4-line `PSystemEngine.cpp` patch, and how to add them to a Windows build (README); **the PC keys for vi**: `PSystemEngine-keys.patch` and `KEYS.md` (Page Up/Down, Home, End, Insert, Delete as one code each while a program sets `SYSCOM->expansion[1]` to `PX_KEYS`) |
+| `emulator/` | **the double CSPs on their own**: `NativeDouble.inc`, and how to add them to a Windows build (README); **the PC keys for vi**: `KEYS.md` (Page Up/Down, Home, End, Insert, Delete as one code each while a program sets `SYSCOM->expansion[1]` to `PX_KEYS`) |
 | `Usefull_System_Disk_Images.zip`, `pascal.bin` | boot disk images, the Z80 loader |
 
-## Tools (Linux; `tools/setup.sh` unpacks the zips into `build/` and builds `build/run_verify`)
+## Tools (Linux; `tools/setup.sh` unpacks the disk images into `build/` and builds `build/run_verify` from the emulator beside this repository)
 
 **Emulator version:** calls through function pointers compile to `CSP 138` (CALLI) by
 default (see below), which the emulator implements from **version 1.91**
 ([UCSD-Pascal_Windows_Emulator](https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator)).
-The zip in this directory is v1.88 and has no CALLI: build the runner from a checkout of the
-emulator instead with `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator tools/setup.sh`
-(keep `ENGINE_DIR` set for the tools), or use `UCSDC_Z80CALLS=1` with the zip.
+`tools/setup.sh` builds the runner from a checkout of the emulator beside this repository
+(`../UCSD-Pascal_Windows_Emulator`), or from `ENGINE_DIR=/path/to/UCSD-Pascal_Windows_Emulator`.
 
 | Tool | Does |
 |---|---|

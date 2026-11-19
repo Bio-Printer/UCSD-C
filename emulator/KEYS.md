@@ -42,10 +42,7 @@ leaving it clears it.)
 
 The emulator has it from **version 2.00**
 ([UCSD-Pascal_Windows_Emulator](https://github.com/Bio-Printer/UCSD-Pascal_Windows_Emulator)):
-rebuild from there.  For an older copy: `PSystemEngine-keys.patch` (this
-folder) is the change as a unified diff
-against v1.88 (`patch -p1` in the `UCSD-Pascal---P-Machine_work` folder).
-In a later emulator, by hand:
+rebuild from there.  In another copy, by hand:
 
 1. `UCSDPascal\PSystemEngine.h`, in the class, after `void PostKey(uint8_t ch);`:
    ```cpp
